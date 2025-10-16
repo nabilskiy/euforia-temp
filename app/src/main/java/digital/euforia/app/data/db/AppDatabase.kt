@@ -20,7 +20,7 @@ import digital.euforia.app.data.db.entity.AppSettings
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class])
 @Database(
-    version = 2,
+    version = 1,
     entities = [
         SampleEntity::class,
         Accompaniment::class,

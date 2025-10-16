@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "4007abe73a5443a0b2a27af23445361a",
+    "identityHash": "c43885a5b643775e25404338808cde6c",
     "entities": [
       {
         "tableName": "SampleEntity",
@@ -698,11 +698,65 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "network_settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `sound_min_repeat_delay` INTEGER NOT NULL, `sound_max_repeat_delay` INTEGER NOT NULL, `phrases_limit` INTEGER NOT NULL, `accompaniments_offset_before` INTEGER NOT NULL, `accompaniments_offset_after` INTEGER NOT NULL, `registration_bonus` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soundMinRepeatDelay",
+            "columnName": "sound_min_repeat_delay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soundMaxRepeatDelay",
+            "columnName": "sound_max_repeat_delay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phrasesLimit",
+            "columnName": "phrases_limit",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accompanimentsOffsetBefore",
+            "columnName": "accompaniments_offset_before",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accompanimentsOffsetAfter",
+            "columnName": "accompaniments_offset_after",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "registrationBonus",
+            "columnName": "registration_bonus",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4007abe73a5443a0b2a27af23445361a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c43885a5b643775e25404338808cde6c')"
     ]
   }
 }
