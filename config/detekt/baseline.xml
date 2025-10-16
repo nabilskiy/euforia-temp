@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+    <ManuallySuppressedIssues></ManuallySuppressedIssues>
+    <CurrentIssues>
+        <ID>EmptyFunctionBlock:MainView.kt${ }</ID>
+        <ID>MagicNumber:NumberFormatUtil.kt$10</ID>
+        <ID>MagicNumber:NumberFormatUtil.kt$10.0</ID>
+        <ID>MagicNumber:NumberFormatUtil.kt$10000</ID>
+        <ID>MagicNumber:NumberFormatUtil.kt$1000000L</ID>
+        <ID>ReturnCount:SemVer.kt$SemVer$override fun compareTo(other: SemVer): Int</ID>
+        <ID>SpreadOperator:TextWrapper.kt$TextWrapper$(textRes, *params.toTypedArray())</ID>
+    </CurrentIssues>
+</SmellBaseline>

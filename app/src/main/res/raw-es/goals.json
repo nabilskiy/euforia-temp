@@ -1,0 +1,52 @@
+[
+    {
+        "identifier": "relax",
+        "code": "G1",
+        "text": "Aliviar la ansiedad o el estrés"
+    },
+    {
+        "identifier": "sleep",
+        "code": "G2",
+        "text": "Dormir mejor"
+    },
+    {
+        "identifier": "toxic",
+        "code": "G3",
+        "text": "Recuperarse de relaciones tóxicas"
+    },
+    {
+        "identifier": "emotional",
+        "code": "G4",
+        "text": "Apoyo emocional"
+    },
+    {
+        "identifier": "confidence",
+        "code": "G5",
+        "text": "Mejorar la confianza en mí mismo"
+    },
+    {
+        "identifier": "warmth",
+        "code": "G6",
+        "text": "Sentir ternura y calidez"
+    },
+    {
+        "identifier": "loneliness",
+        "code": "G7",
+        "text": "Compartir mi soledad"
+    },
+    {
+        "identifier": "esteem",
+        "code": "G8",
+        "text": "Mejorar la autoestima"
+    },
+    {
+        "identifier": "inspired",
+        "code": "G9",
+        "text": "Sentirme inspirado y con energía"
+    },
+    {
+        "identifier": "other",
+        "code": "FF",
+        "text": "Todo lo anterior"
+    }
+]

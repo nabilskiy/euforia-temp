@@ -1,0 +1,710 @@
+<resources>
+    <string name="app_name">Euforia</string>
+    <string name="ok">ОК</string>
+    <string name="error">Error</string>
+    <string name="loading">Loading…</string>
+    <string name="cancel">Cancel</string>
+    <string name="text_load_again">Try again</string>
+    <string name="next">Next</string>
+    <string name="delete">Delete</string>
+    <string name="delete_all">Delete all</string>
+    <string name="select_all">Select all</string>
+    <string name="select">Select</string>
+    <string name="deselect">Deselect</string>
+    <string name="download">Download</string>
+    <string name="restore">Restore</string>
+    <string name="settings">Preferences</string>
+    <string name="rename">Rename</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="done">Done</string>
+    <string name="share">Share</string>
+    <string name="copy">Copy</string>
+    <string name="copied">Copied</string>
+    <string name="report_error">Report an error</string>
+    <string name="save">Save</string>
+    <string name="email">Email</string>
+    <string name="send">Send</string>
+    <string name="edit">Edit</string>
+    <string name="continue_">Continue</string>
+    <string name="sent_success">Successfully sent</string>
+    <string name="preparing_link">Creating a link</string>
+    <string name="copy_link">Copy link</string>
+    <string name="link_copied">Link copied to clipboard</string>
+    <string name="skip">Skip</string>
+    <string name="timer">Timer</string>
+    <string name="soon">Soon</string>
+    <string name="minutes">Minutes</string>
+    <string name="hours">Hours</string>
+    <string name="copyright">© Euforia Digital LLC 2021–2025</string>
+    <string name="add_to_favorites">Add to Favorites</string>
+    <string name="remove_from_favorites">Remove from Favorites</string>
+    <string name="setup_language">Setup language…</string>
+    <string name="play">Play</string>
+    <string name="read_more">See more</string>
+    <string name="faq">FAQs</string>
+
+    <!-- Utils -->
+    <string name="debug_information">Device Logs</string>
+    <string name="debug_information_share">Send to Support</string>
+    <string name="data_store_commit_error_message">Failed to save changes. Please check the available space on your device.</string>
+    <string name="call_error_message">This feature can only be used on the iPhone</string>
+    <string name="send_email_error_message">Error sending email. Please verify your email settings and try again.</string>
+    <string name="support_email_subject">Support Euforia %1$s</string>
+    <string name="text_link_not_created">Failed to create link. Please check the connection.</string>
+    <string name="text_support_not_created">Failed to send a request. Please review the message and try again.</string>
+    <string name="app_critical_update_alert_message">Exciting updates await in Euforia! For the best experience and to continue enjoying our services, please upgrade to the latest version of the app.</string>
+    <string name="app_critical_update_alert_update">Update</string>
+    <string name="request_permissions_notifications_title">Turn on notifications</string>
+    <string name="request_permissions_notifications_text">To enhance your Euforia experience, please grant the app permission to send notifications</string>
+    <string name="request_permissions_notifications_button">Allow Notifications</string>
+    <string name="request_permissions_notifications_skip">Later</string>
+    <string name="notification_permissions_banner_title">Turn on notifications</string>
+    <string name="notification_permissions_banner_text">To enhance your Euforia experience, please grant the app permission to send notifications</string>
+    <string name="enter_email_alert_title">Email</string>
+    <string name="enter_email_alert_message">Your email is required for feedback, support, and important announcements and will be kept secret from anybody else</string>
+
+    <string name="go_to_downloads">Downloads</string>
+    <string name="no_internet_connection_title">No Internet Connection</string>
+    <string name="no_internet_connection_message">Check Downloads to access material offline on your device</string>
+    <string name="failed_load_data_title">Failed to Load Data</string>
+    <string name="resource_not_found_empty_text">Not Found</string>
+    <string name="no_data_empty_text">No Data</string>
+    <string name="get_euforia_max">Upgrade to Euforia MAX</string>
+
+    <!-- Feedback -->
+    <string name="feedback_support_title">Support</string>
+    <string name="feedback_support_subtitle">Please get in touch with us if there\'re any issues with the app</string>
+    <string name="feedback_report_title">Report an error</string>
+    <string name="feedback_report_subtitle">We appreciate your help in improving the quality of the app. Please let us know about any errors you have noticed, and we will do our best to correct them as soon as possible.</string>
+    <string name="feedback_impression_title">Submit a question</string>
+    <string name="feedback_impression_subtitle">If you have any questions about the Euforia, feel free to get in touch with us</string>
+    <string name="feedback_write_here">Message</string>
+    <string name="feedback_or">or</string>
+    <string name="feedback_extra">Contact us via email:</string>
+    <string name="feedback_need_email">Please provide the valid email address for feedback</string>
+    <string name="feedback_need_text">Please type in the text box</string>
+
+    <!-- feedback form alert -->
+    <string name="feedback_alert_title">Dear Euforia User</string>
+    <string name="feedback_alert_message">Help us improve. Please complete a brief feedback form regarding your app experience.</string>
+    <string name="feedback_alert_write_button">Leave feedback</string>
+    <string name="feedback_alert_later_button">Later</string>
+
+    <!-- feedback form -->
+    <string name="feedback_form_title">Feedback</string>
+    <string name="feedback_form_description">Help us improve. Please complete a brief feedback form regarding your app experience.</string>
+    <string name="feedback_form_send_button">Send</string>
+    <string name="feedback_form_validation_text">Please answer all required (*) questions.</string>
+    <string name="feedback_form_finish_title">Thank you 💛</string>
+    <string name="feedback_form_finish_message">Your form has been submitted successfully</string>
+    <string name="feedback_form_exit_confirm_title">Close Form</string>
+    <string name="feedback_form_exit_confirm_message">End survey now? Entered data will be lost</string>
+    <string name="feedback_form_not_found_empty_text">Not found</string>
+    <string name="feedback_form_expiry_title">Time is over</string>
+    <string name="feedback_form_expiry_message">This form is no longer valid</string>
+    <string name="feedback_form_readonly_details">You have already answered the questions on this form.</string>
+    <string name="feedback_form_refill_not_allowed_title">Error</string>
+    <string name="feedback_form_refill_not_allowed_message">This form does not support refilling.</string>
+    <string name="feedback_form_not_saved">Failed to send a request. Please review the information and try again.</string>
+
+    <!-- Personal data -->
+    <string name="personal_data_privacy">Privacy Policy</string>
+    <string name="personal_data_usage">App Privacy Information (App Store)</string>
+    <string name="personal_data_clear">Clear App Data</string>
+    <string name="personal_data_title">Clear App Data</string>
+    <string name="personal_data_clear_details">This process will permanently delete all data created during your use of the app, including:\n– Name.\n– Your preferences and the survey results.\n– Browsing history and favorites.\n– Uploaded files, meditations, articles, exercises and soundscapes, including created soundscapes.\n– Recommendations and suggestions.\n– Other data and cache.\nThis process cannot be undone.</string>
+    <string name="personal_data_delete">Delete Data</string>
+    <string name="personal_data_clear_confirm_title">Deleting personal data</string>
+    <string name="personal_data_clear_confirm_message">Are you sure you want to delete all data and restart Euforia?</string>
+
+    <!-- Subscriptions Management -->
+    <string name="subscriptions_managment">Billing &amp; Subscriptions</string>
+    <string name="about_subscription">About In-App Purchases</string>
+    <string name="update_subscriptions_state">Restore Purchases</string>
+    <string name="manage_subscriptions">Manage Subscriptions</string>
+    <string name="active_subscriptions">Active Subscription</string>
+    <string name="active_subscription_status_text">Your subscription is active. Euforia Max will expire on %1$s.</string>
+    <string name="active_subscription_default_name">Euforia Max</string>
+    <string name="active_subscription_from_appstore">Purchased through the App Store</string>
+    <string name="active_subscription_from_playmarket">Purchased through Google Play</string>
+
+    <!-- UA -->
+    <string name="ua_library_title">Бережіть себе 🇺🇦</string>
+    <string name="ua_mode_enter_confirm_title">Euforia разом з Україною</string>
+    <string name="ua_mode_enter_confirm_message">Для допомоги українцям під час воєнного стану додаток працює в особливому режимі, який надає тільки важливу інформацію.\n\nЯкщо Вам потрібна підтримка, натисніть «Перейти до особливого режиму». Якщо Ви хочете отримати доступ до основного функціоналу Euforia (Голос Euforia, медитації, йога, статті та ін.), оберіть іншу мову.</string>
+    <string name="ua_mode_enter_continue">Перейти до особливого режиму</string>
+    <string name="ua_mode_exit_confirm_title"></string>
+    <string name="ua_mode_exit_confirm_message">Для виходу з особливого режиму та переходу до основного функціоналу Euforia необхідно змінити мову додатка та перезавантажити його. Продовжити?</string>
+    <string name="ua_mode_menu_change_language">Змінити мову</string>
+    <string name="ua_mode_menu_about">Про український контент</string>
+    <string name="ua_mode_about_title">Український контент 🇺🇦</string>
+    <string name="ua_mode_about_details">Контент Euforia створюється протягом кількох років, та навіть зараз, під час війни Росії проти України. Але саме в цей час нашою командою було прийнято рішення створити тимчасовий контент для користувачів з України, що відрізняється від матеріалів основного додатка. В ньому зроблено максимальний акцент на екстрену психологічну самодопомогу в критичних ситуаціях.\n\nЦей контент містить в собі наступні теми: «Війна та діти», «Війна та люди похилого віку» та багато іншої інформації, а також музичні сцени, які допоможуть зняти стрес та моральну напругу.\n\nЯкщо зараз Ви не потребуєте спеціального контенту допомоги або для того, щоб використовувати весь основний функціонал – Голос Euforia, медитації, йога-практику та статті, потрібно змінити мову додатка.</string>
+
+    <!-- Intro -->
+    <string name="intro_gender_step_title">Who\'s the Therapy For?</string>
+    <string name="intro_genter_unspecified">Prefer not to specify</string>
+    <string name="intro_language_step_title">Preferred language</string>
+    <string name="intro_language_preferred">Full version</string>
+    <string name="intro_name_step_title">What can I call you?</string>
+    <string name="intro_name_info">We\'ll use your name to personalize your experience. It will be kept private and secure.</string>
+    <string name="intro_goals_step_title">What brings you to Euforia?</string>
+    <string name="intro_goals_step_subtitle"></string>
+    <string name="intro_reasons_step_title">What brings you to Euforia?</string>
+    <string name="intro_interests_step_title">What ambience do you enjoy?</string>
+    <string name="intro_interests_selected_count">%1$d of %2$d</string>
+    <string name="intro_notifications_step_title">Turn on notifications</string>
+    <string name="intro_notifications_step_subtitle">To enhance your Euforia experience, please grant the app permission to send notifications</string>
+    <string name="intro_email_step_title">Keep in touch with Euforia</string>
+    <string name="intro_email_info">Your email is required for feedback, support and important announcements. It will be kept private and secure.</string>
+    <string name="intro_next">Next</string>
+    <string name="intro_terms"><![CDATA[By clicking "Next" you confirm that you\'ve read and accepted <privacy_link>Privacy<BON:noBreakSpace/>Policy</privacy_link> and <terms_link>User<BON:noBreakSpace/>Agreement</terms_link>]]></string>
+    <string name="intro_final_listen_welcome">Better with headphones</string>
+    <string name="intro_final_title">Preparing your Euforia…</string>
+    <string name="intro_final_subtitle">This could take a few seconds</string>
+
+    <!-- Purchases -->
+    <string name="restore_purchases">Restore Purchases</string>
+    <string name="purchases_restore_failed">Failed to Restore Purchases</string>
+    <string name="purchases_restore_failed_no_active_subscriptions">You don\'t have any active subscriptions</string>
+    <string name="purchases_restore_failed_no_products">You don\'t have any purchased products</string>
+    <string name="purchases_restore_success">Your Purchases have been restored successfully</string>
+    <string name="receipt_error">Failed to verify Purchase Receipt.\nTry again later</string>
+    <string name="premium_terms_text"><![CDATA[Subscription automatically renews at the end of the current period. Cancel any time on App Store. <privacy_link>Privacy<BON:noBreakSpace/>Policy</privacy_link><BON:noBreakSpace/>and<BON:noBreakSpace/><terms_link>User<BON:noBreakSpace/>Agreement</terms_link>]]></string>
+    <string name="premium_popup_title">Welcome to</string>
+    <string name="premium_popup_message">You now have full access to Loving Voice Therapy and all the Euforia content. We care about your mental well-being, so try not to miss your daily sessions.</string>
+    <string name="premium_popup_button">Get Started</string>
+
+    <!-- Subscription Screen -->
+    <string name="subscription_reviews_title">What do people say</string>
+    <string name="subscription_reviews_subtitle">User Reviews</string>
+    <string name="subscription_reviews_total_rating">4.7</string>
+    <string name="subscription_reviews_total_rating_label">Overall score</string>
+    <string name="subscription_reviews_count">More than 10,000 ratings</string>
+    <string name="subscription_subscribe">Subscribe</string>
+    <string name="subscription_terms_text">Subscription automatically renews at the end of the current period. Cancel any time on App Store.</string>
+    <string name="subscription_terms">User Agreement</string>
+    <string name="subscription_privacy">Privacy Policy</string>
+    <string name="subscription_terms_and_conditions">Terms &amp; Conditions</string>
+    <string name="subscription_info">About In-App Purchase</string>
+    <string name="subscription_title_weekly">Weekly</string>
+    <string name="subscription_title_monthly">Monthly</string>
+    <string name="subscription_title_yearly">Annual</string>
+    <string name="subscription_title">Start Loving Voice Therapy Today</string>
+    <string name="subscription_button_title">Continue</string>
+    <string name="subscription_price_per_month_format">%1$s/mo.</string>
+
+    <!-- Subscription Compare Screen -->
+    <string name="subscription_compare">Compare</string>
+    <string name="subscription_compare_title">Euforia MAX Features</string>
+    <string name="subscription_compare_1">First 3-Day Sessions</string>
+    <string name="subscription_compare_2">Free Programs</string>
+    <string name="subscription_compare_3">Free Soundscapes</string>
+    <string name="subscription_compare_4">Download Offline Content</string>
+    <string name="subscription_compare_5">New Sessions Every Day</string>
+    <string name="subscription_compare_6">All Meditations, Articles, and Exercises</string>
+    <string name="subscription_compare_7">All Soundscapes</string>
+    <string name="subscription_compare_8">No Ads or Limitations</string>
+    <string name="subscription_compare_footer">Get more with an annual MAX subscription. Pay once and enjoy a significant discount compared to monthly renewal. Subscribe for full app access and regular content updates throughout the year.</string>
+
+    <!-- About Premium -->
+    <string name="about_premium_status_text"><![CDATA[Your subscription is active. Euforia MAX expires on %1$s. You can always manage your subscription from the menu <subs_manager_link>Billing &amp; Subscriptions</subs_manager_link>.]]></string>
+    <string name="about_premium_done">OK</string>
+
+    <!-- Screen Titles -->
+    <string name="today_title">Today</string>
+    <string name="library_title">Programs</string>
+    <string name="meditations_title">Meditations</string>
+    <string name="articles_title">Articles</string>
+    <string name="exercises_title">Exercises</string>
+    <string name="profile_title">My Euforia</string>
+    <string name="downloads_title">Downloads</string>
+    <string name="favorites_title">Favorites</string>
+    <string name="history_title">History</string>
+    <string name="playlist_title">Playlist</string>
+    <string name="playlists_title">Playlists</string>
+    <string name="quote_title">Overview</string>
+    <string name="search_title">Search</string>
+
+    <!-- Vibes -->
+    <string name="vibes_morning">Morning session</string>
+    <string name="vibes_daytime">Daytime session</string>
+    <string name="vibes_evening">Evening session</string>
+    <string name="vibes_ready_to_listen">Ready to listen</string>
+    <string name="vibes_listen_again">Listen again</string>
+    <string name="vibes_listen">Play</string>
+    <string name="vibes_morning_ready_to_listen">Begin your morning session</string>
+    <string name="vibes_daytime_ready_to_listen">Begin your daytime session</string>
+    <string name="vibes_evening_ready_to_listen">Begin your evening session</string>
+    <string name="vibes_daytime_completed">See you in the evening</string>
+    <string name="vibes_hint_title">Your Loving Voice Therapy®\nstarts now</string>
+    <string name="vibes_hint_text">Just tap PLAY to start the first audio session</string>
+    <string name="vibes_get_max">Get Euforia MAX</string>
+    <string name="vibes_morning_title">Morning</string>
+    <string name="vibes_daytime_title">Daytime</string>
+    <string name="vibes_evening_title">Evening</string>
+    <string name="vibes_first_evening_title">First session</string>
+    <string name="vibes_not_allowed">Available after %1$s</string>
+    <string name="vibes_not_allowed_details">Morning, daytime, and evening sessions become available throughout the day</string>
+    <string name="vibes_demo_period_skip_warning_title">First Therapy Week</string>
+    <string name="vibes_demo_period_skip_warning_message">We recommend completing the 7-day introduction before moving on to the main sessions.</string>
+    <string name="vibes_skip_demo_period">Finish First Week</string>
+    <string name="vibes_rate">Rate</string>
+    <string name="vibes_title_demo_date">Day %1$d</string>
+    <string name="vibes_avatars_title">Choose Avatar</string>
+    <string name="vibes_avatars_empty_text">Select Photos for Your Euforia Audio Sessions</string>
+    <string name="vibes_avatars_add_button">Add Your Photo</string>
+    <string name="vibes_avatars_info_text">Added photos are stored locally and kept private</string>
+    <string name="vibes_avatars_no_selected">Not selected</string>
+    <string name="vibes_avatars_demo">Default</string>
+    <string name="vibes_avatars_restore_demo">Restore to Default</string>
+    <string name="vibes_avatar_change_hint">Choose Your Voice Avatar</string>
+    <string name="vibes_avatar_change_mode">Avatar Transition Mode</string>
+    <string name="vibes_avatar_change_mode_disable">Disable</string>
+    <string name="vibes_avatar_change_mode_static">Static</string>
+    <string name="vibes_avatar_change_mode_random">Random</string>
+    <string name="vides_pending_alert_title">We’ll meet again soon!</string>
+    <string name="vides_morning_pending_alert_message">Your morning session will be ready in %1$s</string>
+    <string name="vides_daytime_pending_alert_message">Your daytime session will be ready in %1$s</string>
+    <string name="vides_evening_pending_alert_message">Your evening session will be ready in %1$s</string>
+    <string name="vides_pending_alert_ok">Continue</string>
+    <string name="vibes_music_change_hint">Select Background Music</string>
+
+    <!-- Vibes Upgrade -->
+    <string name="vibes_upgrade_day_index">Day %1$d</string>
+    <string name="vibes_upgrade_without_subscription">Free version:</string>
+    <string name="vibes_upgrade_details">You have access to the first few days. To unlock full access to daily therapy sessions, a MAX subscription is required.</string>
+    <string name="vibes_upgrade_with_subscription">With subscription</string>
+    <string name="vibes_upgrade_everyday">Get New Sessions Every Day</string>
+    <string name="vibes_upgrade_subscribe">Upgrade to MAX</string>
+
+    <!-- Today Screen -->
+    <string name="today_footer">You may need</string>
+    <string name="today_question_button">FAQ</string>
+    <string name="today_support_button">Support</string>
+    <string name="today_sos_button">Emergency SOS</string>
+    <string name="today_menu_skip_intro">Finish first week</string>
+    <string name="today_menu_info">How it works</string>
+    <string name="today_menu_about">About Euforia</string>
+    <string name="today_info_title">Your Progress</string>
+    <string name="today_info_today_progress_title">Your Today Progress</string>
+    <string name="today_info_subtitle">Loving Voice Therapy®</string>
+    <string name="today_info_step_extra_title">Recovering from Toxic\nRelationships</string>
+    <string name="today_info_step_extra_text">This program will help you recognize the signs of toxicity, learn strategies for getting out of these relationships, and learn how to build healthy and supportive connections.</string>
+    <string name="today_info_step_extra_button">Start Free</string>
+    <string name="today_info_step_demo_period_title">First Week of Getting to Know</string>
+    <string name="today_info_step_demo_period_text">Meet the Voice that Loves You. These 7 days are the beginning of your Therapy. You can always go back and listen to them again.</string>
+    <string name="today_info_step_demo_period_button">Go to First Week</string>
+    <string name="today_info_step_max_title">A New Experience Every Day</string>
+    <string name="today_info_step_max_text">The Therapy includes five new audio sessions every day. Listen to them in the morning, afternoon, and evening for just a few minutes, and feel the power of true emotional support!</string>
+    <string name="today_info_step_max_button">Continue the Therapy</string>
+    <string name="today_info_step_today_title">A New Experience Today</string>
+    <string name="today_info_step_programs_title">Top-3 Rated Programs</string>
+    <string name="today_info_step_programs_button">Find your Program</string>
+    <string name="today_info_step_scenes_title">Soundscapes</string>
+    <string name="today_info_step_scenes_text">Discover inspiration, enhance your focus, and find moments of calm and relaxation throughout your busy day with our Soundscapes.</string>
+    <string name="today_info_step_scenes_button">Go to Soundscapes</string>
+
+    <string name="cell_premium_lock">MAX</string>
+    <string name="search_placeholder">Search</string>
+    <string name="search_result_section_meditations">Meditations</string>
+    <string name="search_result_section_articles">Articles</string>
+    <string name="search_result_section_exercises">Exercises</string>
+    <string name="search_result_section_scenes">Soundscapes</string>
+    <string name="search_result_section_see_more">See results in</string>
+    <string name="search_empty_not_found">No results were found for the query</string>
+    <string name="search_empty_not_found_details">People often search for these queries:</string>
+    <string name="search_empty_not_found_query"><![CDATA[There were no results for the query <p>"%1$s"</p>]]></string>
+    <string name="search_suggestions">Suggestions</string>
+    <string name="search_popular_scenes">Popular</string>
+
+    <string name="type_meditation">meditation</string>
+    <string name="type_article">article</string>
+    <string name="type_exercise">exercise</string>
+
+    <string name="publication_download_on_device">Download</string>
+    <string name="publication_downloading_on_device">Downloading…</string>
+    <string name="publication_downloaded_on_device">Downloaded</string>
+    <string name="publication_downloaded_on_device_subtitle">Available offline</string>
+    <string name="publication_download_locked">Available with subscription</string>
+    <string name="about_meditation">About Meditations</string>
+    <string name="about_meditation_text">Our meditation courses are created by a team of psychologists using modern psychotherapy methods. It allows you to solve your problems on your own, without the help of a psychotherapist, thanks to a combination of elements of ccognitive-behavioral therapy (CBT), EMDR, existential therapy, and other methods based on mindfulness meditations.</string>
+    <string name="about_article">About Articles</string>
+    <string name="about_article_text">Our articles are written by a team of psychologists and personal development experts. We aim to provide high-quality content that helps our users gain self-awareness and improve their lives. Some of our articles are sourced from open platforms and carefully curated by our team for relevance and accuracy.</string>
+    <string name="about_exercise">About Exercises</string>
+    <string name="about_exercise_text">Our yoga exercises and asanas are presented by experienced coaches who share practical techniques for achieving both physical and mental well-being. These simple, effective methods require no special preparation or conditions. We believe that yoga can benefit everyone, regardless of age, fitness level, or experience.</string>
+
+    <string name="similar_publications_title">Similar</string>
+    <string name="publication_play">Play</string>
+    <string name="publication_read">Read</string>
+    <string name="publication_delete_from_downloads">Remove</string>
+    <string name="publication_delete_downloads_title">Remove from Downloads?</string>
+    <string name="publication_delete_downloads_message">The material will no longer be available offline</string>
+    <string name="publication_added_to_favorites_title">Added to Favorites</string>
+    <string name="publication_removed_from_favorites_title">Removed from Favorites</string>
+
+    <string name="publication_player_bg_hint">Customize your meditation experience with background sounds</string>
+    <string name="publication_player_bg_settings">Preferences</string>
+    <string name="publication_player_bg_settings_done">Done</string>
+    <string name="publication_player_bg_volume">Volume</string>
+
+    <string name="article_reader_share_label">Euforia Article</string>
+
+    <string name="rate_title">Rate your session</string>
+    <string name="rate_subtitle">Your feedback helps us improve your experience</string>
+    <string name="rate_rating">Your Rating</string>
+    <string name="rate_button">Submit</string>
+    <string name="rate_comment">Leave a Comment (optional)</string>
+    <string name="rate_comment_placeholder">Tell us how we can improve</string>
+    <string name="rate_share_text">Enjoyed the audio session?\nShare it with your friends!</string>
+    <string name="rate_success_title">Thank you for your feedback!</string>
+    <string name="rate_success_message">We appreciate your input and will use it to keep improving your experience.</string>
+    <string name="rate_success_button">Got it!</string>
+
+    <!-- Sections -->
+    <string name="section_meditations">Meditations</string>
+    <string name="section_articles">Articles</string>
+    <string name="section_exercises">Exercises</string>
+    <string name="section_audio_scenes">Soundscapes</string>
+
+    <!-- Packages -->
+    <string name="package_info_title">Who Is This Program For?</string>
+    <string name="package_menu_about">About the Program</string>
+    <string name="package_empty_meditations">The program hasn\'t had any meditations yet</string>
+    <string name="package_empty_articles">The program hasn\'t had any articles yet</string>
+    <string name="package_empty_exercises">The program hasn\'t had any exercises yet</string>
+    <string name="package_learn_text">More</string>
+    <string name="packages_title">Programs</string>
+
+    <!-- Profile -->
+    <string name="profile_more">Playlists</string>
+    <string name="profile_favorites">Favorites</string>
+    <string name="profile_favorites_empty_title">No favorites yet</string>
+    <string name="profile_favorites_empty_subtitle">Click on the ❤️ on meditations, articles, exercises, and soundscapes to add them to favorites</string>
+    <string name="profile_downloads">Downloaded</string>
+    <string name="profile_downloads_empty_title">Nothing has been downloaded yet</string>
+    <string name="profile_downloads_empty_subtitle">You can download meditations, articles, exercises, and soundscapes to your device for offline access.</string>
+    <string name="profile_downloads_free_empty_title">Offline Mode</string>
+    <string name="profile_downloads_free_empty_subtitle">With Euforia MAX, you can download meditations, articles, exercises, and soundscapes to your device for offline access.</string>
+    <string name="profile_downloads_free_empty_button">Get Euforia MAX</string>
+    <string name="profile_history">History</string>
+    <string name="profile_history_empty_title">No history yet</string>
+    <string name="profile_history_empty_subtitle">Once you start browsing app materials, it will show up here</string>
+    <string name="profile_additions_title">Additions</string>
+    <string name="profile_additions_subtitle"></string>
+    <string name="profile_ua_content">Support Ukraine</string>
+    <string name="profile_info">Information</string>
+    <string name="profile_privacy">Privacy Policy</string>
+    <string name="profile_terms">User Agreement</string>
+    <string name="profile_copyright_notice">Copyright Notice</string>
+    <string name="profile_about_app">About Euforia</string>
+    <string name="profile_subscriptions">Billing &amp; Subscriptions</string>
+    <string name="profile_private_data">User Preferences</string>
+    <string name="profile_settings">Personal</string>
+    <string name="profile_name">Name</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_voice">Voice</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_notifications">Notifications</string>
+    <string name="profile_save_progress">Save Progress</string>
+    <string name="profile_system_settings">System Settings</string>
+    <string name="profile_personal_data">Personal Data</string>
+    <string name="profile_share">Join Euforia family</string>
+    <string name="profile_social_nets">Community</string>
+    <string name="profile_additionel_info">Do you have any question?</string>
+    <string name="profile_share_app">Share app</string>
+    <string name="profile_feedback">Leave feedback</string>
+    <string name="profile_from_author">Contact Us</string>
+    <string name="profile_faq">FAQs</string>
+    <string name="profile_support">Support</string>
+    <string name="profile_developer">Developer</string>
+
+    <!-- Settings -->
+    <string name="name_placeholder">Name</string>
+    <string name="name_validation_text">Please enter a valid name</string>
+    <string name="email_placeholder">Email</string>
+    <string name="email_validation_text">Please provide the valid email address</string>
+    <string name="change_name_title">Change name</string>
+    <string name="change_name_description">We\'ll use your name to personalize your experience. It will be kept private and secure.</string>
+    <string name="change_voice_title">Voice version for</string>
+    <string name="change_voice_description">It\'s necessary for the accurate personalization of app content. Your choice will be kept secret from anybody else.</string>
+    <string name="voice_for_male">Man</string>
+    <string name="voice_for_female">Woman</string>
+    <string name="voice_unspecified">Other</string>
+    <string name="change_email_title">E-mail</string>
+    <string name="change_email_description">Your email is required for feedback, support and important announcements. It will be kept private and secure.</string>
+    <string name="change_language_title">Change language</string>
+    <string name="change_language_confirm_message">To change the language, the app must be restarted. Do you want to proceed?</string>
+    <string name="notifications_settings_title">Notifications</string>
+    <string name="notifications_settings_morning_title">Morning Voice</string>
+    <string name="notifications_settings_morning_details">Set your preferred time to start the day with a morning session.</string>
+    <string name="notifications_settings_daytime_title">Daytime Voice</string>
+    <string name="notifications_settings_daytime_details">Set your preferred time to begin your daytime sessions.</string>
+    <string name="notifications_settings_evening_title">Evening Voice</string>
+    <string name="notifications_settings_evening_details">Set a suitable time before bed for your evening session.</string>
+    <string name="notifications_settings_accompaniment_enabled">Schedule</string>
+    <string name="notifications_settings_accompaniment_time">Time</string>
+    <string name="notifications_settings_time_sensitive">Time sensitive</string>
+    <string name="notifications_settings_time_sensitive_details">Notifications can be presented immediately. They may be presented during "Do Not Disturb" to support you even in the most important moments.</string>
+    <string name="notifications_settings_more">System settings</string>
+    <string name="faq_title">FAQs</string>
+    <string name="faq_footer_text">Do you have another question?</string>
+    <string name="faq_footer_support">Submit a question</string>
+
+    <!-- Sound Scene -->
+    <string name="scenes_title">Soundscapes</string>
+    <string name="scenes_category_saved">Saved</string>
+    <string name="scenes_category_my">My Soundscapes</string>
+    <string name="scenes_category_favorites">Favorites</string>
+    <string name="scenes_search">Search</string>
+    <string name="scenes_playlists">Playlists</string>
+    <string name="scenes_all">All</string>
+    <string name="sounds_title">Sounds</string>
+    <string name="sounds_category_favorites">Favorites</string>
+    <string name="sounds_picker_apply">Apply</string>
+    <string name="sounds_picker_clear">Clear</string>
+    <string name="sounds_picker_limit_message">You can add up to %1$d sounds per Soundscape</string>
+    <string name="sound_add_to_scene">Add to Soundscape</string>
+    <string name="sound_remove_from_scene">Remove from Soundscape</string>
+    <string name="sound_volume">Volume</string>
+    <string name="sound_intensity">Delay interval</string>
+    <string name="sound_intensity_min">Less</string>
+    <string name="sound_intensity_max">More</string>
+    <string name="audio_scene_save">Save &amp; Download</string>
+    <string name="audio_scene_save_changes">Save changes</string>
+    <string name="audio_scene_saving">Saving in progress…</string>
+    <string name="audio_scene_saved_title">Saved to "My Soundscapes"</string>
+    <string name="audio_scene_deleted_title">Soundscape deleted</string>
+    <string name="audio_scene_settings">Preferences</string>
+    <string name="audio_scene_settings_clear">Clear</string>
+    <string name="audio_scene_settings_done">Done</string>
+    <string name="audio_scene_volume">Volume</string>
+    <string name="audio_scene_background_volume">Volume</string>
+    <string name="audio_scene_animations_enable">Sound animations</string>
+    <string name="audio_scene_replace_background_image">Change background</string>
+    <string name="audio_scene_replace_background_sound">Change music</string>
+    <string name="audio_scene_select_background_sound">Select music</string>
+    <string name="audio_scene_audio_settings">Audio options</string>
+    <string name="audio_scene_background_music_settings">Music options</string>
+    <string name="audio_scene_menu_timer_1h">Set 1-hour timer</string>
+    <string name="audio_scene_menu_timer_2h">Set 2-hour timer</string>
+    <string name="audio_scene_menu_timer_set">Set timer</string>
+    <string name="audio_scene_menu_timer_edit">Change timer</string>
+    <string name="audio_scene_menu_timer_stop">Stop timer</string>
+    <string name="rename_audio_scene_title">Rename your Soundscape</string>
+    <string name="save_audio_scene_title">Save your changes</string>
+    <string name="save_audio_scene_message">Use a short name so that you can easily find it in "My Soundscapes".</string>
+    <string name="save_audio_scene_name_placeholder">Soundscape name</string>
+    <string name="sleep_timer_title">Set timer</string>
+    <string name="sleep_timer_message">Set the timer when playing should be ended</string>
+    <string name="sleep_timer_setup_button">Set</string>
+    <string name="sleep_timer_disable_button">Cancel</string>
+    <string name="prepare_scene_progress_title">Downloading…</string>
+    <string name="sounds_section_play_now">Playing now</string>
+    <string name="scene_preparing">Loading</string>
+    <string name="scene_failed_load">The Soundscape could not be loaded</string>
+    <string name="my_scenes_empty_title">My Soundscapes aren\'t saved yet</string>
+    <string name="scenes_management_title">Reorder categories</string>
+    <string name="scenes_management_order_info">Set up your preferred order of categories</string>
+    <string name="scenes_reorder">Reorder</string>
+
+    <!-- Now Playing -->
+    <string name="now_playing_vibes_morning">Morning Euforia Session</string>
+    <string name="now_playing_vibes_daytime">Daytime Euforia Session</string>
+    <string name="now_playing_vibes_evening">Evening Euforia Session</string>
+
+    <!-- Notifications (deprecated texts kept) -->
+    <string name="notification_accompaniment_morning_text">Good Morning, get ready for a wonderful day 🌞</string>
+    <string name="notification_accompaniment_daytime_text">You\'ve got this 😊</string>
+    <string name="notification_accompaniment_evening_text">Set yourself up for a great evening 🌙</string>
+    <string name="notification_accompaniment_remind_later">Remind me in an hour</string>
+
+    <!-- SOS -->
+    <string name="sos_title">SOS</string>
+    <string name="sos_option_1">Breath 4–7–8</string>
+    <string name="sos_option_1_details">2 minutes</string>
+    <string name="sos_option_2">Butterfly</string>
+    <string name="sos_option_2_details">5 minutes</string>
+    <string name="sos_option_1_title">Breath 4–7–8</string>
+    <string name="sos_option_1_text">Hold your breath for 7 counts. One, two, three, four, five, six, seven.\nExhale for 8 counts. One, two, three, four, five, six, seven, eight.\n\nInhale. One two three four.\nHold your breath. One, two, three, four, five, six, seven.\nExhale. One, two, three, four, five, six, seven, eight.\n\nContinue to breathe in this way for 2–3 minutes and you will feel that your state has changed.</string>
+    <string name="sos_option_2_title">Butterfly</string>
+    <string name="sos_option_2_text">You must do three actions simultaneously, and keep your attention on all three activities.\n\t1. Put your hands on the shoulders of the crisscross and start patting yourself on shoulders.\n\t2. Do not stop patting and start to make exhales twice as long breath\n\t3. By continuing to pat and breathe this way, we concentrate on our negative thoughts and emotions.\n\nContinue this technique for 5 minutes, concentrating simultaneously on taps, breaths, and emotions, and soon you will feel your inner state has changed.</string>
+    <string name="sos_call_text">If you need emergency help, please get in touch with the support helpline in your country. We have compiled a list of phone numbers:</string>
+    <string name="sos_call_button">Find phone number</string>
+    <string name="sos_call_title">Call</string>
+    <string name="sos_suggestions_contacts_section">Suggested</string>
+    <string name="sos_all_contacts_section">All regions</string>
+    <string name="sos_search_results_section">Search results</string>
+
+    <!-- Downloads / Links -->
+    <string name="downloads_local_section">Auto-Downloaded</string>
+    <string name="downloads_info_free">Some items have been automatically downloaded for offline access. Manage downloads with a MAX subscription.</string>
+    <string name="downloads_info">Some items have been automatically downloaded for offline access.</string>
+
+    <string name="link_description_meditation">Listen to this meditation in the Euforia app</string>
+    <string name="link_description_article">Read this article in the Euforia app</string>
+    <string name="link_description_exercise">Watch this exercise in the Euforia app</string>
+    <string name="link_description_scene">Listen to this soundscape in the Euforia app</string>
+    <string name="link_description_ua_article">Read this article in the Euforia app</string>
+    <string name="link_description_ua_video">Watch this video in the Euforia app</string>
+    <string name="link_description_ua_file">Open this file in the Euforia app</string>
+
+    <string name="continue_watch_title">Continue Watching</string>
+    <string name="continue_watch_empty_title">Empty list</string>
+    <string name="continue_watch_empty_subtitle">The most recently unfinished items will appear here</string>
+    <string name="continue_watch_alert_title">Meditation Advice</string>
+    <string name="continue_watch_alert_message">We recommend starting from the beginning to achieve the best results.</string>
+    <string name="continue_watch_alert_continue">Continue</string>
+    <string name="continue_watch_alert_beginning">Start Over</string>
+
+    <string name="downloads_menu_delete_all">Clear all downloads</string>
+    <string name="downloads_delete_hint">You can selectively delete downloads</string>
+    <string name="downloads_delete_all_alert_title">Confirm action</string>
+    <string name="downloads_delete_all_alert_message">Are you sure you want to clear all downloads?</string>
+    <string name="favorites_menu_delete_all">Clear all favorites</string>
+    <string name="favorites_delete_all_alert_title">Confirm action</string>
+    <string name="favorites_delete_all_alert_message">Are you sure you want to clear all favorites?</string>
+    <!-- history_menu_delete_all = "Clear history"; -->
+    <string name="profile_about_vibes">Loving Voice Therapy</string>
+    <string name="enter_email_alert_cancel">Later</string>
+    <string name="downloads_management_title">Clear downloads</string>
+
+    <!-- NEW -->
+    <string name="notifications_settings_permission_denied">Permission denied</string>
+    <string name="notifications_settings_permission_denied_text">Turn on notifications in your device\'s settings for a better experience</string>
+    <string name="notifications_settings_permission_denied_button">Turn on notifications</string>
+    <string name="audio_scene_sound_hint">Customize sounds in Soundscape</string>
+    <string name="audio_scene_music_hint">Control the music on the Soundscape</string>
+    <!-- vibes_welcome_subtitle = "Welcome"; -->
+    <!-- vibes_manage_notifications_hint = "Manage notifications"; -->
+    <string name="publication_downloaded_menu_open">Open Downloads</string>
+    <string name="publication_downloaded_menu_delete">Remove from Downloads</string>
+
+    <string name="intro_scenes_step_title">Supporting your emotional well-being</string>
+    <string name="intro_scenes_step_text">During your Therapy, you can use soundscapes and guided meditations to support you every step of the way.</string>
+    <string name="vibes_unavailable_text">Complete day %s to unlock</string>
+    <string name="vibes_unavailable_text_2">Complete previous day to unlock</string>
+    <string name="vibes_unavailable_get_max_text">Unlock with MAX subscription</string>
+    <string name="today_get_max_button">Unlock 365+ Days</string>
+    <string name="today_info_video_title">How Does It Work?</string>
+    <string name="today_menu_intro">First Week</string>
+    <string name="vibes_demo_period_hint_title">First Week</string>
+    <string name="vibes_demo_period_hint_message">If you haven’t completed listening to the first week, you can always finish it in the app’s menu.</string>
+    <string name="vibes_demo_period_hint_button">Open</string>
+
+    <string name="vibes_demo_period_title">First Week</string>
+    <string name="vibes_demo_period_header_text">Start your first week with Loving Voice Therapy® and feel an immediate change in your emotional state.</string>
+    <string name="vibes_demo_period_footer_text">After the first week, continue to listen to the Voice That Loves You every day. All these words meant for you can change a lot in your life. Someday, you will notice the difference and be amazed.</string>
+    <string name="vibes_no_allowed_in_uk_mode_title">Особливий режим</string>
+    <string name="vibes_no_allowed_in_uk_mode_message">В особливому режимі Loving Voice Therapy® не підтримується. Змініть мову, щоб скористатися.</string>
+
+    <string name="widget_play_vibe_title">Loving Voice</string>
+    <string name="widget_single_vibe_configuration_title">Loving Voice Therapy®</string>
+    <string name="widget_single_vibe_configuration_description">Start your audio session now</string>
+    <string name="widget_vibes_configuration_title">Loving Voice Therapy®</string>
+    <string name="widget_vibes_configuration_description">Daily audio sessions available in the morning, afternoon and evening</string>
+    <string name="widget_vibes_morning_placeholder_title">Good Morning</string>
+    <string name="widget_vibes_daytime_placeholder_title">Domino Effect</string>
+    <string name="widget_vibes_evening_placeholder_title">Hello</string>
+    <string name="widget_vibes_empty_text">Click here to start using Euforia</string>
+    <string name="widget_vibes_unlock_text">Unlock with   MAX subscription</string>
+    <string name="widget_scenes_configuration_title">Soundscapes</string>
+    <string name="widget_scenes_configuration_description">Create the ideal sound environment</string>
+    <string name="widget_my_scenes_configuration_title">My Soundscapes</string>
+    <string name="widget_my_scenes_configuration_description">Create and enjoy your personalized soundscapes</string>
+    <string name="widget_scenes_continue_watch_empty_text">Click to start listening to scenes</string>
+    <string name="widget_scenes_my_scenes_empty_text">You haven\'t saved any scenes yet.\nClick here to start listening to scenes.</string>
+    <string name="widget_scenes_regular_empty_text">Long press to go to widget settings\nand select playlist or category</string>
+
+    <string name="parameter_playlist_type">Playlist Type</string>
+    <string name="parameter_playlist">Playlist</string>
+    <string name="parameter_category">Category</string>
+    <string name="playlist_type_default">Default</string>
+    <string name="playlist_type_regular">Regular</string>
+    <string name="playlist_type_category">Category</string>
+    <string name="playlist_type_regular_description">Handpicked playlists to suit your mood</string>
+    <string name="playlist_type_continue_watch">Continue Watch</string>
+    <string name="playlist_type_my_scenes">My Soundscapes</string>
+    <string name="vibes_avatar_changed">Avatar changed</string>
+
+    <string name="imported">Imported</string>
+    <string name="audio_scene_unsaved_changes">Unsaved Changes</string>
+    <string name="audio_scene_unsaved_changes_alert_title">Unsaved Changes</string>
+    <string name="audio_scene_unsaved_changes_alert_message">This scene contains unsaved changes. Do you want to save them?</string>
+    <string name="audio_scene_unsaved_changes_alert_save">Save</string>
+    <string name="audio_scene_unsaved_changes_alert_discard">Discard</string>
+    <string name="audio_scene_change_music">Change music</string>
+    <string name="audio_scene_no_music">Without music</string>
+    <string name="audio_scene_import_music">Import</string>
+    <string name="audio_scene_music_rename">Rename music</string>
+    <string name="audio_scene_music_name_placeholder">Name</string>
+    <string name="sounds_category_suggestions">Suggestions</string>
+    <string name="import_from">Import from</string>
+    <string name="import_from_photos">Photos</string>
+    <string name="import_from_unsplash">Unsplash</string>
+    <string name="import_from_pexels">Pexels</string>
+    <string name="type_photos">Photos</string>
+    <string name="type_videos">Videos</string>
+    <string name="search_photos">Search photos</string>
+    <string name="search_videos">Search videos</string>
+    <string name="subscription_continue_watch">Subscribe to continue</string>
+    <string name="music_category_suggestions">Popular</string>
+
+    <string name="vibes_empty_title">Unable to load Daily Sessions</string>
+    <string name="vibes_empty_subtitle">Please check your internet connection\nor try again later.</string>
+
+    <string name="listen_later">Listen later</string>
+    <string name="click_to_unmute">Tap to unmute</string>
+
+    <string name="today_progress_free_title">Ready to get started?</string>
+    <string name="today_progress_free_1_title">Install the app</string>
+    <string name="today_progress_free_1_text">You have already taken the first step towards your therapy.</string>
+    <string name="today_progress_free_2_title">Today</string>
+    <string name="today_progress_free_2_text">Start your 7-day free trial and begin therapy.</string>
+    <string name="today_progress_free_3_title">First week</string>
+    <string name="today_progress_free_3_text">Go through the first week of acquaintance and feel the first effect of therapy.</string>
+    <string name="today_progress_free_4_title">Start the full therapy program</string>
+    <string name="today_progress_free_4_text">Take time for your well-being every day and become the best version of yourself.</string>
+    <string name="today_progress_premium_title">The excellence of your therapy</string>
+    <string name="today_progress_premium_1_title">Get in the mood for therapy</string>
+    <string name="today_progress_premium_1_text">The first step has already been taken today, you are here, which means you are ready to work on yourself.</string>
+    <string name="today_progress_premium_2_title">Today</string>
+    <string name="today_progress_premium_2_text">Complete your morning, afternoon, and evening therapies.</string>
+    <string name="today_progress_premium_3_title">Relax with Soundscapes</string>
+    <string name="today_progress_premium_3_text">Listen to at least 10 minutes of musical relaxation scenes.</string>
+    <string name="today_progress_premium_4_title">Save your daily progress</string>
+    <string name="today_progress_premium_4_text">The therapy will be most effective if you listen to it daily. Continue your sessions tomorrow.</string>
+    <string name="continuous_days_title">Days in a row in therapy</string>
+    <string name="continuous_days_text">You will feel the effect from the first days, but the therapy will bring results with regular listening.</string>
+    <string name="continuous_days_30">30 days</string>
+    <string name="continuous_days_90">90 days</string>
+    <string name="continuous_days_365">1 year</string>
+    <string name="vibes_unavailable_demo_alert_text">Complete the previous day to unlock the new one</string>
+    <string name="vibes_unavailable_alert_text">Available on %s</string>
+    <string name="goal_relax">Relieve Anxiety or Stress</string>
+    <string name="goal_sleep">Sleep Better</string>
+    <string name="goal_toxic">Recover from Toxic Relationships</string>
+    <string name="goal_emotional">Emotional Support</string>
+    <string name="goal_confidence">Boost Self-Confidence</string>
+    <string name="goal_warmth">Feel Tenderness and Warmth</string>
+    <string name="goal_loneliness">Share My Loneliness</string>
+    <string name="goal_esteem">Improve Self-Esteem</string>
+    <string name="goal_inspired">Get Inspired and Energized</string>
+    <string name="goal_other">All of the Above</string>
+    <string name="lang_uk">Українська</string>
+    <string name="lang_en">English</string>
+    <string name="lang_ru">Русский</string>
+    <string name="lang_es">Español</string>
+    <string name="lang_tr">Türk</string>
+    <string name="lang_fr">Français</string>
+    <string name="lang_pt">Portugal</string>
+    <string name="lang_de">Deutsch</string>
+    <string name="lang_soon_uk">скоро</string>
+    <string name="lang_soon_es">pronto</string>
+    <string name="lang_soon_tr">yakında</string>
+    <string name="lang_soon_fr">bientôt</string>
+    <string name="lang_soon_pt">em breve</string>
+    <string name="lang_soon_de">in Kürze</string>
+</resources>

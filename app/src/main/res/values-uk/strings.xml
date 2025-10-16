@@ -1,0 +1,699 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ok">ОК</string>
+    <string name="error">Помилка</string>
+    <string name="loading">Завантаження…</string>
+    <string name="cancel">Скасувати</string>
+    <string name="text_load_again">Повторити</string>
+    <string name="next">Далі</string>
+    <string name="delete">Видалити</string>
+    <string name="delete_all">Видалити все</string>
+    <string name="select_all">Вибрати все</string>
+    <string name="select">Вибрати</string>
+    <string name="deselect">Скасувати вибір</string>
+    <string name="download">Завантажити</string>
+    <string name="restore">Відновити</string>
+    <string name="settings">Налаштування</string>
+    <string name="rename">Змінити назву</string>
+    <string name="yes">Так</string>
+    <string name="no">Ні</string>
+    <string name="back">Назад</string>
+    <string name="close">Закрити</string>
+    <string name="done">Готово</string>
+    <string name="share">Поширити</string>
+    <string name="copy">Копіювати</string>
+    <string name="copied">Скопійовано</string>
+    <string name="report_error">Повідомити про помилку</string>
+    <string name="save">Зберегти</string>
+    <string name="email">Email</string>
+    <string name="send">Надіслати</string>
+    <string name="edit">Редагувати</string>
+    <string name="continue_">Продовжити</string>
+    <string name="sent_success">Успішно надіслано</string>
+    <string name="preparing_link">Підготовка посилання</string>
+    <string name="copy_link">Скопіювати посилання</string>
+    <string name="link_copied">Посилання скопійоване</string>
+    <string name="skip">Пропустити</string>
+    <string name="timer">Таймер</string>
+    <string name="soon">Незабаром</string>
+    <string name="minutes">Хвилини</string>
+    <string name="hours">Години</string>
+    <string name="copyright">© Euforia Digital LLC 2021-2025</string>
+    <!-- in context menu -->
+    <string name="add_to_favorites">Додати до обраного</string>
+    <!-- in context menu -->
+    <string name="remove_from_favorites">Видалити із обраного</string>
+    <string name="setup_language">Налаштування мови…</string>
+    <string name="play">Грати</string>
+    <string name="read_more">Ще</string>
+    <string name="faq">FAQ</string>
+
+    <!-- Utils -->
+    <string name="debug_information">Device logs</string>
+    <string name="debug_information_share">Відправити в підтримку</string>
+    <string name="data_store_commit_error_message">Не вдалося зберегти зміни, будь ласка, перевірте вільне місце на пристрої</string>
+    <string name="call_error_message">Ця функція доступна лише на iPhone</string>
+    <string name="send_email_error_message">Не вдалося надіслати email. Будь ласка, перевірте налаштування електронної пошти та спробуйте ще раз.</string>
+    <string name="support_email_subject">Support Euforia %s</string>
+    <string name="text_link_not_created">Неможливо створити посилання. Перевірте підключення.</string>
+    <string name="text_support_not_created">Будь ласка, перегляньте повідомлення і повторіть спробу.</string>
+    <string name="app_critical_update_alert_message">Для продовження роботи з додатком, будь ласка, оновіть версію в AppStore.</string>
+    <string name="app_critical_update_alert_update">Оновити</string>
+    <string name="request_permissions_notifications_title">Увімкнути повідомлення</string>
+    <string name="request_permissions_notifications_text">Для покращення Вашого досвіду в Euforia, будь ласка, надайте дозвіл додатку на відправлення повідомлень</string>
+    <string name="request_permissions_notifications_button">Дозволити повідомлення</string>
+    <string name="request_permissions_notifications_skip">Пізніше</string>
+    <string name="notification_permissions_banner_title">Дозволити повідомлення</string>
+    <string name="notification_permissions_banner_text">Для покращення користувацького досвіду Euforia, будь ласка, надайте дозвіл додатку на відправлення повідомлень</string>
+    <string name="enter_email_alert_title">Email</string>
+    <string name="enter_email_alert_message">Ваша електронна адреса необхідна для зворотнього зв\'язку, підтримки та важливих оголошень та буде збережена в таємниці від третіх осіб</string>
+
+    <string name="go_to_downloads">Downloads</string>
+    <string name="no_internet_connection_title">Немає інтернет-з\'єднання</string>
+    <string name="no_internet_connection_message">Відвідайте розділ «Завантаження», щоб отримати доступ до матеріалів в офлайн режимі</string>
+    <string name="failed_load_data_title">Не вдалося завантажити дані</string>
+    <string name="resource_not_found_empty_text">Матеріал недоступний</string>
+    <string name="no_data_empty_text">Немає даних</string>
+    <string name="get_euforia_max">Отримати Euforia MAX</string>
+
+    <!-- Feedback -->
+    <string name="feedback_support_title">Підтримка</string>
+    <string name="feedback_support_subtitle">Будь ласка, зв\'яжіться з нами, якщо у Вас виникли проблеми з додатком</string>
+    <string name="feedback_report_title">Повідомити про помилку</string>
+    <string name="feedback_report_subtitle">Ми цінуємо Вашу допомогу у покращенні якості додатка. Будь ласка, повідомте нам про помилку, яку Ви помітили, і ми намагатимемося виправити її якомога швидше.</string>
+    <string name="feedback_impression_title">Задати питання</string>
+    <string name="feedback_impression_subtitle">Якщо у Вас є питання, пов\'язані з проєктом Euforia, зв\'яжіться з нами</string>
+    <string name="feedback_write_here">Повідомлення</string>
+    <string name="feedback_or">або</string>
+    <string name="feedback_extra">Зв\'яжіться з нами через електронну адресу для надання додаткових матеріалів:</string>
+    <string name="feedback_need_email">Вкажіть коректний email для зворотного зв\'язку</string>
+    <string name="feedback_need_text">Напишіть докладне звернення до текстового поля</string>
+
+    <!-- feedback form alert -->
+    <string name="feedback_alert_title">Шановний користувачу</string>
+    <string name="feedback_alert_message">Допоможіть покращити Euforia! Заповніть коротку форму зворотнього зв\'язку.</string>
+    <string name="feedback_alert_write_button">Залишити відгук</string>
+    <string name="feedback_alert_later_button">Не зараз</string>
+
+    <!-- feedback form -->
+    <string name="feedback_form_title">Зворотній зв\'язок</string>
+    <string name="feedback_form_description">Допоможіть зробити Euforia краще. Заповніть коротку форму зворотного зв\'язку про застосунок.</string>
+    <string name="feedback_form_send_button">Відправити</string>
+    <string name="feedback_form_validation_text">Дайте відповідь на всі обов\'язкові (*) запитання</string>
+    <string name="feedback_form_finish_title">Дякуємо 💜</string>
+    <string name="feedback_form_finish_message">Ваша форма успішно відправлена</string>
+    <string name="feedback_form_exit_confirm_title">Закрити форму</string>
+    <string name="feedback_form_exit_confirm_message">Закінчити опитування зараз? Введені дані будуть втрачені</string>
+    <string name="feedback_form_not_found_empty_text">Не знайдено</string>
+    <string name="feedback_form_expiry_title">Час вичерпано</string>
+    <string name="feedback_form_expiry_message">Ця форма більше не дійсна</string>
+    <string name="feedback_form_readonly_details">Ви вже відповіли на запитання цієї форми.</string>
+    <string name="feedback_form_refill_not_allowed_title">Помилка</string>
+    <string name="feedback_form_refill_not_allowed_message">Повторне заповнення не підтримується цією формою.</string>
+    <string name="feedback_form_not_saved">Не вдалося надіслати запит. Будь ласка, перевірте інформацію та повторіть спробу</string>
+
+    <!-- Personal data -->
+    <string name="personal_data_privacy">Privacy Policy</string>
+    <string name="personal_data_usage">App Privacy Information (App Store)</string>
+    <string name="personal_data_clear">Clear app data</string>
+    <string name="personal_data_title">Clear app data</string>
+    <string name="personal_data_clear_details">This process will permanently delete all data created during your use of the app, including:\n– Name.\n– Your preferences and the survey results.\n– Browsing history and favorites.\n– Uploaded files, meditations, articles, exercises and soundscapes, including created soundscapes.\n– Recommendations and suggestions.\n– Other data and cache.\nThis process cannot be undone.</string>
+    <string name="personal_data_delete">Delete data</string>
+    <string name="personal_data_clear_confirm_title">Deleting personal data</string>
+    <string name="personal_data_clear_confirm_message">Are you sure you want to delete all data and restart Euforia?</string>
+
+    <!-- Subscriptions Management -->
+    <string name="subscriptions_managment">Оплата та підписки</string>
+    <string name="about_subscription">Про підписки</string>
+    <string name="update_subscriptions_state">Відновити покупки</string>
+    <string name="manage_subscriptions">Управління підписками</string>
+    <string name="active_subscriptions">Активні підписки</string>
+    <string name="active_subscription_status_text">Ваша підписка активна. Термін закінчення Euforia Max %s.</string>
+    <string name="active_subscription_default_name">Euforia Max</string>
+    <string name="active_subscription_from_appstore">Придбано в App Store</string>
+    <string name="active_subscription_from_playmarket">Придбано в Play Market</string>
+
+    <!-- UA -->
+    <string name="ua_library_title">Бережіть себе 🇺🇦</string>
+    <string name="ua_mode_enter_confirm_title">Euforia разом з Україною</string>
+    <string name="ua_mode_enter_confirm_message">Для допомоги українцям під час воєнного стану додаток працює в особливому режимі, який надає тільки важливу інформацію.\n\nЯкщо Вам потрібна підтримка, натисніть «Перейти до особливого режиму». Якщо Ви хочете отримати доступ до основного функціоналу Euforia (Голос Euforia, медитації, йога, статті та ін.), оберіть іншу мову.</string>
+    <string name="ua_mode_enter_continue">Перейти до особливого режиму</string>
+    <string name="ua_mode_exit_confirm_title"></string>
+    <string name="ua_mode_exit_confirm_message">Для виходу з особливого режиму та переходу до основного функціоналу Euforia необхідно змінити мову додатка та перезавантажити його. Продовжити?</string>
+    <string name="ua_mode_menu_change_language">Змінити мову</string>
+    <string name="ua_mode_menu_about">Про український контент</string>
+    <string name="ua_mode_about_title">Український контент 🇺🇦</string>
+    <string name="ua_mode_about_details">Контент Euforia створюється протягом кількох років, та навіть зараз, під час війни Росії проти України. Але саме в цей час нашою командою було прийнято рішення створити тимчасовий контент для користувачів з України, що відрізняється від матеріалів основного додатка. В ньому зроблено максимальний акцент на екстрену психологічну самодопомогу в критичних ситуаціях.\n\nЦей контент містить в собі наступні теми: «Війна та діти», «Війна та люди похилого віку» та багато іншої інформації, а також музичні сцени, які допоможуть зняти стрес та моральну напругу.\n\nЯкщо зараз Ви не потребуєте спеціального контенту допомоги або для того, щоб використовувати весь основний функціонал – Голос Euforia, медитації, йога-практику та статті, потрібно змінити мову додатка.</string>
+
+    <!-- Intro -->
+    <string name="intro_gender_step_title">Пройдіть терапію для</string>
+    <string name="intro_genter_unspecified">Не вказувати</string>
+    <string name="intro_language_step_title">Оберіть мову</string>
+    <string name="intro_language_preferred">Full version</string>
+    <string name="intro_name_step_title">Як можна до Вас звертатися?</string>
+    <string name="intro_name_info">Вкажіть ім\'я для персоналізації контенту. Вся Ваша інформація буде зберігатися в секреті від будь-кого ще.</string>
+    <string name="intro_goals_step_title">Що привело Вас в Euforia?</string>
+    <string name="intro_goals_step_subtitle"></string>
+    <string name="intro_reasons_step_title">Що привело Вас до Euforia?</string>
+    <string name="intro_interests_step_title">Що Вам подобається більше?</string>
+    <string name="intro_interests_selected_count">%d з %d</string>
+    <string name="intro_notifications_step_title">Дозвольте повідомлення</string>
+    <string name="intro_notifications_step_subtitle">Щоб відкрити всі можливості Euforia, будь ласка, надайте застосунку дозвіл на надсилання сповіщень</string>
+    <string name="intro_email_step_title">Залишайтеся на зв\'язку</string>
+    <string name="intro_email_info">Ваша електронна адреса необхідна для зворотного зв\'язку, підтримки, важливих оголошень і буде зберігатися в секреті від будь-кого ще</string>
+    <string name="intro_next">Продовжити</string>
+    <string name="intro_terms">Натискаючи "Продовжити", Ви підтверджуєте, що прочитали та приймаєте &lt;privacy_link&gt;Політику&lt;BON:noBreakSpace/&gt;конфіденційності&lt;/privacy_link&gt; та &lt;terms_link&gt;Угоду&lt;BON:noBreakSpace/&gt;користувача&lt;/terms_link&gt;</string>
+    <string name="intro_final_listen_welcome">Використовуйте навушники</string>
+    <string name="intro_final_title">Підготовка Вашої Euforia...</string>
+    <string name="intro_final_subtitle">Це займе кілька секунд</string>
+
+    <!-- Purchases -->
+    <string name="restore_purchases">Відновити покупки</string>
+    <string name="purchases_restore_failed">Не вдалося відновити покупки</string>
+    <string name="purchases_restore_failed_no_active_subscriptions">У Вас немає активних підписок</string>
+    <string name="purchases_restore_failed_no_products">У Вас немає здійснених покупок</string>
+    <string name="purchases_restore_success">Ваші покупки успішно відновлено</string>
+    <string name="receipt_error">Не вдалося перевірити квитанцію.\nСпробуйте пізніше</string>
+    <string name="premium_terms_text">Платежі автоматично списуються в кінці періоду. Управління підписками доступне в налаштуваннях облікового запису в App Store. &lt;privacy_link&gt;Privacy&lt;BON:noBreakSpace/&gt;policy&lt;/privacy_link&gt;&lt;BON:noBreakSpace/&gt;and&lt;BON:noBreakSpace/&gt;&lt;terms_link&gt;User&lt;BON:noBreakSpace/&gt;agreement&lt;/terms_link&gt;</string>
+    <string name="premium_popup_title">Ласкаво просимо</string>
+    <string name="premium_popup_message">Вітаємо! Ви відкрили необмежений доступ до всього контенту програми. Ваш ментальний стан важливий для нас, і ми раді допомогти Вам!</string>
+    <string name="premium_popup_button">Почати</string>
+
+    <!-- Subscription Screen -->
+    <string name="subscription_reviews_title">Про нас кажуть</string>
+    <string name="subscription_reviews_subtitle">Відгуки користувачів</string>
+    <string name="subscription_reviews_total_rating">4.7</string>
+    <string name="subscription_reviews_total_rating_label">Overall score</string>
+    <string name="subscription_reviews_count">More than 1,000 ratings</string>
+    <string name="subscription_subscribe">Підписатись</string>
+    <string name="subscription_terms_text">Платежі автоматично списуються наприкінці періоду. Керування підписками доступне в налаштуваннях облікового запису в App Store.</string>
+    <string name="subscription_terms">Terms of Use</string>
+    <string name="subscription_privacy">Privacy Policy</string>
+    <string name="subscription_terms_and_conditions">Terms &amp; Conditions</string>
+    <string name="subscription_info">About subscriptions</string>
+    <string name="subscription_title_weekly">Weekly</string>
+    <string name="subscription_title_monthly">Monthly</string>
+    <string name="subscription_title_yearly">Annual</string>
+    <string name="subscription_title">Unlock unlimited access to all content and sound scenes</string>
+    <string name="subscription_button_title">Continue</string>
+    <string name="subscription_price_per_month_format">%s/міс.</string>
+
+    <!-- Subscription Compare Screen -->
+    <string name="subscription_compare">Переваги</string>
+    <string name="subscription_compare_title">Переваги Euforia MAX</string>
+    <string name="subscription_compare_1">Перший Тиждень Голосу Euforia</string>
+    <string name="subscription_compare_2">Безкоштовні Программи</string>
+    <string name="subscription_compare_3">Безкоштовні Звукові Сцени</string>
+    <string name="subscription_compare_4">Завантаження на пристрій</string>
+    <string name="subscription_compare_5">Унікальний Голос Euforia Щодня</string>
+    <string name="subscription_compare_6">Всі Медитації, Статті та Вправи</string>
+    <string name="subscription_compare_7">Всі Звукові Сцени</string>
+    <string name="subscription_compare_8">Без Реклами та Обмежень</string>
+    <string name="subscription_compare_footer">Отримайте більше переваг із річною передплатою MAX. Сплатіть один раз та отримайте значну знижку порівняно із щомісячним поновленням. Підпишіться, щоб отримати повний доступ до програми та регулярні оновлення вмісту Euforia MAX протягом року.</string>
+
+    <!-- About Premium -->
+    <string name="about_premium_status_text">Your subscription is active. Euforia MAX expires on %s. You can always manage your subscription from the menu &lt;subs_manager_link&gt;Billing &amp;amp; Subscriptions&lt;/subs_manager_link&gt;.</string>
+    <string name="about_premium_done">OK</string>
+
+    <!-- Screen Titles -->
+    <string name="today_title">Сьогодні</string>
+    <string name="library_title">Програми</string>
+    <string name="meditations_title">Медитації</string>
+    <string name="articles_title">Статті</string>
+    <string name="exercises_title">Вправи</string>
+    <string name="profile_title">Моя Euforia</string>
+    <string name="downloads_title">Завантаження</string>
+    <string name="favorites_title">Обране</string>
+    <string name="history_title">Історія</string>
+    <string name="playlist_title">Список відтворення</string>
+    <string name="playlists_title">Списки відтворення</string>
+    <string name="quote_title">Перегляд</string>
+    <string name="search_title">Пошук</string>
+
+    <!-- Vibes -->
+    <string name="vibes_morning">Morning vibes</string>
+    <string name="vibes_daytime">Daytime vibes</string>
+    <string name="vibes_evening">Evening vibes</string>
+    <string name="vibes_ready_to_listen">Ready to listen</string>
+    <string name="vibes_listen_again">Listen again</string>
+    <string name="vibes_listen">Play</string>
+    <string name="vibes_morning_ready_to_listen">Get your morning vibes</string>
+    <string name="vibes_daytime_ready_to_listen">Get your daytime vibes</string>
+    <string name="vibes_evening_ready_to_listen">Get your evening vibes</string>
+    <string name="vibes_daytime_completed">Until evening</string>
+    <string name="vibes_hint_title">Your Loving Voice Therapy®\nstarts now</string>
+    <string name="vibes_hint_text">Just tap PLAY to start the first audio session</string>
+    <string name="vibes_get_max">Get Euforia MAX</string>
+    <string name="vibes_morning_title">Morning</string>
+    <string name="vibes_daytime_title">Daytime</string>
+    <string name="vibes_evening_title">Evening</string>
+    <string name="vibes_first_evening_title">First session</string>
+    <string name="vibes_not_allowed">Available after %s</string>
+    <string name="vibes_not_allowed_details">Morning, daytime, and evening vibes open throughout the day</string>
+    <string name="vibes_demo_period_skip_warning_title">Introduction week</string>
+    <string name="vibes_demo_period_skip_warning_message">We suggest starting with the 7-day introduction before moving on to the main vibes</string>
+    <string name="vibes_skip_demo_period">Skip first week</string>
+    <string name="vibes_rate">Rate</string>
+    <string name="vibes_title_demo_date">День %d</string>
+
+    <string name="vibes_avatars_title">Избранные фотографии</string>
+    <string name="vibes_avatars_empty_text">Чтобы добавить своё фото к воспроизведению, пожалуйста, перейдите в Галерею</string>
+    <string name="vibes_avatars_add_button">Добавить фото</string>
+    <string name="vibes_avatars_info_text">Выбранные фото сохранены только на данном устройстве, их можете видеть только Вы.</string>
+    <string name="vibes_avatars_no_selected">Не выбрано</string>
+    <string name="vibes_avatars_demo">Demo</string>
+    <string name="vibes_avatars_restore_demo">Restore default</string>
+
+    <string name="vibes_avatar_change_hint">Change Voice Avatar</string>
+    <string name="vibes_avatar_change_mode">Avatar Change Mode</string>
+    <string name="vibes_avatar_change_mode_disable">Disable</string>
+    <string name="vibes_avatar_change_mode_static">Static</string>
+    <string name="vibes_avatar_change_mode_random">Random</string>
+
+    <string name="vides_pending_alert_title">До скорой встречи</string>
+    <string name="vides_morning_pending_alert_message">Утренняя встреча\nбудет доступна через %s</string>
+    <string name="vides_daytime_pending_alert_message">Дневная встреча\nбудет доступна через %s</string>
+    <string name="vides_evening_pending_alert_message">Вечерняя встреча\nбудет доступна через %s</string>
+    <string name="vides_pending_alert_ok">Понятно</string>
+
+    <string name="vibes_music_change_hint">Change the Background Music</string>
+
+    <!-- Vibes Upgrade -->
+    <string name="vibes_upgrade_day_index">Day %d</string>
+    <string name="vibes_upgrade_without_subscription">Without MAX subscription:</string>
+    <string name="vibes_upgrade_details">You are currently listening to an introduction period. As soon as it comes to an end, you will start listening again.</string>
+    <string name="vibes_upgrade_with_subscription">With subscription</string>
+    <string name="vibes_upgrade_everyday">Unique vibes every day</string>
+    <string name="vibes_upgrade_subscribe">Subscribe to MAX</string>
+
+    <!-- Today Screen -->
+    <string name="today_footer">Вам може знадобитися</string>
+    <string name="today_question_button">FAQ</string>
+    <string name="today_support_button">Підтримка</string>
+    <string name="today_sos_button">SOS</string>
+    <string name="today_menu_skip_intro">Skip introduction</string>
+    <string name="today_menu_info">How it works?</string>
+    <string name="today_menu_about">About Euforia</string>
+    <string name="today_info_title">Your Progress</string>
+    <string name="today_info_today_progress_title">Your Today Progress</string>
+    <string name="today_info_subtitle">Loving Voice Therapy®</string>
+    <string name="today_info_step_extra_title">Recovery from toxic\nrelationships</string>
+    <string name="today_info_step_extra_text">Наша програма допоможе Вам визначити ознаки токсичності, освоїти стратегії виходу з таких стосунків і навчитися будувати здорові та сприятливі взаємини.</string>
+    <string name="today_info_step_extra_button">Start Free</string>
+    <string name="today_info_step_demo_period_title">The first 3 day period</string>
+    <string name="today_info_step_demo_period_text">This is a trial version of the Voice, you can always come back to it and listen to the introduction again.</string>
+    <string name="today_info_step_demo_period_button">Listen</string>
+    <string name="today_info_step_max_title">Every-day-new\nexperience</string>
+    <string name="today_info_step_max_text">Every day, new unique messages from the Voice that will support and provide shelter in special moments of your life</string>
+    <string name="today_info_step_max_button">Start</string>
+    <string name="today_info_step_today_title">A New Experience Today</string>
+    <string name="today_info_step_programs_title">Top-3 Rated Programs</string>
+    <string name="today_info_step_programs_button">Find your Program</string>
+    <string name="today_info_step_scenes_title">Soundscapes</string>
+    <string name="today_info_step_scenes_text">Experience inspiration, improve your focus, and find moments of calm and relaxation throughout your day and before bedtime with Euforia\'s Soundscapes. Create a personalized sound atmosphere perfectly tailored to your preferences and needs.</string>
+    <string name="today_info_step_scenes_button">Go to Soundscapes</string>
+
+    <string name="cell_premium_lock">MAX</string>
+    <string name="search_placeholder">Пошук</string>
+    <string name="search_result_section_meditations">Медитації</string>
+    <string name="search_result_section_articles">Статті</string>
+    <string name="search_result_section_exercises">Вправи</string>
+    <string name="search_result_section_scenes">Сцени</string>
+    <string name="search_result_section_see_more">Дивитися все</string>
+    <string name="search_empty_not_found">За Вашим запитом нічого не знайдено</string>
+    <string name="search_empty_not_found_details">Популярні запити:</string>
+    <string name="search_empty_not_found_query">Немає результатів за запитом &lt;p&gt;"%s"&lt;/p&gt;</string>
+    <string name="search_suggestions">Часто шукають</string>
+    <string name="search_popular_scenes">Популярні</string>
+
+    <string name="type_meditation">медитація</string>
+    <string name="type_article">стаття</string>
+    <string name="type_exercise">вправа</string>
+
+    <string name="publication_download_on_device">Download</string>
+    <string name="publication_downloading_on_device">Downloading…</string>
+    <string name="publication_downloaded_on_device">Downloaded</string>
+    <string name="publication_downloaded_on_device_subtitle">Available offline</string>
+    <string name="publication_download_locked">Available with subscription</string>
+    <string name="about_meditation">About meditation</string>
+    <string name="about_meditation_text">Meditation courses are created by a team of psychologists based on modern psychotherapy methods. It allows you to solve your problems on your own, without the help of a psychотерапевта, thanks to a combination of elements of cognitive behavioral therapy (CBT), EMDR, existential therapy, and other methods based on mindfulness meditations.</string>
+    <string name="about_article">About article</string>
+    <string name="about_article_text">Articles for those who want to understand themselves and improve their lives are prepared for the project by a team of psychologists, as well as obtained from open sources.</string>
+    <string name="about_exercise">About exercise</string>
+    <string name="about_exercise_text">Yoga exercises and asanas are recorded for you by experienced coaches. They share secrets of achieving good physical and mental well-being using simple and proven techniques that do not require preparation or special conditions.</string>
+
+    <string name="similar_publications_title">Similar</string>
+    <string name="publication_play">Play</string>
+    <string name="publication_read">Read</string>
+    <string name="publication_delete_from_downloads">Remove</string>
+    <string name="publication_delete_downloads_title">Remove from Downloads?</string>
+    <string name="publication_delete_downloads_message">The material will no longer be available offline</string>
+    <string name="publication_added_to_favorites_title">Додано до обраного</string>
+    <string name="publication_removed_from_favorites_title">Видалено із обраного</string>
+
+    <string name="publication_player_bg_hint">Налаштуйте свою медитацію, додавши фонові звуки</string>
+    <string name="publication_player_bg_settings">Налаштування</string>
+    <string name="publication_player_bg_settings_done">Готово</string>
+    <string name="publication_player_bg_volume">Гучність</string>
+
+    <string name="article_reader_share_label">Стаття Euforia</string>
+
+    <string name="rate_title">Rate your experience</string>
+    <string name="rate_subtitle">Your feedback will help us to make the app more suitable for you</string>
+    <string name="rate_rating">Rating</string>
+    <string name="rate_button">Rate</string>
+    <string name="rate_comment">Comment (optional)</string>
+    <string name="rate_comment_placeholder">Describe what we can improve</string>
+    <string name="rate_share_text">Did you enjoy the audio session?\nShare with your friends</string>
+    <string name="rate_success_title">Thank you for your participation</string>
+    <string name="rate_success_message">We will definitely take your opinion into account and continue to improve for your positive experience</string>
+    <string name="rate_success_button">Got it</string>
+
+    <!-- Sections -->
+    <string name="section_meditations">Meditations</string>
+    <string name="section_articles">Articles</string>
+    <string name="section_exercises">Exercises</string>
+    <string name="section_audio_scenes">Сцени</string>
+
+    <!-- Packages -->
+    <string name="package_info_title">Who is this program for?</string>
+    <string name="package_menu_about">About program</string>
+    <string name="package_empty_meditations">The program hasn\'t had any meditations yet</string>
+    <string name="package_empty_articles">The program hasn\'t had any articles yet</string>
+    <string name="package_empty_exercises">The program hasn\'t had any exercises yet</string>
+    <string name="package_learn_text">More</string>
+    <string name="packages_title">Programs</string>
+
+    <!-- Profile -->
+    <string name="profile_more">Плейлисти</string>
+    <string name="profile_favorites">Обране</string>
+    <string name="profile_favorites_empty_title">Список обраних пустий</string>
+    <string name="profile_favorites_empty_subtitle">Ви можете додавати медитації, статті, вправи та сцени в обране для швидкого доступу</string>
+    <string name="profile_downloads">Завантажені</string>
+    <string name="profile_downloads_empty_title">Пока немає завантажених публікацій</string>
+    <string name="profile_downloads_empty_subtitle">Ви можете мати офлайн доступ до медитацій, статей, вправ і сцен, завантажуючи їх на свій пристрій</string>
+    <string name="profile_downloads_free_empty_title">Офлайн режим</string>
+    <string name="profile_downloads_free_empty_subtitle">З Euforia MAX ви можете отримати офлайн доступ до медитацій, статей, вправ і сцен, завантажуючи їх на свій пристрій</string>
+    <string name="profile_downloads_free_empty_button">Отримати Euforia MAX</string>
+    <string name="profile_history">Історія</string>
+    <string name="profile_history_empty_title">Немає історії переглядів</string>
+    <string name="profile_history_empty_subtitle">Ще немає історії відвідуваних сторінок</string>
+    <string name="profile_additions_title">Додатково</string>
+    <string name="profile_additions_subtitle"></string>
+    <string name="profile_ua_content">Підтримка України</string>
+    <string name="profile_info">Інформація</string>
+    <string name="profile_privacy">Політика конфіденційності</string>
+    <string name="profile_terms">Угода користувача </string>
+    <string name="profile_copyright_notice">Авторське право</string>
+    <string name="profile_about_app">Про додаток</string>
+    <string name="profile_subscriptions">Оплата та підписки</string>
+    <string name="profile_private_data">Налаштування користувача</string>
+    <string name="profile_settings">Персональне</string>
+    <string name="profile_name">Імʼя</string>
+    <string name="profile_email">E-mail</string>
+    <string name="profile_voice">Голос</string>
+    <string name="profile_language">Мова додатку</string>
+    <string name="profile_notifications">Сповіщення</string>
+    <string name="profile_save_progress">Зберегти прогрес</string>
+    <string name="profile_system_settings">Системні налаштування</string>
+    <string name="profile_personal_data">Personal data</string>
+    <string name="profile_share">Приєднайтеся до сім\'ї Euforia</string>
+    <string name="profile_social_nets">Спільноти</string>
+    <string name="profile_additionel_info">У вас є питання?</string>
+    <string name="profile_share_app">Розповісти друзям</string>
+    <string name="profile_feedback">Залишити відгук</string>
+    <string name="profile_from_author">Зв\'язатися з нами</string>
+    <string name="profile_faq">FAQ</string>
+    <string name="profile_support">Підтримка</string>
+    <string name="profile_developer">Розробник</string>
+
+    <!-- Settings -->
+    <string name="name_placeholder">Ім\'я</string>
+    <string name="name_validation_text">Введіть коректне ім\'я</string>
+    <string name="email_placeholder">E-mail</string>
+    <string name="email_validation_text">Please provide the valid email address</string>
+    <string name="change_name_title">Змінити ім\'я</string>
+    <string name="change_name_description">Вкажіть ім\'я для персоналізації контенту та звернень. Уся інформація доступна лише вам та не буде доступна іншим користувачам.</string>
+    <string name="change_voice_title">Голос вайба</string>
+    <string name="change_voice_description">Оберіть коректний варіант для персоналізації вмісту програми. Вся інформація доступна лише вам та не буде доступна іншим користувачам.</string>
+    <string name="voice_for_male">For man</string>
+    <string name="voice_for_female">For woman</string>
+    <string name="voice_unspecified">Unspecified</string>
+    <string name="change_email_title">E-mail</string>
+    <string name="change_email_description">Your email address will be hidden from other users, but it\'s required for feedback, support and important project announcements</string>
+    <string name="change_language_title">Змінити мову</string>
+    <string name="change_language_confirm_message">Для зміни мови потрібно перезавантажити додаток. Бажаєте продовжити?</string>
+    <string name="notifications_settings_title">Сповіщення</string>
+    <string name="notifications_settings_morning_title">Ранковий вайб</string>
+    <string name="notifications_settings_morning_details">Вкажіть бажаний час початку дня для прослуховування ранкового контенту</string>
+    <string name="notifications_settings_daytime_title">Денний вайб</string>
+    <string name="notifications_settings_daytime_details">Встановіть зручний час для прослуховування денного контенту</string>
+    <string name="notifications_settings_evening_title">Вечірній вайб</string>
+    <string name="notifications_settings_evening_details">Встановіть сприятливий час перед сном для прослуховування вечірнього контенту</string>
+    <string name="notifications_settings_accompaniment_enabled">Запланувати</string>
+    <string name="notifications_settings_accompaniment_time">Час</string>
+    <string name="notifications_settings_time_sensitive">Time sensitive</string>
+    <string name="notifications_settings_time_sensitive_details">Повідомлення можуть бути надані негайно, у тому числі, під час режиму «Не турбувати», для вашої підтримки навіть у найважливіші моменти</string>
+    <string name="notifications_settings_more">Системні налаштування повідомлень</string>
+    <string name="faq_title">FAQ</string>
+    <string name="faq_footer_text">У вас є інші питання?</string>
+    <string name="faq_footer_support">Задати питання</string>
+
+    <!-- Sound Scene -->
+    <string name="scenes_title">Сцени</string>
+    <string name="scenes_category_saved">Збережені</string>
+    <string name="scenes_category_my">Мої сцени</string>
+    <string name="scenes_category_favorites">Обране</string>
+    <string name="scenes_search">Пошук</string>
+    <string name="scenes_playlists">Плейлисти</string>
+    <string name="scenes_all">Всі</string>
+    <string name="sounds_title">Звуки</string>
+    <string name="sounds_category_favorites">Обране</string>
+    <string name="sounds_picker_apply">Продовжити</string>
+    <string name="sounds_picker_clear">Очистити</string>
+    <string name="sounds_picker_limit_message">Ви можете додати до %d звуків на сцену</string>
+    <string name="sound_add_to_scene">Додати на сцену</string>
+    <string name="sound_remove_from_scene">Видалити зі сцени</string>
+    <string name="sound_volume">Гучність</string>
+    <string name="sound_intensity">Інтервал затримки</string>
+    <string name="sound_intensity_min">Частіше</string>
+    <string name="sound_intensity_max">Рідше</string>
+    <string name="audio_scene_save">Зберегти</string>
+    <string name="audio_scene_save_changes">Зберегти зміни</string>
+    <string name="audio_scene_saving">Збереження сцени…</string>
+    <string name="audio_scene_saved_title">Збережено в "Мої сцени"</string>
+    <string name="audio_scene_deleted_title">Сцена видалена</string>
+    <string name="audio_scene_settings">Налаштування сцени</string>
+    <string name="audio_scene_settings_clear">Очистити</string>
+    <string name="audio_scene_settings_done">Готово</string>
+    <string name="audio_scene_volume">Гучність</string>
+    <string name="audio_scene_background_volume">Гучність</string>
+    <string name="audio_scene_animations_enable">Анімація звуків</string>
+    <string name="audio_scene_replace_background_image">Змінити обкладинку</string>
+    <string name="audio_scene_replace_background_sound">Змінити музику</string>
+    <string name="audio_scene_select_background_sound">Обрати музику</string>
+    <string name="audio_scene_audio_settings">Налаштування звуку</string>
+    <string name="audio_scene_background_music_settings">Налаштування музики</string>
+    <string name="audio_scene_menu_timer_1h">Таймер на 1 годину</string>
+    <string name="audio_scene_menu_timer_2h">Таймер на 2 години</string>
+    <string name="audio_scene_menu_timer_set">Встановити таймер</string>
+    <string name="audio_scene_menu_timer_edit">Редагувати таймер</string>
+    <string name="audio_scene_menu_timer_stop">Зупинити таймер</string>
+    <string name="rename_audio_scene_title">Перейменувати</string>
+    <string name="save_audio_scene_title">Задайте назву вашій сцені</string>
+    <string name="save_audio_scene_message">Задайте коротку назву сцені, щоб легко знайти її в "Мої сцени"</string>
+    <string name="save_audio_scene_name_placeholder">Назва</string>
+    <string name="sleep_timer_title">Таймер</string>
+    <string name="sleep_timer_message">Встановіть таймер, коли відтворення має бути зупинено</string>
+    <string name="sleep_timer_setup_button">Встановити</string>
+    <string name="sleep_timer_disable_button">Скасувати</string>
+    <string name="prepare_scene_progress_title">Завантаження та підготовка</string>
+    <string name="scene_preparing">Завантаження</string>
+    <string name="sounds_section_play_now">Грає зараз</string>
+    <string name="scene_failed_load">Не вдалося завантажити сцену</string>
+    <string name="my_scenes_empty_title">Мої сцени ще не збережено</string>
+    <string name="scenes_management_title">Переставити категорії</string>
+    <string name="scenes_management_order_info">Встановіть бажаний порядок категорій</string>
+    <string name="scenes_reorder">Змінити порядок</string>
+
+    <!-- Now Playing (keys kept as provided) -->
+    <string name="now_playing_vides_morning">Morning vibes</string>
+    <string name="now_playing_vides_daytime">Daytime vibes</string>
+    <string name="now_playing_vides_evening">Evening vibes</string>
+
+    <!-- Notifications (Deprecated) -->
+    <string name="notification_accompaniment_morning_text">Good Morning, get ready for a wonderful day 🌞</string>
+    <string name="notification_accompaniment_daytime_text">You\'ve got this 😊</string>
+    <string name="notification_accompaniment_evening_text">Set yourself up for a great evening 🌙</string>
+    <string name="notification_accompaniment_remind_later">Remind me in an hour</string>
+
+    <!-- SOS -->
+    <string name="sos_title">SOS</string>
+    <string name="sos_option_1">2 хвилини</string>
+    <string name="sos_option_1_details">Дихання 4–7–8</string>
+    <string name="sos_option_2">5 хвилин</string>
+    <string name="sos_option_2_details">Метелик</string>
+    <string name="sos_option_1_title">2 хвилини</string>
+    <string name="sos_option_1_text">Робимо вдих на 4 рахунки:\nОдин, два, три, чотири.\n\nЗатримайте подих на 7 рахунків:\nОдин, два, три, чотири, п\'ять, шість, сім.\n\nВидих на 8 рахунків:\nОдин, два, три, чотири, п\'ять, шість, сім, вісім.\n\nВдих: один, два, три, чотири.\n\nЗатримка: один, два, три, чотири, п\'ять, шість, сім.\n\nВидих: один, два, три, чотири, п\'ять, шість, сім, вісім.\n\nПродовжуйте дихати таким чином 2–3 хвилини та Ви відчуєте, що Ваш стан змінився.</string>
+    <string name="sos_option_2_title">5 хвилин</string>
+    <string name="sos_option_2_text">Потрібно одночасно здійснювати 3 дії, намагаючись утримати увагу на всіх 3-х діях відразу:\n\t1. Кладемо руки на плечі хрест-навхрест і починаємо по черзі поплескувати себе долонями по плечах.\n\t2. Не перестаючи поплескувати, уповільнюємо видих, щоб він став у 2 рази довше вдиху.\n\t3. Продовжуємо поплескувати долонями та дихати таким чином, концентруємося на своїх негативних переживаннях і емоціях.\n\nПродовжуйте виконувати цю техніку упродовж 5 хвилин, концентруючись поплескування, дихання та переживання, і скоро Ви відчуєте, що Ваш внутрішній стан змінився.</string>
+    <string name="sos_call_text">Якщо Вам потрібна негайна допомога, будь ласка, зверніться до служб підтримки за телефонами горячої лініі у Вашій країні:</string>
+    <string name="sos_call_button">Знайти номер телефону</string>
+    <string name="sos_call_title">Виклик</string>
+    <string name="sos_suggestions_contacts_section">Автовизначення</string>
+    <string name="sos_all_contacts_section">Всі регіони</string>
+    <string name="sos_search_results_section">Знайдено</string>
+
+    <!-- Downloads -->
+    <string name="downloads_local_section">Auto-downloaded</string>
+    <string name="downloads_info_free">Деякий контент був автоматично завантажений для офлайн перегляду на Ваш пристрій. Щоб керувати завантаженнями, необхідно активувати підписку MAX.</string>
+    <string name="downloads_info">Деякий контент був автоматично завантажений для офлайн перегляду на Ваш пристрій.</string>
+
+    <!-- Links -->
+    <string name="link_description_meditation">Прослухайте цю медитацію в додатку Euforia</string>
+    <string name="link_description_article">Прочитайте цю статтю в додатку  Euforia</string>
+    <string name="link_description_exercise">Подивіться цю вправу в додатку Euforia</string>
+    <string name="link_description_scene">Прослухайте цю звукову сцену в додатку Euforia</string>
+    <string name="link_description_ua_article">Прочитайте цю статтю в додатку Euforia</string>
+    <string name="link_description_ua_video">Подивіться це відео у додатку Euforia</string>
+    <string name="link_description_ua_file">Відкрийте цей файл у додатку Euforia.</string>
+
+    <!-- Continue Watch -->
+    <string name="continue_watch_title">Continue Watching</string>
+    <string name="continue_watch_empty_title">Empty list</string>
+    <string name="continue_watch_empty_subtitle">The most recently unfinished items will be shown here</string>
+    <string name="continue_watch_alert_title">Meditation advice</string>
+    <string name="continue_watch_alert_message">We advise you to start over listening after a lengthy interval to obtain the desired result</string>
+    <string name="continue_watch_alert_continue">Continue</string>
+    <string name="continue_watch_alert_beginning">Start over</string>
+
+    <!-- Clear menus -->
+    <string name="downloads_menu_delete_all">Clear downloads</string>
+    <string name="downloads_delete_hint">You may clear data selectively</string>
+    <string name="downloads_delete_all_alert_title">Confirm action</string>
+    <string name="downloads_delete_all_alert_message">Are you sure you want to clear downloads?</string>
+    <string name="favorites_menu_delete_all">Clear all</string>
+    <string name="favorites_delete_all_alert_title">Confirm action</string>
+    <string name="favorites_delete_all_alert_message">Are you sure you want to clear all favorites?</string>
+    <!-- history_menu_delete_all = "Clear history" -->
+    <string name="profile_about_vibes">About Euforia Vibes</string>
+    <string name="enter_email_alert_cancel">Later</string>
+    <string name="downloads_management_title">Clear downloads</string>
+
+    <!-- NEW -->
+    <string name="notifications_settings_permission_denied">Доступ заборонено</string>
+    <string name="notifications_settings_permission_denied_text">Увімкніть сповіщення в налаштуваннях Вашого пристрою для покращення роботи</string>
+    <string name="notifications_settings_permission_denied_button">Увімкнути сповіщення</string>
+    <string name="audio_scene_sound_hint">Налаштуйте звуки в сценах</string>
+    <string name="audio_scene_music_hint">Керуйте музикою в сценах</string>
+    <!-- vibes_welcome_subtitle = "Ласкаво просимо" -->
+    <!-- vibes_manage_notifications_hint = "Керування сповіщеннями" -->
+    <string name="publication_downloaded_menu_open">Відкрити завантаження</string>
+    <string name="publication_downloaded_menu_delete">Видалити з завантажень</string>
+
+    <!-- Intro scenes -->
+    <string name="intro_scenes_step_title">Підтримайте Ваш емоційний стан</string>
+    <string name="intro_scenes_step_text">Під час терапії Ви можете використовувати звукові сцени і спрямовані медитації, які будуть підтримувати Вас на кожному кроці.</string>
+    <string name="vibes_unavailable_text">Завершіть день %s, щоб розблокувати</string>
+    <string name="vibes_unavailable_text_2">Завершіть попередній день, щоб розблокувати</string>
+    <string name="vibes_unavailable_get_max_text">Розблокуйте з підпискою MAX</string>
+    <string name="today_get_max_button">Розблокувати всі 365+ днів</string>
+    <string name="today_info_video_title">Як це працює?</string>
+    <string name="today_menu_intro">Перший тиждень</string>
+    <string name="vibes_demo_period_hint_title">Перший тиждень</string>
+    <string name="vibes_demo_period_hint_message">Якщо Ви не завершили прослуховування першого тижня, завжди можете завершити його в меню програми.</string>
+    <string name="vibes_demo_period_hint_button">Відкрити</string>
+
+    <string name="vibes_demo_period_title">First Week</string>
+    <string name="vibes_demo_period_header_text">Start your first week with Loving Voice Therapy® and feel an immediate change in your emotional state.</string>
+    <string name="vibes_demo_period_footer_text">After the first week, continue to listen to the Voice That Loves You every day. All these words meant for you can change a lot in your life. Someday, you will notice the difference and be amazed.</string>
+    <string name="vibes_no_allowed_in_uk_mode_title">Особливий режим</string>
+    <string name="vibes_no_allowed_in_uk_mode_message">В особливому режимі Loving Voice Therapy® не підтримується. Змініть мову, щоб скористатися.</string>
+
+    <!-- Widgets -->
+    <string name="widget_play_vibe_title">Loving Voice</string>
+    <string name="widget_single_vibe_configuration_title">Loving Voice Therapy®</string>
+    <string name="widget_single_vibe_configuration_description">Розпочніть свою аудіосесію прямо зараз</string>
+    <string name="widget_vibes_configuration_title">Loving Voice Therapy®</string>
+    <string name="widget_vibes_configuration_description">Щоденні аудіосесії доступні вранці, вдень та ввечері</string>
+    <string name="widget_vibes_morning_placeholder_title">Доброго ранку</string>
+    <string name="widget_vibes_daytime_placeholder_title">Ефект доміно</string>
+    <string name="widget_vibes_evening_placeholder_title">Привіт</string>
+    <string name="widget_vibes_empty_text">Натисніть тут, щоб почати користуватися Euforia</string>
+    <string name="widget_vibes_unlock_text">Розблокувати з підпискою   MAX</string>
+    <string name="widget_scenes_configuration_title">Звукові сцени</string>
+    <string name="widget_scenes_configuration_description">Швидко запускайте свої улюблені сцени</string>
+    <string name="widget_my_scenes_configuration_title">Мої звукові сцени</string>
+    <string name="widget_my_scenes_configuration_description">Швидко запускайте свої улюблені сцени</string>
+    <string name="widget_scenes_continue_watch_empty_text">Натисніть, щоб почати прослуховування сцен</string>
+    <string name="widget_scenes_my_scenes_empty_text">Ви ще не зберегли жодної сцени.\nНатисніть тут, щоб почати прослуховування сцен.</string>
+    <string name="widget_scenes_regular_empty_text">Натисніть і утримуйте, щоб перейти до налаштувань віджета\nі вибрати плейлист або категорію</string>
+
+    <!-- Parameters -->
+    <string name="parameter_playlist_type">Вид плейлиста</string>
+    <string name="parameter_playlist">Плейлист</string>
+    <string name="parameter_category">Категорія</string>
+    <string name="playlist_type_default">За замовчуванням</string>
+    <string name="playlist_type_regular">Звичайний</string>
+    <string name="playlist_type_category">Категорія</string>
+    <string name="playlist_type_regular_description">Добірні плейлисти для Вашого настрою</string>
+    <string name="playlist_type_continue_watch">Продовжити перегляд</string>
+    <string name="playlist_type_my_scenes">Мої сцени</string>
+    <string name="vibes_avatar_changed">Аватар змінено</string>
+
+    <!-- Misc -->
+    <string name="imported">Імпортовано</string>
+    <string name="audio_scene_unsaved_changes">Незбережені зміни</string>
+    <string name="audio_scene_unsaved_changes_alert_title">Незбережені зміни</string>
+    <string name="audio_scene_unsaved_changes_alert_message">Сцена містить зміни, хочете їх зберегти?</string>
+    <string name="audio_scene_unsaved_changes_alert_save">Зберегти</string>
+    <string name="audio_scene_unsaved_changes_alert_discard">Скасувати</string>
+    <string name="audio_scene_change_music">Змінити музику</string>
+    <string name="audio_scene_no_music">Без музики</string>
+    <string name="audio_scene_import_music">Імпортувати</string>
+    <string name="audio_scene_music_rename">Перейменувати музику</string>
+    <string name="audio_scene_music_name_placeholder">Назва</string>
+    <string name="sounds_category_suggestions">Рекомендації</string>
+    <string name="import_from">Імпорт з</string>
+    <string name="import_from_photos">Фото</string>
+    <string name="import_from_unsplash">Unsplash</string>
+    <string name="import_from_pexels">Pexels</string>
+    <string name="type_photos">Фото</string>
+    <string name="type_videos">Відео</string>
+    <string name="search_photos">Шукати фото</string>
+    <string name="search_videos">Шукати відео</string>
+    <string name="subscription_continue_watch">Підпишіться, щоб продовжити</string>
+    <string name="music_category_suggestions">Популярні</string>
+
+    <string name="vibes_empty_title">Unable to load Daily Sessions</string>
+    <string name="vibes_empty_subtitle">Please check your internet connection\nor try again later.</string>
+
+    <string name="listen_later">Listen later</string>
+    <string name="click_to_unmute">Увімкніть звук</string>
+
+    <string name="today_progress_free_title">Ready to get started?</string>
+    <string name="today_progress_free_1_title">Install the app</string>
+    <string name="today_progress_free_1_text">You have already taken the first step towards your therapy.</string>
+    <string name="today_progress_free_2_title">Today</string>
+    <string name="today_progress_free_2_text">Start your 7-day free trial and begin therapy.</string>
+    <string name="today_progress_free_3_title">First week</string>
+    <string name="today_progress_free_3_text">Go through the first week of acquaintance and feel the first effect of therapy.</string>
+    <string name="today_progress_free_4_title">Start the full therapy program</string>
+    <string name="today_progress_free_4_text">Take time for your well-being every day and become the best version of yourself.</string>
+    <string name="today_progress_premium_title">The excellence of your therapy</string>
+    <string name="today_progress_premium_1_title">Get in the mood for therapy</string>
+    <string name="today_progress_premium_1_text">The first step has already been taken today, you are here, which means you are ready to work on yourself.</string>
+    <string name="today_progress_premium_2_title">Today</string>
+    <string name="today_progress_premium_2_text">Complete your morning, afternoon, and evening therapies.</string>
+    <string name="today_progress_premium_3_title">Relax with Soundscapes</string>
+    <string name="today_progress_premium_3_text">Listen to at least 10 minutes of musical relaxation scenes.</string>
+    <string name="today_progress_premium_4_title">Save your daily progress</string>
+    <string name="today_progress_premium_4_text">The therapy will be most effective if you listen to it daily. Continue your sessions tomorrow.</string>
+    <string name="continuous_days_title">Days in a row in therapy</string>
+    <string name="continuous_days_text">You will feel the effect from the first days, but the therapy will bring results with regular listening.</string>
+    <string name="continuous_days_30">30 days</string>
+    <string name="continuous_days_90">90 days</string>
+    <string name="continuous_days_365">1 year</string>
+    <string name="vibes_unavailable_demo_alert_text">Завершіть попередній день, щоб відкрити новий</string>
+    <string name="vibes_unavailable_alert_text">Буде доступно %s</string>
+</resources>

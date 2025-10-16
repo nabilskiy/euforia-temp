@@ -1,0 +1,44 @@
+package digital.euforia.app.ui.navigation
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import digital.euforia.app.ui.plan.PlanScreen
+
+@Composable
+fun HomeNavigation(navController: NavHostController, isBottomBarShown: MutableState<Boolean>) {
+    NavHost(
+        navController = navController,
+        startDestination = HomeDestination.Plan
+    ) {
+        composable<HomeDestination.Plan> {
+            val route = it.toRoute<HomeDestination.Plan>()
+            isBottomBarShown.value = true
+            PlanScreen(navController = navController, viewModel = hiltViewModel())
+        }
+        composable<HomeDestination.Programs> {
+            val route = it.toRoute<HomeDestination.Programs>()
+            isBottomBarShown.value = true
+//            ProgramsScreen(route, navController)
+            Box() {}
+        }
+
+        composable<HomeDestination.Soundscapes> {
+            val route = it.toRoute<HomeDestination.Soundscapes>()
+            isBottomBarShown.value = true
+//            SoundscapesScreen(route, navController)
+            Box() {}
+        }
+        composable<HomeDestination.Settings> {
+            val route = it.toRoute<HomeDestination.Settings>()
+            isBottomBarShown.value = false
+//            SettingsScreen(route, navController)
+            Box() {}
+        }
+    }
+}

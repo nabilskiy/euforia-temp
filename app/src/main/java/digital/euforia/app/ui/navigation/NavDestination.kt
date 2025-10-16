@@ -1,0 +1,47 @@
+package digital.euforia.app.ui.navigation
+
+import androidx.annotation.Keep
+import kotlinx.serialization.Serializable
+
+@Serializable
+@Keep
+data object Splash
+
+@Serializable
+@Keep
+data object Video
+
+@Serializable
+@Keep
+data object Onboarding
+
+@Serializable
+@Keep
+data object Paywall
+
+@Serializable
+@Keep
+data object Home
+
+@Serializable
+@Keep
+data object Vibes
+
+@Serializable
+sealed class HomeDestination(val showNavBar: Boolean = true) {
+    @Serializable
+    @Keep
+    data object Plan : HomeDestination()
+
+    @Serializable
+    @Keep
+    data object Programs : HomeDestination()
+
+    @Serializable
+    @Keep
+    data object Soundscapes : HomeDestination()
+
+    @Serializable
+    @Keep
+    data object Settings : HomeDestination()
+}

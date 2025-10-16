@@ -1,0 +1,130 @@
+{
+  "project_info": {
+    "project_number": "1069013677496",
+    "firebase_url": "https://euforia-36f46-default-rtdb.firebaseio.com",
+    "project_id": "euforia-36f46",
+    "storage_bucket": "euforia-36f46.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069013677496:android:0c9c0ff20e2fd9bdae0b4d",
+        "android_client_info": {
+          "package_name": "com.euforia"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069013677496-bgdl7hesienj487h70cqmsv451u5sgaf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClCxGTJBWXBNGpgGSQEcKgloy-DrAMXLE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069013677496-bgdl7hesienj487h70cqmsv451u5sgaf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069013677496-77kqlnhi3dhr8nqfbpq0c22mpop0e03k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "digital.euforia",
+                "app_store_id": "1658593805"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069013677496:android:7e5a7b9d41acab8eae0b4d",
+        "android_client_info": {
+          "package_name": "com.euforia.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069013677496-bgdl7hesienj487h70cqmsv451u5sgaf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClCxGTJBWXBNGpgGSQEcKgloy-DrAMXLE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069013677496-bgdl7hesienj487h70cqmsv451u5sgaf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069013677496-77kqlnhi3dhr8nqfbpq0c22mpop0e03k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "digital.euforia",
+                "app_store_id": "1658593805"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069013677496:android:63ceaa94b7b5df06ae0b4d",
+        "android_client_info": {
+          "package_name": "digital.euforia.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069013677496-tqhgbhq8sgittsndqg23qlo3oo8eq3ee.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "digital.euforia.app",
+            "certificate_hash": "05a069c9e2332e93ce84ba96ae93c7dc474459a6"
+          }
+        },
+        {
+          "client_id": "1069013677496-bgdl7hesienj487h70cqmsv451u5sgaf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClCxGTJBWXBNGpgGSQEcKgloy-DrAMXLE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069013677496-bgdl7hesienj487h70cqmsv451u5sgaf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069013677496-77kqlnhi3dhr8nqfbpq0c22mpop0e03k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "digital.euforia",
+                "app_store_id": "1658593805"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
