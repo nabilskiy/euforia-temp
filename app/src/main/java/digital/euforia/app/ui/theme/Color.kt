@@ -44,7 +44,8 @@ val EveningAccompanimentAccentVariant = Color(0xFF34389A)
 val DarkGray = Color(0xFF6A6969)
 val TitleDisabled = Color(0xFFB3B3B3)
 val DescriptionDisabled = Color(0xFF8C8C8C)
-
+val StreakBackground = Color(0xFF2A2A2D)
+val SecondaryText = Color(0xFFC6C6C6)
 val MaxGradient = Brush.linearGradient(
     colors = listOf(
         Color(0xFF8A2BE2), // Violet
@@ -53,6 +54,13 @@ val MaxGradient = Brush.linearGradient(
     )
 )
 
+val TasksGradient = Brush.verticalGradient(
+    colors = listOf(
+        Color(0x80204FC0), // Dark Blue
+        Color(0x80FF5589), // Dark Pink
+        Color(0x80E29B31)  // Brown
+    )
+)
 // Evening кольори (як в онбордингу)
 val eveningColors = listOf(
     Color(0xFF003399),  // Темно-синій

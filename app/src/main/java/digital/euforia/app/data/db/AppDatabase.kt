@@ -11,12 +11,20 @@ import digital.euforia.app.data.db.dao.SampleEntityDao
 import digital.euforia.app.data.db.dao.PhraseDao
 import digital.euforia.app.data.db.dao.AccompanimentItemDao
 import digital.euforia.app.data.db.dao.AppSettingsDao
+import digital.euforia.app.data.db.dao.ArticleDao
+import digital.euforia.app.data.db.dao.ExerciseDao
+import digital.euforia.app.data.db.dao.MeditationDao
+import digital.euforia.app.data.db.dao.PackageDao
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.File
 import digital.euforia.app.data.db.entity.SampleEntity
 import digital.euforia.app.data.db.entity.Phrase
 import digital.euforia.app.data.db.entity.AccompanimentItem
 import digital.euforia.app.data.db.entity.AppSettings
+import digital.euforia.app.data.db.entity.ArticleEntity
+import digital.euforia.app.data.db.entity.ExerciseEntity
+import digital.euforia.app.data.db.entity.MeditationEntity
+import digital.euforia.app.data.db.entity.PackageEntity
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class])
 @Database(
@@ -28,6 +36,10 @@ import digital.euforia.app.data.db.entity.AppSettings
         Phrase::class,
         AccompanimentItem::class,
         AppSettings::class,
+        PackageEntity::class,
+        MeditationEntity::class,
+        ExerciseEntity::class,
+        ArticleEntity::class,
     ]
 )
 
@@ -38,4 +50,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun phraseDao(): PhraseDao
     abstract fun accompanimentItemDao(): AccompanimentItemDao
     abstract fun appSettingsDao(): AppSettingsDao
+    abstract fun packageDao(): PackageDao
+    abstract fun meditationDao(): MeditationDao
+    abstract fun exerciseDao(): ExerciseDao
+    abstract fun articleDao(): ArticleDao
 }

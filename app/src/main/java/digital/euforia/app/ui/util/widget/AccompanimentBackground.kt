@@ -62,33 +62,16 @@ import kotlin.math.sin
  */
 @Composable
 fun AccompanimentBackground(
-    modifier: Modifier = Modifier,
-    // sphere visual size (diameter) in dp
-//    ballSizeDp: Float = 310f,
-    // padding from the corners toward the center for diagonal balls (in dp) - kept for backward compatibility (unused in rotation mode)
-    diagonalPaddingDp: Float = 24f,
-    // if provided, used as fixed orbit radius in px; otherwise computed from canvas size
-    // minimum distance between widget center and sphere centers (in dp)
-    // speed: full orbit period in ms for the trio
     orbitPeriodMs: Int = 120_000,
-    // independent black ball settings
     extraOrbitPeriodMs: Int = 30_000,
     extraOrbitRadiusPx: Float? = null,
     colors: AccompanimentButtonColors,
     dimensions: AccompanimentButtonDimensions,
 ) {
-    // Background box with provided color[0]
-//    Card(
-//        modifier = modifier,
-//        shape = RoundedCornerShape(24.dp),
-//        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-//        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-//    ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(24.dp))
             .blur(35.dp)
-//                .background(backgroundColor)
     ) {
         val transition = rememberInfiniteTransition(label = "accompaniment_orbits")
         // Group rotation for 3 balls (0..1 -> 0..2π)
@@ -101,7 +84,6 @@ fun AccompanimentBackground(
             ),
             label = "tGroup"
         )
-        // Independent rotation for the black ball
         val tExtra by transition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
@@ -111,7 +93,6 @@ fun AccompanimentBackground(
             ),
             label = "tExtra"
         )
-        // Breathing scale 0.9..1.1, smooth ping-pong
         val breathe by transition.animateFloat(
             initialValue = 0.9f,
             targetValue = 1.1f,
@@ -134,10 +115,6 @@ fun AccompanimentBackground(
             val cx = size.width / 2f
             val cy = size.height / 2f
             val center = Offset(cx, cy)
-
-            // Orbit radius for trio (enforce minimum distance from center and stay within canvas)
-//                val autoMaxR = (min(size.width, size.height) / 2f - radius).coerceAtLeast(0f)
-//                val orbitR = buttonDimensions..coerceAtLeast(minCenterR)
             val angle = tGroup * 2f * PI.toFloat()
             val phase = 2f * PI.toFloat() / 3f // 120°
 
@@ -217,7 +194,6 @@ fun AccompanimentBackground(
 
         Box(modifier = Modifier.fillMaxSize().background(color = White.copy(alpha = 0.04f)))
     }
-//    }
 }
 
 
@@ -229,24 +205,12 @@ enum class AccompanimentButtonColors(
     val extraBallColor: Color = Black,
     val backgroundColor: Color
 ) {
-    //    MORNING(
-//        firstColor = Gray,
-//        secondColor = morningColors[1].copy(alpha = 0.5f),
-//        thirdColor = morningColors[2],
-//        backgroundColor = morningColors[1]
-//    ),
     MORNING(
         firstColor = morningColors2[2],
         secondColor = morningColors2[1],
         thirdColor = morningColors2[0],
         backgroundColor = PrimaryBackground
     ),
-    //    DAYTIME(
-//        firstColor = daytimeColors[0],
-//        secondColor = daytimeColors[2],
-//        thirdColor = daytimeColors[0],
-//        backgroundColor = daytimeColors[2]
-//    ),
     DAYTIME(
         firstColor = daytimeColors2[0],
         secondColor = DaytimeAccompanimentMain,
@@ -259,12 +223,6 @@ enum class AccompanimentButtonColors(
         thirdColor = eveningColors[2],
         backgroundColor = PrimaryBackground
     )
-//    EVENING(
-//        firstColor = EveningAccompanimentAccentVariant,
-//        secondColor = EveningAccompanimentAccent,
-//        thirdColor = EveningAccompanimentAccentVariant,
-//        backgroundColor = EveningAccompanimentMain
-//    )
 }
 
 @Keep

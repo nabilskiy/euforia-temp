@@ -19,17 +19,17 @@ fun demoDailyTasks() = listOf(
     DailyTask(
         titleRes = R.string.today_progress_free_2_title,
         descriptionRes = R.string.today_progress_free_2_text,
-        iconRes = R.drawable.ic_checkbox_full
+        iconRes = R.drawable.ic_gift
     ),
     DailyTask(
         titleRes = R.string.today_progress_free_3_title,
         descriptionRes = R.string.today_progress_free_3_text,
-        iconRes = R.drawable.ic_checkbox_full
+        iconRes = R.drawable.ic_week
     ),
     DailyTask(
         titleRes = R.string.today_progress_free_4_title,
         descriptionRes = R.string.today_progress_free_4_text,
-        iconRes = R.drawable.ic_checkbox_full
+        iconRes = R.drawable.ic_congratulation
     ),
 )
 
@@ -42,16 +42,16 @@ fun premiumDailyTasks() = listOf(
     DailyTask(
         titleRes = R.string.today_progress_premium_2_title,
         descriptionRes = R.string.today_progress_premium_2_text,
-        iconRes = R.drawable.ic_checkbox_full
+        iconRes = R.drawable.ic_voice
     ),
     DailyTask(
         titleRes = R.string.today_progress_premium_3_title,
         descriptionRes = R.string.today_progress_premium_3_text,
-        iconRes = R.drawable.ic_checkbox_full
+        iconRes = R.drawable.ic_sounds
     ),
     DailyTask(
         titleRes = R.string.today_progress_premium_4_title,
         descriptionRes = R.string.today_progress_premium_4_text,
-        iconRes = R.drawable.ic_checkbox_full
+        iconRes = R.drawable.ic_progress
     ),
 )

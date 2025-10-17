@@ -50,4 +50,16 @@ class RepositoryModule {
         )
     }
 
+    @Singleton
+    @Provides
+    fun providePackageRepository(
+        database: AppDatabase
+    ): digital.euforia.app.data.repository.PackageRepository {
+        return digital.euforia.app.data.repository.PackageRepository(
+            database.packageDao(),
+            database.meditationDao(),
+            database.exerciseDao(),
+            database.articleDao()
+        )
+    }
 }

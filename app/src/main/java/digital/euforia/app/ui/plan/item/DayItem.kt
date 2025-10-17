@@ -1,4 +1,4 @@
-package digital.euforia.app.ui.plan.widget
+package digital.euforia.app.ui.plan.item
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -44,10 +44,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.Accompaniment
-import digital.euforia.app.data.db.entity.AccompanimentItem
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.ui.plan.DayTimeItemUi
@@ -55,7 +53,6 @@ import digital.euforia.app.ui.plan.DayUi
 import digital.euforia.app.ui.plan.PlanViewItems
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.DarkGray
-import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.daytimeColors
 import digital.euforia.app.ui.theme.eveningColors
@@ -249,7 +246,6 @@ private fun DayTimeBackground(
     when (item.state) {
         DayTimeItemUi.State.AVAILABLE, DayTimeItemUi.State.COMPLETED -> {
             AccompanimentBackground(
-                modifier = Modifier.fillMaxSize(),
                 colors = item.item.timeOfDay.getButtonColors(),
                 dimensions = buttonDimensions,
             )
@@ -334,7 +330,7 @@ private fun BoxScope.TimeOfDayTitleView(
                 modifier = Modifier.size(20.dp),
                 painter = painterResource(R.drawable.ic_checkbox_full),
                 contentDescription = null,
-                tint = Color.Unspecified
+                tint = White.copy(alpha = 0.2f)
             )
             Text(
                 text = "${stringResource(id = timeOfDay.getTitleRes()).uppercase()}$completedText",

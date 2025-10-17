@@ -2,20 +2,22 @@ package digital.euforia.app.ui.plan
 
 import androidx.annotation.Keep
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
-import digital.euforia.app.domain.model.plan.demoDailyTasks
-import digital.euforia.app.ui.plan.widget.dayItem
-import digital.euforia.app.ui.plan.widget.tasksItem
-import digital.euforia.app.ui.theme.EuforiaTheme
+import digital.euforia.app.ui.plan.item.dayItem
+import digital.euforia.app.ui.plan.item.continuousItem
+import digital.euforia.app.ui.plan.item.tasksItem
 import digital.euforia.app.ui.theme.PrimaryBackground
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -41,6 +43,7 @@ fun PlanScreen(
         timeOfDayConfig = state.timeOfDayConfig,
         completedDailyTasks = state.completedDailyTasks,
         dailyTasks = state.dailyTasks,
+        continuousDays = state.continuousDays,
         onDaySelected = viewModel::onDaySelected
     )
 }
@@ -57,6 +60,7 @@ private fun PlanContent(
     timeOfDayConfig: TimeOfDayConfig,
     completedDailyTasks: Int,
     dailyTasks: List<DailyTask>,
+    continuousDays: Int,
     onDaySelected: (Int) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().background(color = PrimaryBackground)) {
@@ -72,32 +76,21 @@ private fun PlanContent(
             onDaySelected = onDaySelected,
         )
         tasksItem(
+            isDemo = isDemo,
             tasks = dailyTasks,
             completedTasks = completedDailyTasks
         )
+
+        continuousItem(days = continuousDays)
+        item{
+            Spacer(modifier = Modifier.fillMaxWidth().height(200.dp))
+        }
     }
 }
 
 private fun handleSideEffect(sideEffect: PlanSideEffect) {
     when (sideEffect) {
         else -> {}
-    }
-}
-
-@Preview
-@Composable
-fun PlanPreview() {
-    EuforiaTheme {
-//        PlanContent(
-//            accompanimentsDays = emptyList(),
-//            completedDays = 0,
-//            selectedDayIndex = 1,
-//            freeDemoDays = 7,
-//            isPremium = false,
-//            isDemo = true,
-//            timeOfDay = TimeOfDay.MORNING,
-//            onDaySelected = {}
-//        )
     }
 }
 

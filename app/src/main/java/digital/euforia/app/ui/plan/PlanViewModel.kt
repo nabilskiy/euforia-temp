@@ -17,6 +17,7 @@ import digital.euforia.app.domain.model.plan.demoDailyTasks
 import digital.euforia.app.domain.model.plan.premiumDailyTasks
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentWithItemsFlowUseCase
 import digital.euforia.app.domain.usecase.app_settings.GetAppSettingsUseCase
+import digital.euforia.app.domain.usecase.plan.ComputeContinuousDaysUseCase
 import digital.euforia.app.ui.util.getCurrentTimeOfDay
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.flow.collectLatest
@@ -33,6 +34,7 @@ class PlanViewModel @Inject constructor(
     private val profilePreferences: ProfilePreferences,
     private val getAppSettingsUseCase: GetAppSettingsUseCase,
     private val getAccompanimentWithItemsFlowUseCase: GetAccompanimentWithItemsFlowUseCase,
+    private val computeContinuousDaysUseCase: ComputeContinuousDaysUseCase,
     private val config: EuforiaRemoteConfigFetcher
 
 ) : ViewModel(), ContainerHost<PlanState, PlanSideEffect> {
@@ -48,7 +50,7 @@ class PlanViewModel @Inject constructor(
         intent {
             val timeOfDayConfig = config.getTimeOfDayConfig() ?: defaultTimeOfDayConfig()
             val currentTimeOfDay = getCurrentTimeOfDay(timeOfDayConfig)
-
+            val continuousDays = computeContinuousDaysUseCase.invoke()
             val settings = getAppSettingsUseCase.invoke()
             val todayOffset = settings?.run {
                 state.todayOffset.copy(
@@ -60,7 +62,8 @@ class PlanViewModel @Inject constructor(
                 state.copy(
                     todayOffset = todayOffset,
                     timeOfDay = currentTimeOfDay,
-                    timeOfDayConfig = timeOfDayConfig
+                    timeOfDayConfig = timeOfDayConfig,
+                    continuousDays = continuousDays,
                 )
             }
         }
@@ -135,7 +138,8 @@ data class PlanState(
     val timeOfDayConfig: TimeOfDayConfig = defaultTimeOfDayConfig(),
     val todayOffset: TodayOffset = TodayOffset(),
     val completedDailyTasks: Int = 1,
-    val dailyTasks: List<DailyTask> = demoDailyTasks()
+    val dailyTasks: List<DailyTask> = demoDailyTasks(),
+    val continuousDays: Int = 1,
 )
 
 data class TodayOffset(

@@ -25,8 +25,10 @@ class AppPreferences(
         booleanPreferencesKey("notification_permission_granted")
     private val keyCompletedDays = intPreferencesKey("completed_days")
     private val keyIsOnboardingCompleted = booleanPreferencesKey("is_onboarding_completed")
-    private val keyFirstLaunchDate = longPreferencesKey("first_launch_date")
     private val keyCompletedDailyTasks = intPreferencesKey("completed_daily_tasks")
+    private val keyContinuousDays = intPreferencesKey("continuous_days")
+    private val keyFirstLaunchDate = longPreferencesKey("first_launch_date")
+    private val keyLastLaunchDate = longPreferencesKey("last_launch_date")
 
     suspend fun getDeviceToken(): String {
         val existing = store.data.firstOrNull()?.get(keyDeviceToken)
@@ -158,6 +160,27 @@ class AppPreferences(
     fun getCompletedDailyTasksFlow(): Flow<Int> {
         return store.data.map { preferences ->
             preferences[keyCompletedDailyTasks] ?: 1
+        }
+    }
+
+    suspend fun getContinuousDays(): Int {
+        return store.data.firstOrNull()?.get(keyContinuousDays) ?: 0
+    }
+
+    suspend fun setContinuousDays(days: Int) {
+        store.edit { preferences ->
+            preferences[keyContinuousDays] = days
+        }
+    }
+
+    suspend fun getLastLaunchDate(): Instant? {
+        return store.data.firstOrNull()?.get(keyLastLaunchDate)
+            ?.let { Instant.ofEpochMilli(it) }
+    }
+
+    suspend fun setLastLaunchDate() {
+        store.edit { preferences ->
+            preferences[keyLastLaunchDate] = Instant.now().toEpochMilli()
         }
     }
 }
