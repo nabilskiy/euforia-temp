@@ -41,8 +41,8 @@ data class NetworkMeditation(
     @field:Json(name = "video") val video: NetworkFile?,
 )
 
-fun NetworkMeditation.toEntity(): digital.euforia.app.data.db.entity.MeditationEntity =
-    digital.euforia.app.data.db.entity.MeditationEntity(
+fun NetworkMeditation.toEntity(): digital.euforia.app.data.db.entity.Meditation =
+    digital.euforia.app.data.db.entity.Meditation(
         id = id,
         type = type,
         alias = alias,

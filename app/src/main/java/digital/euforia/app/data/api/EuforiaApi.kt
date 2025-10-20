@@ -1,6 +1,7 @@
 package digital.euforia.app.data.api
 
 import digital.euforia.app.data.model.NetworkAccompaniment
+import digital.euforia.app.data.model.NetworkPackage
 import digital.euforia.app.data.model.NetworkSettings
 import digital.euforia.app.data.model.NetworkSound
 import digital.euforia.app.domain.util.ResultWrapper
@@ -32,4 +33,10 @@ interface EuforiaApi {
     ): ResultWrapper<NetworkAccompaniment>
 
     suspend fun settings(): ResultWrapper<NetworkSettings>
+
+    @GET("packages")
+    suspend fun getPackages(
+        @Query("id") id: String,
+        @Query("per-page") perPage: Int? = null
+    ): ResultWrapper<NetworkPackage>
 }

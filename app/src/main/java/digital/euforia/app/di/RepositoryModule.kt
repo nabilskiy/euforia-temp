@@ -9,6 +9,7 @@ import digital.euforia.app.data.db.AppDatabase
 import digital.euforia.app.data.repository.AccompanimentItemRepository
 import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.repository.AppSettingsRepository
+import digital.euforia.app.data.repository.PackageRepository
 import javax.inject.Singleton
 
 @Module
@@ -53,13 +54,15 @@ class RepositoryModule {
     @Singleton
     @Provides
     fun providePackageRepository(
+        api: EuforiaApi,
         database: AppDatabase
-    ): digital.euforia.app.data.repository.PackageRepository {
-        return digital.euforia.app.data.repository.PackageRepository(
-            database.packageDao(),
-            database.meditationDao(),
-            database.exerciseDao(),
-            database.articleDao()
+    ): PackageRepository {
+        return PackageRepository(
+            api = api,
+            packageDao = database.packageDao(),
+            meditationDao = database.meditationDao(),
+            exerciseDao = database.exerciseDao(),
+            articleDao = database.articleDao()
         )
     }
 }

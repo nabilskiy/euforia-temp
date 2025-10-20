@@ -12,12 +12,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
+import digital.euforia.app.domain.model.plan.RankedPackage
 import digital.euforia.app.ui.plan.item.dayItem
 import digital.euforia.app.ui.plan.item.continuousItem
 import digital.euforia.app.ui.plan.item.tasksItem
+import digital.euforia.app.ui.plan.item.topProgramsItem
 import digital.euforia.app.ui.theme.PrimaryBackground
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -44,6 +47,7 @@ fun PlanScreen(
         completedDailyTasks = state.completedDailyTasks,
         dailyTasks = state.dailyTasks,
         continuousDays = state.continuousDays,
+        topPrograms = state.topPackages,
         onDaySelected = viewModel::onDaySelected
     )
 }
@@ -61,6 +65,7 @@ private fun PlanContent(
     completedDailyTasks: Int,
     dailyTasks: List<DailyTask>,
     continuousDays: Int,
+    topPrograms: List<RankedPackage>,
     onDaySelected: (Int) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().background(color = PrimaryBackground)) {
@@ -82,7 +87,11 @@ private fun PlanContent(
         )
 
         continuousItem(days = continuousDays)
-        item{
+        topProgramsItem(
+            isDemo = isDemo,
+            topPrograms = topPrograms
+        )
+        item {
             Spacer(modifier = Modifier.fillMaxWidth().height(200.dp))
         }
     }

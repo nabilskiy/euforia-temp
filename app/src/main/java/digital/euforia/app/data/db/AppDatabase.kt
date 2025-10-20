@@ -21,10 +21,10 @@ import digital.euforia.app.data.db.entity.SampleEntity
 import digital.euforia.app.data.db.entity.Phrase
 import digital.euforia.app.data.db.entity.AccompanimentItem
 import digital.euforia.app.data.db.entity.AppSettings
-import digital.euforia.app.data.db.entity.ArticleEntity
-import digital.euforia.app.data.db.entity.ExerciseEntity
-import digital.euforia.app.data.db.entity.MeditationEntity
-import digital.euforia.app.data.db.entity.PackageEntity
+import digital.euforia.app.data.db.entity.Article
+import digital.euforia.app.data.db.entity.Exercise
+import digital.euforia.app.data.db.entity.Meditation
+import digital.euforia.app.data.db.entity.Package
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class])
 @Database(
@@ -36,10 +36,10 @@ import digital.euforia.app.data.db.entity.PackageEntity
         Phrase::class,
         AccompanimentItem::class,
         AppSettings::class,
-        PackageEntity::class,
-        MeditationEntity::class,
-        ExerciseEntity::class,
-        ArticleEntity::class,
+        Package::class,
+        Meditation::class,
+        Exercise::class,
+        Article::class,
     ]
 )
 

@@ -17,6 +17,10 @@ val White = Color(0xFFFFFFFF)
 val PrimaryBackground = Color(0xFF18191D)
 val PrimaryButtonText = Color(0xFF0E1116)
 val LabelText = Color(0xFF202328)
+val DescriptionText = Color(0xFFB8B8B8)
+val FirstRank = Color(0x1AFF9A3D)
+val SecondRank = Color(0x1AC6FF3D)
+val ThirdRank = Color(0x1A2AFF80)
 val OnboardingSphereColors = listOf(
     Color(0xFF9934A2),
     Color(0xFF0C42AE),
@@ -30,6 +34,7 @@ val NavBarBackground = Color(0xE62B2C2F)
 val NavBarIcon = Color(0xFFC5C5C5)
 val CircleButtonBackground = Color(0x0AFFFFFF)
 val CircleButtonIcon = Color(0x80FFFFFF)
+val ProgramButtonContainer = Color(0xFF2C2E3A)
 val Vibe1Color = Color(0xFF6B73FF)
 val Vibe2Color = Color(0xFF9B59B6)
 val Vibe3Color = Color(0xFF3498DB)

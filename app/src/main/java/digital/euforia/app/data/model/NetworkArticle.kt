@@ -35,8 +35,8 @@ data class NetworkArticle(
     @field:Json(name = "content_length") val contentLength: Int?
 )
 
-fun NetworkArticle.toEntity(): digital.euforia.app.data.db.entity.ArticleEntity =
-    digital.euforia.app.data.db.entity.ArticleEntity(
+fun NetworkArticle.toEntity(): digital.euforia.app.data.db.entity.Article =
+    digital.euforia.app.data.db.entity.Article(
         id = id,
         type = type,
         alias = alias,

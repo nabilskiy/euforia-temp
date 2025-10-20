@@ -1,12 +1,11 @@
 package digital.euforia.app.data.network
 
 import digital.euforia.app.BuildConfig
-import digital.euforia.app.data.md5
+import digital.euforia.app.data.util.md5
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.di.ApplicationCoroutineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class AuthTokenProvider @Inject constructor(

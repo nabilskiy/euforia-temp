@@ -61,8 +61,8 @@ fun NetworkVideoUrls.toEntity(): digital.euforia.app.data.db.entity.VideoUrls =
         dash = dash,
     )
 
-fun NetworkExercise.toEntity(): digital.euforia.app.data.db.entity.ExerciseEntity =
-    digital.euforia.app.data.db.entity.ExerciseEntity(
+fun NetworkExercise.toEntity(): digital.euforia.app.data.db.entity.Exercise =
+    digital.euforia.app.data.db.entity.Exercise(
         id = id,
         type = type,
         alias = alias,

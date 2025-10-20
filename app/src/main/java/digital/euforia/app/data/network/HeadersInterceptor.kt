@@ -2,7 +2,7 @@ package digital.euforia.app.data.network
 
 import android.os.Build
 import digital.euforia.app.BuildConfig
-import digital.euforia.app.data.toInt
+import digital.euforia.app.data.util.toInt
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response

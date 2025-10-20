@@ -1,4 +1,4 @@
-package digital.euforia.app.data
+package digital.euforia.app.data.util
 
 import java.security.MessageDigest
 

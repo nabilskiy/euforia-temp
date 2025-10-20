@@ -7,21 +7,24 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.AccompanimentItem
+import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.data.util.combine
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
+import digital.euforia.app.domain.model.plan.RankedPackage
 import digital.euforia.app.domain.model.plan.demoDailyTasks
 import digital.euforia.app.domain.model.plan.premiumDailyTasks
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentWithItemsFlowUseCase
 import digital.euforia.app.domain.usecase.app_settings.GetAppSettingsUseCase
 import digital.euforia.app.domain.usecase.plan.ComputeContinuousDaysUseCase
+import digital.euforia.app.domain.usecase.program.GetTopProgramsFlowUseCase
 import digital.euforia.app.ui.util.getCurrentTimeOfDay
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
@@ -34,6 +37,7 @@ class PlanViewModel @Inject constructor(
     private val profilePreferences: ProfilePreferences,
     private val getAppSettingsUseCase: GetAppSettingsUseCase,
     private val getAccompanimentWithItemsFlowUseCase: GetAccompanimentWithItemsFlowUseCase,
+    private val getTopPackagesFlowUseCase: GetTopProgramsFlowUseCase,
     private val computeContinuousDaysUseCase: ComputeContinuousDaysUseCase,
     private val config: EuforiaRemoteConfigFetcher
 
@@ -76,14 +80,16 @@ class PlanViewModel @Inject constructor(
             val isPremiumFlow = profilePreferences.getIsPremiumFlow()
             val isDemoFlow = profilePreferences.getIsDemoFlow()
             val accompanimentWithItemsFlow = getAccompanimentWithItemsFlowUseCase.invoke()
+            val topPackagesFlow = getTopPackagesFlowUseCase.invoke()
 
             combine(
                 completedDaysFlow,
                 completedDailyTasksFlow,
                 isPremiumFlow,
                 isDemoFlow,
-                accompanimentWithItemsFlow
-            ) { completedDays, completedDailyTasks, isPremium, isDemo, accompanimentsWithItems ->
+                accompanimentWithItemsFlow,
+                topPackagesFlow
+            ) { completedDays, completedDailyTasks, isPremium, isDemo, accompanimentsWithItems, topPackages ->
                 val state = container.stateFlow.value
 
                 val dayItems = accompanimentsWithItems.mapIndexed { index, accompanimentWithItems ->
@@ -109,7 +115,8 @@ class PlanViewModel @Inject constructor(
                     isDemo = isDemo,
                     days = dayItems,
                     completedDailyTasks = completedDailyTasks,
-                    dailyTasks = if (isDemo) demoDailyTasks() else premiumDailyTasks()
+                    dailyTasks = if (isDemo) demoDailyTasks() else premiumDailyTasks(),
+                    topPackages = topPackages
                 )
             }.distinctUntilChanged()
                 .collectLatest { updatedState ->
@@ -126,7 +133,6 @@ class PlanViewModel @Inject constructor(
     }
 }
 
-
 data class PlanState(
     val days: List<DayUi> = emptyList(),
     val completedDays: Int = 0,
@@ -139,6 +145,7 @@ data class PlanState(
     val todayOffset: TodayOffset = TodayOffset(),
     val completedDailyTasks: Int = 1,
     val dailyTasks: List<DailyTask> = demoDailyTasks(),
+    val topPackages: List<RankedPackage> = emptyList(),
     val continuousDays: Int = 1,
 )
 

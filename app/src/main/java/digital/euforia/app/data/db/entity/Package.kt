@@ -8,17 +8,23 @@ import androidx.room.Relation
 
 /** Aggregation for reading full package with its children */
 data class PackageWithChildren(
-    @Embedded val pkg: PackageEntity,
+    @Embedded val pkg: Package,
     @Relation(parentColumn = "id", entityColumn = "main_package_id")
-    val meditations: List<MeditationEntity>,
+    val meditations: List<Meditation>,
     @Relation(parentColumn = "id", entityColumn = "main_package_id")
-    val exercises: List<ExerciseEntity>,
+    val exercises: List<Exercise>,
     @Relation(parentColumn = "id", entityColumn = "main_package_id")
-    val articles: List<ArticleEntity>,
+    val articles: List<Article>,
+)
+
+data class PackageWithMeditations(
+    @Embedded val pkg: Package,
+    @Relation(parentColumn = "id", entityColumn = "main_package_id")
+    val meditations: List<Meditation>,
 )
 
 @Entity(tableName = "packages")
-data class PackageEntity(
+data class Package(
     @PrimaryKey @ColumnInfo(name = "id") val id: Int,
     @ColumnInfo(name = "type") val type: String,
     @ColumnInfo(name = "pro") val pro: Boolean,
@@ -39,10 +45,15 @@ data class PackageEntity(
     @ColumnInfo(name = "color_3") val color3: String?,
 
     @ColumnInfo(name = "published_at") val publishedAt: Long?,
-)
+) {
+
+    companion object Companion {
+        val TOP_PACKAGES_IDS = listOf("3", "1", "19")
+    }
+}
 
 @Entity(tableName = "meditations")
-data class MeditationEntity(
+data class Meditation(
     @PrimaryKey @ColumnInfo(name = "id") val id: Int,
     @ColumnInfo(name = "type") val type: String,
     @ColumnInfo(name = "alias") val alias: String,
@@ -80,7 +91,7 @@ data class MeditationEntity(
 )
 
 @Entity(tableName = "exercises")
-data class ExerciseEntity(
+data class Exercise(
     @PrimaryKey @ColumnInfo(name = "id") val id: Int,
     @ColumnInfo(name = "type") val type: String,
     @ColumnInfo(name = "alias") val alias: String,
@@ -118,7 +129,7 @@ data class ExerciseEntity(
 )
 
 @Entity(tableName = "articles")
-data class ArticleEntity(
+data class Article(
     @PrimaryKey @ColumnInfo(name = "id") val id: Int,
     @ColumnInfo(name = "type") val type: String,
     @ColumnInfo(name = "alias") val alias: String,
