@@ -1,0 +1,44 @@
+[
+    {
+        "identifier": "nature",
+        "code": "I1",
+        "imageName": "img_interests_nature",
+        "sceneCategoryId": 4,
+        "name": "Naturaleza"
+    },
+    {
+        "identifier": "journey",
+        "code": "I3",
+        "imageName": "img_interests_journey",
+        "sceneCategoryId": 5,
+        "name": "Viaje"
+    },
+    {
+        "identifier": "locations",
+        "code": "I2",
+        "imageName": "img_interests_places",
+        "sceneCategoryId": 10,
+        "name": "Lugares"
+    },
+    {
+        "identifier": "fantasy",
+        "code": "I4",
+        "imageName": "img_interests_fantasy",
+        "sceneCategoryId": 3,
+        "name": "Fantasía"
+    },
+    {
+        "identifier": "space",
+        "code": "I5",
+        "imageName": "img_interests_space",
+        "sceneCategoryId": 8,
+        "name": "Espacio"
+    },
+    {
+        "identifier": "abstraction",
+        "code": "I6",
+        "imageName": "img_interests_abstract",
+        "sceneCategoryId": 9,
+        "name": "Abstracción"
+    }
+]

@@ -1,0 +1,52 @@
+[
+    {
+        "identifier": "relax",
+        "code": "G1",
+        "text": "Relieve Anxiety or Stress"
+    },
+    {
+        "identifier": "sleep",
+        "code": "G2",
+        "text": "Sleep Better"
+    },
+    {
+        "identifier": "toxic",
+        "code": "G3",
+        "text": "Recover from Toxic Relationships"
+    },
+    {
+        "identifier": "emotional",
+        "code": "G4",
+        "text": "Emotional Support"
+    },
+    {
+        "identifier": "confidence",
+        "code": "G5",
+        "text": "Boost Self-Confidence"
+    },
+    {
+        "identifier": "warmth",
+        "code": "G6",
+        "text": "Feel Tenderness and Warmth"
+    },
+    {
+        "identifier": "loneliness",
+        "code": "G7",
+        "text": "Share My Loneliness"
+    },
+    {
+        "identifier": "esteem",
+        "code": "G8",
+        "text": "Improve Self-Esteem"
+    },
+    {
+        "identifier": "inspired",
+        "code": "G9",
+        "text": "Get Inspired and Energized"
+    },
+    {
+        "identifier": "other",
+        "code": "FF",
+        "text": "All of the Above"
+    }
+]

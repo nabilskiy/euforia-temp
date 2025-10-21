@@ -1,0 +1,32 @@
+package digital.euforia.app.data.repository
+
+import digital.euforia.app.data.api.EuforiaApi
+import digital.euforia.app.data.db.dao.AppSettingsDao
+import digital.euforia.app.data.db.entity.AppSettings
+import digital.euforia.app.data.model.NetworkSettings
+import digital.euforia.app.data.model.toEntity
+import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+
+class AppSettingsRepository @Inject constructor(
+    private val api: EuforiaApi,
+    private val dao: AppSettingsDao
+) {
+
+    fun observe(): Flow<AppSettings?> = dao.observe()
+
+    suspend fun get(): AppSettings? = dao.get()
+
+    suspend fun save(entity: AppSettings) = dao.insert(entity)
+
+    suspend fun saveFromNetwork(model: NetworkSettings) = dao.insert(model.toEntity())
+
+    suspend fun sync() {
+        val result = api.settings()
+        result.onSuccess { net ->
+            dao.insert(net.toEntity())
+        }
+    }
+
+    suspend fun clear() = dao.clear()
+}
