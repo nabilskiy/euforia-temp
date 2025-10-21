@@ -12,13 +12,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
 import digital.euforia.app.domain.model.plan.RankedPackage
 import digital.euforia.app.ui.plan.item.dayItem
 import digital.euforia.app.ui.plan.item.continuousItem
+import digital.euforia.app.ui.plan.item.soundscapesItem
 import digital.euforia.app.ui.plan.item.tasksItem
 import digital.euforia.app.ui.plan.item.topProgramsItem
 import digital.euforia.app.ui.theme.PrimaryBackground
@@ -90,6 +90,10 @@ private fun PlanContent(
         topProgramsItem(
             isDemo = isDemo,
             topPrograms = topPrograms
+        )
+        soundscapesItem(
+            isDemo = isDemo, onSoundscapesClick = {},
+            onBannerClick = {}
         )
         item {
             Spacer(modifier = Modifier.fillMaxWidth().height(200.dp))

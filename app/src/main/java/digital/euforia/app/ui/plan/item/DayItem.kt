@@ -110,7 +110,7 @@ fun LazyListScope.dayItem(
                 .collect { page -> onDaySelected(page) }
         }
         HorizontalPager(
-            modifier = Modifier.fillMaxWidth(1f),
+            modifier = Modifier.fillMaxWidth(1f).heightIn(min = 260.dp),
             state = pagerState,
             userScrollEnabled = true
         ) { position ->

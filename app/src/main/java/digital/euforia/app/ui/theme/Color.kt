@@ -16,6 +16,7 @@ val VibesBackground = Color(0xFF17181D)
 val White = Color(0xFFFFFFFF)
 val PrimaryBackground = Color(0xFF18191D)
 val PrimaryButtonText = Color(0xFF0E1116)
+val SoundscapesButtonBackground = Color(0x336D95E3)
 val LabelText = Color(0xFF202328)
 val DescriptionText = Color(0xFFB8B8B8)
 val FirstRank = Color(0x1AFF9A3D)
@@ -51,6 +52,15 @@ val TitleDisabled = Color(0xFFB3B3B3)
 val DescriptionDisabled = Color(0xFF8C8C8C)
 val StreakBackground = Color(0xFF2A2A2D)
 val SecondaryText = Color(0xFFC6C6C6)
+val SoundscapeColors = listOf(
+    Color(0xFFEA6464),
+    Color(0xFF64BBEA),
+    Color(0xFF49DC7F),
+    Color(0xFFE267AF),
+    Color(0xFF64EAC6),
+    Color(0xFF284DEF),
+    Color(0xFFEEC959),
+)
 val MaxGradient = Brush.linearGradient(
     colors = listOf(
         Color(0xFF8A2BE2), // Violet
