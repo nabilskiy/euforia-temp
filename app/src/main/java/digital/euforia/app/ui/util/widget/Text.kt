@@ -28,5 +28,4 @@ fun MaxTextView(modifier: Modifier = Modifier) {
             )
         )
     }
-
 }

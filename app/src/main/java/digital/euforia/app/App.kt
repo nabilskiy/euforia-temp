@@ -9,6 +9,7 @@ import digital.euforia.app.data.network.DeviceToken
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.di.ApplicationCoroutineScopeDefault
 import digital.euforia.app.domain.usecase.InitUseCase
+import digital.euforia.app.domain.usecase.translation.SyncTranslationsUseCase
 import digital.euforia.app.domain.usecase.app_settings.SyncAppSettingsUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -32,11 +33,15 @@ class App : Application() {
     @Inject
     lateinit var syncAppSettingsUseCase: SyncAppSettingsUseCase
 
+    @Inject
+    lateinit var syncTranslationsUseCase: SyncTranslationsUseCase
+
     override fun onCreate() {
         super.onCreate()
         initLogger()
         initTokens()
         syncAppSettings()
+        syncTranslations()
     }
 
     private fun initLogger() {
@@ -53,5 +58,9 @@ class App : Application() {
 
     private fun syncAppSettings() {
         coroutineScope.launch { syncAppSettingsUseCase() }
+    }
+
+    private fun syncTranslations() {
+        coroutineScope.launch { syncTranslationsUseCase() }
     }
 }

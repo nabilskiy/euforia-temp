@@ -707,4 +707,6 @@
     <string name="lang_soon_fr">bientôt</string>
     <string name="lang_soon_pt">em breve</string>
     <string name="lang_soon_de">in Kürze</string>
+    <string name="plan_banner_title">Unlock full therapy with</string>
+    <string name="plan_banner_max">Euforia MAX</string>
 </resources>

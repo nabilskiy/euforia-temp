@@ -19,10 +19,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -40,37 +43,65 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import digital.euforia.app.ui.theme.SoundscapeColors
 import digital.euforia.app.ui.theme.eveningColors
 import digital.euforia.app.R
+import digital.euforia.app.domain.model.config.BannerConfig
+import digital.euforia.app.ui.theme.Black
+import digital.euforia.app.ui.theme.DarkGray
+import digital.euforia.app.ui.theme.MaxGradientReversed
 import digital.euforia.app.ui.theme.SecondaryText
 import digital.euforia.app.ui.theme.SoundscapesButtonBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.widget.AnimatedSizeBox
+import digital.euforia.app.ui.util.widget.clickableSingle
 
 fun LazyListScope.soundscapesItem(
     isDemo: Boolean,
+    isPremium: Boolean,
+    bannerConfig: BannerConfig?,
     onSoundscapesClick: () -> Unit,
     onBannerClick: () -> Unit,
+    onFAQClick: () -> Unit,
+    onSupportClick: () -> Unit,
+    onSOSClick: () -> Unit
 ) = item(key = PlanViewItems.SOUNDSCAPES, contentType = PlanViewItems.SOUNDSCAPES) {
     Box(
         modifier = Modifier.fillMaxWidth().heightIn(min = 600.dp).triRadialGradient(
             center1 = Offset(200f, 500f),
             center2 = Offset(900f, 700f),
-            center3 = Offset(300f, 1200f),
+            center3 = Offset(500f, 1500f),
             radius1Px = 400f,
             radius2Px = 500f,
-            radius3Px = 600f,
+            radius3Px = 800f,
             color1 = eveningColors[0],
             color2 = eveningColors[1],
             color3 = eveningColors[2],
         )
     ) {
-        SoundscapesContent(onSoundscapesClick)
+        Column {
+            SoundscapesContent(onSoundscapesClick)
+            PremiumBannerContent(
+                isPremium = isPremium,
+                bannerConfig = bannerConfig,
+                onClick = onBannerClick
+            )
+            FooterButtons(
+                onFAQClick = onFAQClick,
+                onSupportClick = onSupportClick,
+                onSOSClick = onSOSClick
+            )
+        }
     }
 }
 
@@ -106,6 +137,107 @@ private fun SoundscapesContent(onSoundscapesClick: () -> Unit) {
 
                 )
             SoundscapesButton(onSoundscapesClick)
+        }
+    }
+}
+
+@Composable
+fun ColumnScope.FooterButtons(
+    onFAQClick: () -> Unit,
+    onSupportClick: () -> Unit,
+    onSOSClick: () -> Unit
+) {
+    Text(
+        modifier = Modifier.padding(top = 48.dp, bottom = 24.dp).fillMaxWidth(),
+        text = stringResource(R.string.today_footer),
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
+        color = White,
+        textAlign = TextAlign.Center,
+    )
+    FooterButton(
+        textRes = R.string.today_question_button,
+        onClick = onFAQClick
+    )
+    FooterButton(
+        textRes = R.string.today_support_button,
+        onClick = onSupportClick
+    )
+    FooterButton(
+        textRes = R.string.today_sos_button,
+        containerColor = White,
+        textColor = Black,
+        onClick = onSOSClick
+    )
+}
+
+@Composable
+fun ColumnScope.FooterButton(
+    textRes: Int,
+    containerColor: Color = White.copy(alpha = 0.1f),
+    textColor: Color = White,
+    onClick: () -> Unit
+) {
+    AnimatedSizeBox(
+        modifier = Modifier.padding(horizontal = 64.dp, vertical = 8.dp),
+        pressedScale = 1.02f,
+        onClick = onClick
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth()
+                .background(color = containerColor, shape = RoundedCornerShape(16.dp))
+                .height(48.dp),
+        ) {
+            Text(
+                modifier = Modifier.align(Alignment.Center),
+                text = stringResource(textRes),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
+                maxLines = 3,
+                overflow = Ellipsis,
+                color = textColor
+            )
+        }
+    }
+}
+
+@Composable
+fun PremiumBannerContent(isPremium: Boolean, bannerConfig: BannerConfig?, onClick: () -> Unit) {
+    if (!isPremium && bannerConfig != null) {
+        val fontSize = bannerConfig.style.subtitleSize.sp
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 164.dp, end = 16.dp)
+                .clickableSingle(onClick = onClick)
+        ) {
+            AsyncImage(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)),
+                model = bannerConfig.imgUrl,
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+            )
+            Column(
+                modifier = Modifier.fillMaxWidth().align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = spacedBy(4.dp)
+            ) {
+                Text(
+                    text = bannerConfig.subtitle,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = fontSize
+                    ),
+                    color = White,
+                    textAlign = TextAlign.Center,
+                )
+
+                Text(
+                    text = stringResource(R.string.plan_banner_max),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = fontSize,
+                        brush = MaxGradientReversed
+                    ),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -175,7 +307,7 @@ fun Modifier.triRadialGradient(
 
         fun ballBrush(center: Offset, radius: Float, base: Color) = Brush.radialGradient(
             colorStops = arrayOf(
-                0.0f to base.copy(alpha = 0.4f),
+                0.0f to base.copy(alpha = 0.6f),
                 1.0f to base.copy(alpha = 0f)
             ),
             center = center,
@@ -185,6 +317,15 @@ fun Modifier.triRadialGradient(
         val blendMode = BlendMode.ColorDodge
 
         onDrawBehind {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0.0f to White.copy(alpha = 0f),
+                        0.5f to White.copy(alpha = 0.1f),
+                        1.0f to White.copy(alpha = 0f)
+                    ),
+                )
+            )
             drawCircle(
                 brush = ballBrush(center1, radius1Px, color1),
                 radius = radius1Px,

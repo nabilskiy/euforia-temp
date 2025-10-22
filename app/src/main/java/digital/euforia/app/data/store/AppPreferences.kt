@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import digital.euforia.app.data.util.parseJsonToFlatMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -29,6 +30,7 @@ class AppPreferences(
     private val keyContinuousDays = intPreferencesKey("continuous_days")
     private val keyFirstLaunchDate = longPreferencesKey("first_launch_date")
     private val keyLastLaunchDate = longPreferencesKey("last_launch_date")
+    private val keyTranslationsJson = stringPreferencesKey("translations_json")
 
     suspend fun getDeviceToken(): String {
         val existing = store.data.firstOrNull()?.get(keyDeviceToken)
@@ -181,6 +183,24 @@ class AppPreferences(
     suspend fun setLastLaunchDate() {
         store.edit { preferences ->
             preferences[keyLastLaunchDate] = Instant.now().toEpochMilli()
+        }
+    }
+
+    suspend fun setTranslationsJson(json: String) {
+        store.edit { preferences ->
+            preferences[keyTranslationsJson] = json
+        }
+    }
+
+    suspend fun getTranslationsMap(): Map<String, String> {
+        val json = store.data.firstOrNull()?.get(keyTranslationsJson) ?: return emptyMap()
+        return parseJsonToFlatMap(json)
+    }
+
+    suspend fun getTranslationsMapFlow(): Flow<Map<String, String>> {
+        return store.data.map { preferences ->
+            val json = preferences[keyTranslationsJson] ?: return@map emptyMap()
+            parseJsonToFlatMap(json)
         }
     }
 }

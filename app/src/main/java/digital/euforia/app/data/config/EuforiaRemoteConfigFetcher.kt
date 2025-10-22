@@ -1,8 +1,10 @@
 package digital.euforia.app.data.config
 
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import digital.euforia.app.data.model.config.NetworkAppSettingsConfig
 import digital.euforia.app.domain.model.config.AppSettingsConfig
+import digital.euforia.app.domain.model.config.BannerConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
 import digital.euforia.app.domain.model.plan.TodayPresentType
@@ -75,6 +77,19 @@ class EuforiaRemoteConfigFetcher(
             .toTodayPresentType()
     }
 
+    fun getTodayBannerConfig(): BannerConfig? {
+        return getConfig(
+            key = KEY_TODAY_BANNER_1,
+            moshiClazz = NetworkBannerConfig::class.java,
+            map = { it.toBannerConfig() }
+        ).dataOrNull
+    }
+
+    fun getStringsJson() : String {
+        return remoteConfig.getString(KEY_STRINGS)
+    }
+
+
     companion object {
         private const val KEY_APP_SETTINGS = "app_settings"
         private const val KEY_ALLOWED_LANGUAGES = "allow_languages"
@@ -90,6 +105,8 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_INTRO_VIDEO_SKIP_ALLOW = "intro_video_skip_allow"
         private const val KEY_TIME_OF_DAY_CONFIG = "time_of_day_config"
         private const val KEY_TODAY_PRESENT_TYPE = "today_present_type"
+        private const val KEY_TODAY_BANNER_1 = "today_banner_1"
+        private const val KEY_STRINGS = "strings"
 
     }
 }

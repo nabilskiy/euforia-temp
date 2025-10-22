@@ -63,9 +63,16 @@ val SoundscapeColors = listOf(
 )
 val MaxGradient = Brush.linearGradient(
     colors = listOf(
-        Color(0xFF8A2BE2), // Violet
-        Color(0xFFFF3A5F), // Pink-Red
-        Color(0xFFFFB347)  // Orange-Yellow
+        Color(0xFF8A2BE2),
+        Color(0xFFFF3A5F),
+        Color(0xFFFFB347),
+    )
+)
+val MaxGradientReversed = Brush.linearGradient(
+    colors = listOf(
+        Color(0xFFFFB347),
+        Color(0xFFFF3A5F),
+        Color(0xFF8A2BE2),
     )
 )
 

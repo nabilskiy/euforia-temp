@@ -7,11 +7,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.AccompanimentItem
-import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.data.util.combine
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.model.config.BannerConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
@@ -21,7 +21,9 @@ import digital.euforia.app.domain.model.plan.premiumDailyTasks
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentWithItemsFlowUseCase
 import digital.euforia.app.domain.usecase.app_settings.GetAppSettingsUseCase
 import digital.euforia.app.domain.usecase.plan.ComputeContinuousDaysUseCase
+import digital.euforia.app.domain.usecase.plan.GetBannerConfigUseCase
 import digital.euforia.app.domain.usecase.program.GetTopProgramsFlowUseCase
+import digital.euforia.app.domain.usecase.translation.GetTranslationUseCase
 import digital.euforia.app.ui.util.getCurrentTimeOfDay
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.flow.collectLatest
@@ -38,6 +40,8 @@ class PlanViewModel @Inject constructor(
     private val getAppSettingsUseCase: GetAppSettingsUseCase,
     private val getAccompanimentWithItemsFlowUseCase: GetAccompanimentWithItemsFlowUseCase,
     private val getTopPackagesFlowUseCase: GetTopProgramsFlowUseCase,
+    private val getTranslationUseCase: GetTranslationUseCase,
+    private val getBannerConfigUseCase: GetBannerConfigUseCase,
     private val computeContinuousDaysUseCase: ComputeContinuousDaysUseCase,
     private val config: EuforiaRemoteConfigFetcher
 
@@ -47,6 +51,7 @@ class PlanViewModel @Inject constructor(
         onCreate = {
             applySettings()
             observeStates()
+            applyTranslations()
         }
     )
 
@@ -68,6 +73,17 @@ class PlanViewModel @Inject constructor(
                     timeOfDay = currentTimeOfDay,
                     timeOfDayConfig = timeOfDayConfig,
                     continuousDays = continuousDays,
+                )
+            }
+        }
+    }
+
+    private fun applyTranslations() {
+        intent {
+            val bannerConfig = getBannerConfigUseCase()
+            reduce {
+                state.copy(
+                    bannerConfig = bannerConfig
                 )
             }
         }
@@ -147,6 +163,7 @@ data class PlanState(
     val dailyTasks: List<DailyTask> = demoDailyTasks(),
     val topPackages: List<RankedPackage> = emptyList(),
     val continuousDays: Int = 1,
+    val bannerConfig: BannerConfig? = null,
 )
 
 data class TodayOffset(

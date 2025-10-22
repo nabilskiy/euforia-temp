@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.model.config.BannerConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
 import digital.euforia.app.domain.model.plan.RankedPackage
@@ -48,6 +49,7 @@ fun PlanScreen(
         dailyTasks = state.dailyTasks,
         continuousDays = state.continuousDays,
         topPrograms = state.topPackages,
+        bannerConfig = state.bannerConfig,
         onDaySelected = viewModel::onDaySelected
     )
 }
@@ -66,6 +68,7 @@ private fun PlanContent(
     dailyTasks: List<DailyTask>,
     continuousDays: Int,
     topPrograms: List<RankedPackage>,
+    bannerConfig: BannerConfig?,
     onDaySelected: (Int) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().background(color = PrimaryBackground)) {
@@ -92,8 +95,15 @@ private fun PlanContent(
             topPrograms = topPrograms
         )
         soundscapesItem(
-            isDemo = isDemo, onSoundscapesClick = {},
-            onBannerClick = {}
+            isDemo = isDemo,
+            isPremium = isPremium,
+            bannerConfig = bannerConfig,
+            onSoundscapesClick = {},
+            onBannerClick = {},
+            onFAQClick = {},
+            onSupportClick = {},
+            onSOSClick = {}
+
         )
         item {
             Spacer(modifier = Modifier.fillMaxWidth().height(200.dp))
