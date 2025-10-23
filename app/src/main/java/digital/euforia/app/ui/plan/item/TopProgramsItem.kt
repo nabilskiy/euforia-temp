@@ -57,7 +57,7 @@ fun LazyListScope.topProgramsItem(
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
             color = White,
             textAlign = TextAlign.Start,
-            modifier = Modifier.padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
+            modifier = Modifier.padding(start = 16.dp, top = 64.dp, end = 16.dp, bottom = 8.dp)
                 .fillMaxWidth()
         )
 

@@ -16,12 +16,14 @@ import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
 import digital.euforia.app.domain.model.plan.RankedPackage
+import digital.euforia.app.domain.model.plan.ExtraPackage
 import digital.euforia.app.domain.model.plan.demoDailyTasks
 import digital.euforia.app.domain.model.plan.premiumDailyTasks
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentWithItemsFlowUseCase
 import digital.euforia.app.domain.usecase.app_settings.GetAppSettingsUseCase
 import digital.euforia.app.domain.usecase.plan.ComputeContinuousDaysUseCase
 import digital.euforia.app.domain.usecase.plan.GetBannerConfigUseCase
+import digital.euforia.app.domain.usecase.plan.GetExtraPackageFlowUseCase
 import digital.euforia.app.domain.usecase.program.GetTopProgramsFlowUseCase
 import digital.euforia.app.domain.usecase.translation.GetTranslationUseCase
 import digital.euforia.app.ui.util.getCurrentTimeOfDay
@@ -40,11 +42,11 @@ class PlanViewModel @Inject constructor(
     private val getAppSettingsUseCase: GetAppSettingsUseCase,
     private val getAccompanimentWithItemsFlowUseCase: GetAccompanimentWithItemsFlowUseCase,
     private val getTopPackagesFlowUseCase: GetTopProgramsFlowUseCase,
+    private val getExtraPackageFlowUseCase: GetExtraPackageFlowUseCase,
     private val getTranslationUseCase: GetTranslationUseCase,
     private val getBannerConfigUseCase: GetBannerConfigUseCase,
     private val computeContinuousDaysUseCase: ComputeContinuousDaysUseCase,
     private val config: EuforiaRemoteConfigFetcher
-
 ) : ViewModel(), ContainerHost<PlanState, PlanSideEffect> {
     override val container = container<PlanState, PlanSideEffect>(
         initialState = PlanState(),
@@ -97,6 +99,7 @@ class PlanViewModel @Inject constructor(
             val isDemoFlow = profilePreferences.getIsDemoFlow()
             val accompanimentWithItemsFlow = getAccompanimentWithItemsFlowUseCase.invoke()
             val topPackagesFlow = getTopPackagesFlowUseCase.invoke()
+            val extraPackageFlow = getExtraPackageFlowUseCase.invoke()
 
             combine(
                 completedDaysFlow,
@@ -104,8 +107,9 @@ class PlanViewModel @Inject constructor(
                 isPremiumFlow,
                 isDemoFlow,
                 accompanimentWithItemsFlow,
-                topPackagesFlow
-            ) { completedDays, completedDailyTasks, isPremium, isDemo, accompanimentsWithItems, topPackages ->
+                topPackagesFlow,
+                extraPackageFlow
+            ) { completedDays, completedDailyTasks, isPremium, isDemo, accompanimentsWithItems, topPackages, extraPackage ->
                 val state = container.stateFlow.value
 
                 val dayItems = accompanimentsWithItems.mapIndexed { index, accompanimentWithItems ->
@@ -132,7 +136,8 @@ class PlanViewModel @Inject constructor(
                     days = dayItems,
                     completedDailyTasks = completedDailyTasks,
                     dailyTasks = if (isDemo) demoDailyTasks() else premiumDailyTasks(),
-                    topPackages = topPackages
+                    topPackages = topPackages,
+                    extraPackage = extraPackage,
                 )
             }.distinctUntilChanged()
                 .collectLatest { updatedState ->
@@ -162,6 +167,7 @@ data class PlanState(
     val completedDailyTasks: Int = 1,
     val dailyTasks: List<DailyTask> = demoDailyTasks(),
     val topPackages: List<RankedPackage> = emptyList(),
+    val extraPackage: ExtraPackage? = null,
     val continuousDays: Int = 1,
     val bannerConfig: BannerConfig? = null,
 )

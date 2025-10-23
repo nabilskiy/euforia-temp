@@ -29,6 +29,10 @@ interface PackageDao {
     @Query("SELECT * FROM packages WHERE id IN (:ids)")
     fun getWithMeditationsByIdFlow(ids: List<String>): Flow<List<PackageWithMeditations>>
 
+    @Transaction
+    @Query("SELECT * FROM packages WHERE id = :id")
+    fun getWithMeditationsByIdFlow(id: String): Flow<PackageWithMeditations?>
+
     @Query("DELETE FROM packages")
     suspend fun clearAll()
 

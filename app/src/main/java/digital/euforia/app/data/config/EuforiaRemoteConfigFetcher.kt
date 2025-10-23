@@ -89,6 +89,10 @@ class EuforiaRemoteConfigFetcher(
         return remoteConfig.getString(KEY_STRINGS)
     }
 
+    fun getExtraPackageId(): String? {
+        val packageId = remoteConfig.getString(KEY_EXTRA_PACKAGE_ID)
+        return packageId.ifBlank { null }
+    }
 
     companion object {
         private const val KEY_APP_SETTINGS = "app_settings"
@@ -107,6 +111,6 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_TODAY_PRESENT_TYPE = "today_present_type"
         private const val KEY_TODAY_BANNER_1 = "today_banner_1"
         private const val KEY_STRINGS = "strings"
-
+        private const val KEY_EXTRA_PACKAGE_ID = "extra_package_id"
     }
 }

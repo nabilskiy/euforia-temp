@@ -191,4 +191,5 @@ dependencies {
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)
     implementation(libs.haze)
+    implementation(libs.haze.materials)
 }

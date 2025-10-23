@@ -59,7 +59,23 @@ class PackageRepository @Inject constructor(
         }
     }
 
+    suspend fun syncPackages(ids: List<String>): Unit = withContext(ioDispatcher) {
+        ids.forEach {
+            val packagesResult = api.getPackages(id = it)
+            packagesResult.onSuccess { networkPackage ->
+                Timber.d("Syncing top packages: $networkPackage")
+                save(networkPackage)
+            }.onFailure {
+                Timber.d("Failed to sync top packages: ${it.message}")
+            }
+        }
+    }
+
     suspend fun getTopPackagesFlow(): Flow<List<PackageWithMeditations>> {
         return packageDao.getWithMeditationsByIdFlow(TOP_PACKAGES_IDS)
+    }
+
+    suspend fun getPackageByIdFlow(id: String): Flow<PackageWithMeditations?> {
+        return packageDao.getWithMeditationsByIdFlow(id)
     }
 }

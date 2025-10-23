@@ -134,8 +134,7 @@ private fun SoundscapesContent(onSoundscapesClick: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = SecondaryText,
                 textAlign = TextAlign.Start,
-
-                )
+            )
             SoundscapesButton(onSoundscapesClick)
         }
     }

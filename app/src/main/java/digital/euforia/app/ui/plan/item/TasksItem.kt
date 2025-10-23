@@ -51,7 +51,7 @@ fun LazyListScope.tasksItem(
             text = stringResource(titleRes),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
             color = White,
-            modifier = Modifier.padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 4.dp)
+            modifier = Modifier.padding(start = 16.dp, top = 64.dp, end = 16.dp, bottom = 4.dp)
         )
         Box {
             val heightDpMap = remember { mutableStateMapOf<Int, Dp>() }

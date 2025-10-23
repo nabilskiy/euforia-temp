@@ -16,9 +16,11 @@ import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.BannerConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
+import digital.euforia.app.domain.model.plan.ExtraPackage
 import digital.euforia.app.domain.model.plan.RankedPackage
 import digital.euforia.app.ui.plan.item.dayItem
 import digital.euforia.app.ui.plan.item.continuousItem
+import digital.euforia.app.ui.plan.item.extraItem
 import digital.euforia.app.ui.plan.item.soundscapesItem
 import digital.euforia.app.ui.plan.item.tasksItem
 import digital.euforia.app.ui.plan.item.topProgramsItem
@@ -50,6 +52,7 @@ fun PlanScreen(
         continuousDays = state.continuousDays,
         topPrograms = state.topPackages,
         bannerConfig = state.bannerConfig,
+        extraPackage = state.extraPackage,
         onDaySelected = viewModel::onDaySelected
     )
 }
@@ -69,6 +72,7 @@ private fun PlanContent(
     continuousDays: Int,
     topPrograms: List<RankedPackage>,
     bannerConfig: BannerConfig?,
+    extraPackage: ExtraPackage?,
     onDaySelected: (Int) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().background(color = PrimaryBackground)) {
@@ -88,8 +92,10 @@ private fun PlanContent(
             tasks = dailyTasks,
             completedTasks = completedDailyTasks
         )
-
-        continuousItem(days = continuousDays)
+        if (!isDemo) {
+            continuousItem(days = continuousDays)
+        }
+        extraItem(extraPackage = extraPackage) {}
         topProgramsItem(
             isDemo = isDemo,
             topPrograms = topPrograms
@@ -118,4 +124,4 @@ private fun handleSideEffect(sideEffect: PlanSideEffect) {
 }
 
 @Keep
-enum class PlanViewItems { DAYS, TASKS, STREAK, TOP, SOUNDSCAPES, SOS }
+enum class PlanViewItems { DAYS, TASKS, EXTRA, STREAK, TOP, SOUNDSCAPES, SOS }
