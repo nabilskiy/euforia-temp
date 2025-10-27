@@ -56,4 +56,8 @@ class AccompanimentRepository @Inject constructor(
 
     suspend fun getTodayAccompaniments(demo: Boolean) =
         api.getTodayAccompaniments(demo)
+
+    suspend fun getAccompanimentById(id: Int): Accompaniment? {
+        return accompanimentDao.getById(id)
+    }
 }

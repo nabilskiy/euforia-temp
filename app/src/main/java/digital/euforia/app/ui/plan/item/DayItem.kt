@@ -65,6 +65,7 @@ import digital.euforia.app.ui.util.widget.ActionButton
 import digital.euforia.app.ui.util.widget.AccompanimentButtonColors
 import digital.euforia.app.ui.util.widget.AccompanimentButtonDimensions
 import digital.euforia.app.ui.util.widget.MaxTextView
+import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -79,6 +80,7 @@ fun LazyListScope.dayItem(
     timeOfDay: TimeOfDay,
     timeOfDayConfig: TimeOfDayConfig,
     onDaySelected: (Int) -> Unit,
+    onDayTimeItemClick: (DayTimeItemUi) -> Unit
 ) = item(key = PlanViewItems.DAYS, contentType = PlanViewItems.DAYS) {
     val day = days.getOrNull(selectedDayIndex)
 
@@ -118,6 +120,7 @@ fun LazyListScope.dayItem(
                 AccompanimentPagerPage(
                     day = pageDay,
                     timeOfDayConfig = timeOfDayConfig,
+                    onDayTimeItemClick = onDayTimeItemClick
                 )
             }
         }
@@ -128,6 +131,7 @@ fun LazyListScope.dayItem(
 private fun AccompanimentPagerPage(
     day: DayUi,
     timeOfDayConfig: TimeOfDayConfig,
+    onDayTimeItemClick: (DayTimeItemUi) -> Unit
 ) {
     if (day.items.size == 3) {
         Row(
@@ -140,7 +144,8 @@ private fun AccompanimentPagerPage(
                 item = day.items.first(),
                 timeOfDayConfig = timeOfDayConfig,
                 isCompleted = false,
-                buttonDimensions = AccompanimentButtonDimensions.PRIMARY
+                buttonDimensions = AccompanimentButtonDimensions.PRIMARY,
+                onClick = onDayTimeItemClick
             )
 
             Column(
@@ -152,14 +157,16 @@ private fun AccompanimentPagerPage(
                     accompaniment = day.accompaniment,
                     item = day.items[1],
                     timeOfDayConfig = timeOfDayConfig,
-                    isCompleted = false
+                    isCompleted = false,
+                    onClick = onDayTimeItemClick
                 )
                 AccompanimentButton(
                     modifier = Modifier.fillMaxHeight().weight(1f),
                     accompaniment = day.accompaniment,
                     item = day.items.last(),
                     timeOfDayConfig = timeOfDayConfig,
-                    isCompleted = true
+                    isCompleted = true,
+                    onClick = onDayTimeItemClick
                 )
             }
         }
@@ -176,9 +183,9 @@ private fun AccompanimentButton(
     isLocked: Boolean = false,
     isToday: Boolean = false,
     buttonDimensions: AccompanimentButtonDimensions = AccompanimentButtonDimensions.SECONDARY,
+    onClick: (DayTimeItemUi) -> Unit
 ) {
-    item
-    Box(modifier = modifier) {
+    Box(modifier = modifier.noRippleClickable(onClick = { onClick(item) })) {
         DayTimeBackground(item, buttonDimensions)
 
         when (item.state) {
@@ -478,7 +485,7 @@ fun MaxBadge(isMax: Boolean) {
     }
 }
 
-private fun subscribeToPagerUpdates(
+fun subscribeToPagerUpdates(
     coroutineScope: CoroutineScope,
     pagerState: PagerState,
     page: Int

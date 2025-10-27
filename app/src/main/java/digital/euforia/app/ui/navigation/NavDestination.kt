@@ -1,6 +1,7 @@
 package digital.euforia.app.ui.navigation
 
 import androidx.annotation.Keep
+import digital.euforia.app.domain.model.TimeOfDay
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -44,4 +45,8 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     @Serializable
     @Keep
     data object Settings : HomeDestination()
+
+    @Serializable
+    @Keep
+    data class AudioPlayer(val accompanimentId: Int, val timeOfDay: TimeOfDay)
 }

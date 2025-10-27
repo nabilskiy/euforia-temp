@@ -152,6 +152,28 @@ class PlanViewModel @Inject constructor(
             reduceState { copy(selectedDayIndex = day) }
         }
     }
+
+    fun onDayTimeItemClick(item: DayTimeItemUi) {
+        intent {
+            val accompaniment = state.days.getOrNull(state.selectedDayIndex)?.accompaniment
+                ?: return@intent
+            val title = when (item.item.timeOfDay) {
+                TimeOfDay.MORNING -> accompaniment.morningTitle
+                TimeOfDay.DAYTIME -> accompaniment.daytimeTitle
+                TimeOfDay.EVENING -> accompaniment.eveningTitle
+            }
+
+            if (item.state == DayTimeItemUi.State.LOCKED) return@intent
+            val accompanimentItem = item.item
+//            val audioUrl = accompanimentItem.audioUrl ?: return@intent
+            postSideEffect(
+                PlanSideEffect.NavigateAudioPlayer(
+                    accompanimentId = item.item.accompanimentId,
+                    timeOfDay = item.item.timeOfDay
+                )
+            )
+        }
+    }
 }
 
 data class PlanState(
@@ -207,4 +229,9 @@ data class DayTimeItemUi(
 }
 
 
-sealed class PlanSideEffect {}
+sealed class PlanSideEffect {
+    data class NavigateAudioPlayer(
+        val accompanimentId: Int,
+        val timeOfDay: TimeOfDay
+    ) : PlanSideEffect()
+}

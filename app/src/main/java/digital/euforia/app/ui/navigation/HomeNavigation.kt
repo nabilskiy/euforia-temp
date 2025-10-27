@@ -9,6 +9,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import digital.euforia.app.ui.plan.PlanScreen
+import digital.euforia.app.ui.player.audio.AudioPlayerScreen
+import digital.euforia.app.ui.provider.audioPlayerViewModel
 
 @Composable
 fun HomeNavigation(navController: NavHostController, isBottomBarShown: MutableState<Boolean>) {
@@ -39,6 +41,18 @@ fun HomeNavigation(navController: NavHostController, isBottomBarShown: MutableSt
             isBottomBarShown.value = false
 //            SettingsScreen(route, navController)
             Box() {}
+        }
+        composable<HomeDestination.AudioPlayer> {
+            val route = it.toRoute<HomeDestination.AudioPlayer>()
+            isBottomBarShown.value = false
+            AudioPlayerScreen(
+                navController,
+                hiltViewModel()
+//                audioPlayerViewModel(
+//                    accompanimentId = route.accompanimentId,
+//                    timeOfDay = route.timeOfDay
+//                )
+            )
         }
     }
 }

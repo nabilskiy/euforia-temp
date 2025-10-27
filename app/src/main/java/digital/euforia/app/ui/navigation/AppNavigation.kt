@@ -30,7 +30,6 @@ fun AppNavigation(
 //        startDestination = Vibes
 //        startDestination = Home
     ) {
-//        var showFloatingSpheres by remember { mutableStateOf(true) }
         composable<Splash>(
             enterTransition = {
                 fadeIn(animationSpec = tween(1500))

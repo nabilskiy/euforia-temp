@@ -1,6 +1,7 @@
 package digital.euforia.app.data.api
 
 import digital.euforia.app.data.model.NetworkAccompaniment
+import digital.euforia.app.data.model.NetworkMusic
 import digital.euforia.app.data.model.NetworkPackage
 import digital.euforia.app.data.model.NetworkSettings
 import digital.euforia.app.data.model.NetworkSound
@@ -20,7 +21,7 @@ interface EuforiaApi {
     suspend fun sounds(): ResultWrapper<List<NetworkSound>>
 
     @GET("music")
-    suspend fun music(): Response<List<String>>
+    suspend fun music(): ResultWrapper<List<NetworkMusic>>
 
     @GET("accompaniments/week")
     suspend fun getAccompanimentsPerWeek(

@@ -181,7 +181,6 @@ dependencies {
     implementation(libs.firebase.crashlytics.ktx)
     implementation(libs.firebase.config.ktx)
     implementation(libs.firebase.messaging)
-    implementation(libs.firebase.messaging.ktx)
     implementation(libs.firebase.ui)
     implementation(libs.timber)
     testImplementation(libs.coroutines.test)

@@ -18,12 +18,14 @@ import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.plan.DailyTask
 import digital.euforia.app.domain.model.plan.ExtraPackage
 import digital.euforia.app.domain.model.plan.RankedPackage
+import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.plan.item.dayItem
 import digital.euforia.app.ui.plan.item.continuousItem
 import digital.euforia.app.ui.plan.item.extraItem
 import digital.euforia.app.ui.plan.item.soundscapesItem
 import digital.euforia.app.ui.plan.item.tasksItem
 import digital.euforia.app.ui.plan.item.topProgramsItem
+import digital.euforia.app.ui.player.audio.AudioPlayerScreen
 import digital.euforia.app.ui.theme.PrimaryBackground
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -35,7 +37,7 @@ fun PlanScreen(
 ) {
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect)
+        handleSideEffect(sideEffect, navController)
     }
 
     PlanContent(
@@ -53,7 +55,8 @@ fun PlanScreen(
         topPrograms = state.topPackages,
         bannerConfig = state.bannerConfig,
         extraPackage = state.extraPackage,
-        onDaySelected = viewModel::onDaySelected
+        onDaySelected = viewModel::onDaySelected,
+        onDayTimeItemClick = viewModel::onDayTimeItemClick
     )
 }
 
@@ -74,6 +77,7 @@ private fun PlanContent(
     bannerConfig: BannerConfig?,
     extraPackage: ExtraPackage?,
     onDaySelected: (Int) -> Unit,
+    onDayTimeItemClick: (DayTimeItemUi) -> Unit
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().background(color = PrimaryBackground)) {
         dayItem(
@@ -86,6 +90,7 @@ private fun PlanContent(
             timeOfDay = timeOfDay,
             timeOfDayConfig = timeOfDayConfig,
             onDaySelected = onDaySelected,
+            onDayTimeItemClick = onDayTimeItemClick
         )
         tasksItem(
             isDemo = isDemo,
@@ -117,8 +122,16 @@ private fun PlanContent(
     }
 }
 
-private fun handleSideEffect(sideEffect: PlanSideEffect) {
+private fun handleSideEffect(sideEffect: PlanSideEffect, navController: NavHostController) {
     when (sideEffect) {
+        is PlanSideEffect.NavigateAudioPlayer -> {
+            navController.navigate(
+                HomeDestination.AudioPlayer(
+                    accompanimentId = sideEffect.accompanimentId,
+                    timeOfDay = sideEffect.timeOfDay
+                )
+            )
+        }
         else -> {}
     }
 }
