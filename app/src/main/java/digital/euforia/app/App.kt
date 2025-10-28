@@ -11,6 +11,7 @@ import digital.euforia.app.di.ApplicationCoroutineScopeDefault
 import digital.euforia.app.domain.usecase.InitUseCase
 import digital.euforia.app.domain.usecase.translation.SyncTranslationsUseCase
 import digital.euforia.app.domain.usecase.app_settings.SyncAppSettingsUseCase
+import digital.euforia.app.domain.usecase.resources.SyncResourcesUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -36,12 +37,16 @@ class App : Application() {
     @Inject
     lateinit var syncTranslationsUseCase: SyncTranslationsUseCase
 
+    @Inject
+    lateinit var syncResourcesUseCase: SyncResourcesUseCase
+
     override fun onCreate() {
         super.onCreate()
         initLogger()
         initTokens()
         syncAppSettings()
         syncTranslations()
+        syncResources()
     }
 
     private fun initLogger() {
@@ -62,5 +67,9 @@ class App : Application() {
 
     private fun syncTranslations() {
         coroutineScope.launch { syncTranslationsUseCase() }
+    }
+
+    private fun syncResources() {
+        coroutineScope.launch { syncResourcesUseCase() }
     }
 }

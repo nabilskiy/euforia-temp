@@ -43,15 +43,10 @@ fun HomeNavigation(navController: NavHostController, isBottomBarShown: MutableSt
             Box() {}
         }
         composable<HomeDestination.AudioPlayer> {
-            val route = it.toRoute<HomeDestination.AudioPlayer>()
             isBottomBarShown.value = false
             AudioPlayerScreen(
                 navController,
                 hiltViewModel()
-//                audioPlayerViewModel(
-//                    accompanimentId = route.accompanimentId,
-//                    timeOfDay = route.timeOfDay
-//                )
             )
         }
     }

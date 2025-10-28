@@ -25,6 +25,7 @@ import digital.euforia.app.ui.plan.item.extraItem
 import digital.euforia.app.ui.plan.item.soundscapesItem
 import digital.euforia.app.ui.plan.item.tasksItem
 import digital.euforia.app.ui.plan.item.topProgramsItem
+import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.player.audio.AudioPlayerScreen
 import digital.euforia.app.ui.theme.PrimaryBackground
 import org.orbitmvi.orbit.compose.collectAsState
@@ -128,7 +129,8 @@ private fun handleSideEffect(sideEffect: PlanSideEffect, navController: NavHostC
             navController.navigate(
                 HomeDestination.AudioPlayer(
                     accompanimentId = sideEffect.accompanimentId,
-                    timeOfDay = sideEffect.timeOfDay
+                    timeOfDay = sideEffect.timeOfDay,
+                    entryPoint = AudioPlayerEntryPoint.DAY
                 )
             )
         }

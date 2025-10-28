@@ -3,6 +3,7 @@ package digital.euforia.app.data.api
 import digital.euforia.app.data.model.NetworkAccompaniment
 import digital.euforia.app.data.model.NetworkMusic
 import digital.euforia.app.data.model.NetworkPackage
+import digital.euforia.app.data.model.NetworkResource
 import digital.euforia.app.data.model.NetworkSettings
 import digital.euforia.app.data.model.NetworkSound
 import digital.euforia.app.domain.util.ResultWrapper
@@ -40,4 +41,10 @@ interface EuforiaApi {
         @Query("id") id: String,
         @Query("per-page") perPage: Int? = null
     ): ResultWrapper<NetworkPackage>
+
+    @GET("resources")
+    suspend fun getResources(
+        @Query("class_alias") classAlias: String? = null,
+        @Query("per-page") perPage: Int = 0
+    ): ResultWrapper<List<NetworkResource>>
 }

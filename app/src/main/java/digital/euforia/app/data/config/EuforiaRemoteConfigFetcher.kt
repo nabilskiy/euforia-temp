@@ -85,13 +85,18 @@ class EuforiaRemoteConfigFetcher(
         ).dataOrNull
     }
 
-    fun getStringsJson() : String {
+    fun getStringsJson(): String {
         return remoteConfig.getString(KEY_STRINGS)
     }
 
     fun getExtraPackageId(): String? {
         val packageId = remoteConfig.getString(KEY_EXTRA_PACKAGE_ID)
         return packageId.ifBlank { null }
+    }
+
+    fun getVoiceAvatarPreviewsIds(): List<Int> {
+        return getListConfig(KEY_VOICE_AVATAR_PREVIEWS_ID).dataOrNull?.map { it.toInt() }
+            ?: emptyList()
     }
 
     companion object {
@@ -112,5 +117,6 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_TODAY_BANNER_1 = "today_banner_1"
         private const val KEY_STRINGS = "strings"
         private const val KEY_EXTRA_PACKAGE_ID = "extra_package_id"
+        private const val KEY_VOICE_AVATAR_PREVIEWS_ID = "voice_avatar_previews_ids"
     }
 }

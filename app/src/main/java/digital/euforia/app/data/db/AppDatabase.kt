@@ -16,6 +16,7 @@ import digital.euforia.app.data.db.dao.ExerciseDao
 import digital.euforia.app.data.db.dao.MeditationDao
 import digital.euforia.app.data.db.dao.MusicDao
 import digital.euforia.app.data.db.dao.PackageDao
+import digital.euforia.app.data.db.dao.ResourceDao
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.File
 import digital.euforia.app.data.db.entity.SampleEntity
@@ -27,6 +28,7 @@ import digital.euforia.app.data.db.entity.Exercise
 import digital.euforia.app.data.db.entity.Meditation
 import digital.euforia.app.data.db.entity.Music
 import digital.euforia.app.data.db.entity.Package
+import digital.euforia.app.data.db.entity.Resource
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class])
 @Database(
@@ -43,6 +45,7 @@ import digital.euforia.app.data.db.entity.Package
         Exercise::class,
         Article::class,
         Music::class,
+        Resource::class,
     ]
 )
 
@@ -58,4 +61,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun articleDao(): ArticleDao
     abstract fun musicDao(): MusicDao
+    abstract fun resourceDao(): ResourceDao
 }

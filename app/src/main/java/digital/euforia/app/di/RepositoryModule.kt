@@ -10,6 +10,7 @@ import digital.euforia.app.data.repository.AccompanimentItemRepository
 import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.repository.AppSettingsRepository
 import digital.euforia.app.data.repository.PackageRepository
+import digital.euforia.app.data.repository.ResourceRepository
 import javax.inject.Singleton
 
 @Module
@@ -63,6 +64,18 @@ class RepositoryModule {
             meditationDao = database.meditationDao(),
             exerciseDao = database.exerciseDao(),
             articleDao = database.articleDao()
+        )
+    }
+
+    @Singleton
+    @Provides
+    fun provideResourcesRepository(
+        api: EuforiaApi,
+        database: AppDatabase
+    ): ResourceRepository {
+        return ResourceRepository(
+            api = api,
+            resourceDao = database.resourceDao()
         )
     }
 }

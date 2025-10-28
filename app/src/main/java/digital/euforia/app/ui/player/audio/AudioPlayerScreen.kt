@@ -19,6 +19,7 @@ import digital.euforia.app.ui.plan.item.subscribeToPagerUpdates
 import digital.euforia.app.ui.player.audio.page.AvatarsPage
 import digital.euforia.app.ui.player.audio.page.PlayerPage
 import digital.euforia.app.ui.util.widget.vibe.PlayState
+import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -50,9 +51,18 @@ fun AudioPlayerScreen(
     }
 
     AudioPlayerContent(
+        entryPoint = state.entryPoint,
         title = state.title.orEmpty(),
         pages = state.pages,
+        soundsEffects = state.soundEffectsList,
         currentPageIndex = state.currentPageIndex,
+        avatarPreviewUrl = state.avatarPreviewUrl,
+        avatarPreviewIds = state.avatarPreviewIds,
+        avatarUi = state.selectedAvatar,
+        avatarsList = state.avatarsList,
+        selectedSoundIndex = state.selectedSoundEffectIndex,
+        onMuteClick = viewModel::onMuteClicked,
+        onSoundEffectClick = viewModel::onSoundEffectSelected,
         onPageSelected = viewModel::onPageSelected,
         navigateAvatars = viewModel::onNavigateToAvatars,
         navigatePlayer = viewModel::onNavigateToPlayer,
@@ -61,9 +71,18 @@ fun AudioPlayerScreen(
 
 @Composable
 private fun AudioPlayerContent(
+    entryPoint: AudioPlayerEntryPoint,
     title: String,
     pages: List<PlayerPage>,
     currentPageIndex: Int,
+    selectedSoundIndex: Int,
+    avatarPreviewUrl: String?,
+    avatarsList: List<AvatarUi>,
+    avatarPreviewIds: List<Int>,
+    avatarUi: AvatarUi?,
+    soundsEffects: List<SoundEffectUi>,
+    onMuteClick: () -> Unit,
+    onSoundEffectClick: (Int) -> Unit,
     onPageSelected: (Int) -> Unit,
     navigateAvatars: () -> Unit,
     navigatePlayer: () -> Unit
@@ -81,13 +100,23 @@ private fun AudioPlayerContent(
     HorizontalPager(
         modifier = Modifier.fillMaxWidth(1f).heightIn(min = 260.dp),
         state = pagerState,
-        userScrollEnabled = true
+        userScrollEnabled = false
     ) { position ->
         when (position) {
             0 -> PlayerPage(
+                entryPoint = entryPoint,
                 title = title,
                 progress = 0f,
                 playState = PlayState.LOADING,
+                selectedSoundIndex = selectedSoundIndex,
+                avatarPreviewUrl = avatarPreviewUrl,
+                avatarPreviewIds = avatarPreviewIds,
+                avatarUi = avatarUi,
+                avatarsList = avatarsList,
+                soundsEffects = soundsEffects,
+                onAvatarClick = navigateAvatars,
+                onMuteClick = onMuteClick,
+                onSoundEffectClick = onSoundEffectClick,
                 onPause = { },
                 onPlay = { },
                 onSeekTo = { }

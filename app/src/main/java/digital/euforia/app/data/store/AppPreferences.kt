@@ -11,6 +11,7 @@ import digital.euforia.app.data.util.parseJsonToFlatMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 import java.time.Instant
 import java.util.UUID
 
@@ -154,11 +155,13 @@ class AppPreferences(
     suspend fun getCompletedDailyTasks(): Int {
         return store.data.firstOrNull()?.get(keyCompletedDailyTasks) ?: 1
     }
+
     suspend fun setCompletedDailyTasks(count: Int) {
         store.edit { preferences ->
             preferences[keyCompletedDailyTasks] = count
         }
     }
+
     fun getCompletedDailyTasksFlow(): Flow<Int> {
         return store.data.map { preferences ->
             preferences[keyCompletedDailyTasks] ?: 1
@@ -193,8 +196,13 @@ class AppPreferences(
     }
 
     suspend fun getTranslationsMap(): Map<String, String> {
-        val json = store.data.firstOrNull()?.get(keyTranslationsJson) ?: return emptyMap()
-        return parseJsonToFlatMap(json)
+        try {
+            val json = store.data.firstOrNull()?.get(keyTranslationsJson) ?: return emptyMap()
+            return parseJsonToFlatMap(json)
+        } catch (e: Exception) {
+            Timber.d("Failed to parse translations JSON: ${e.message}")
+            return emptyMap()
+        }
     }
 
     suspend fun getTranslationsMapFlow(): Flow<Map<String, String>> {
