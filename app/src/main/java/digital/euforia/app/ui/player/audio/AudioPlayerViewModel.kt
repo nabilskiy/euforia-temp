@@ -1,6 +1,7 @@
 package digital.euforia.app.ui.player.audio
 
 import androidx.annotation.Keep
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,11 +10,14 @@ import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_VOICE_AVATAR
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_VOICE_MUSIC
+import digital.euforia.app.data.store.AppPreferences
 import javax.inject.Inject
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.model.onboarding.Gender
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentUseCase
 import digital.euforia.app.domain.usecase.resources.GetResourcesUseCase
 import digital.euforia.app.ui.util.reduceState
+import digital.euforia.app.ui.util.widget.vibe.PlayState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -25,7 +29,8 @@ class AudioPlayerViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val configFetcher: EuforiaRemoteConfigFetcher,
     private val getAccompanimentUseCase: GetAccompanimentUseCase,
-    private val getResourcesUseCase: GetResourcesUseCase
+    private val getResourcesUseCase: GetResourcesUseCase,
+    private val appPreferences: AppPreferences
 ) : ViewModel(), ContainerHost<AudioPlayerState, AudioPlayerSideEffect> {
 
     private val accompanimentId: Int = requireNotNull(savedStateHandle.get<Int>("accompanimentId"))
@@ -34,62 +39,64 @@ class AudioPlayerViewModel @Inject constructor(
         requireNotNull(savedStateHandle.get<AudioPlayerEntryPoint>("entryPoint"))
 
     override val container = container<AudioPlayerState, AudioPlayerSideEffect>(
-        initialState = AudioPlayerState(entryPoint = entryPoint),
+        initialState = AudioPlayerState(entryPoint = entryPoint, timeOfDay = timeOfDay),
         onCreate = {
             getAccompaniment()
         }
     )
 
     fun getMusicUrlForTimeOfDay(): String? {
-        val acc = container.stateFlow.value.accompaniment ?: return null
+        val state = container.stateFlow.value
+        val acc = state.accompaniment ?: return null
+        val gender = state.gender
         return when (timeOfDay) {
-            TimeOfDay.MORNING -> acc.morningMusicUrl
+            TimeOfDay.MORNING -> {
+                if (gender == Gender.MALE) acc.morningFemaleAudioUrl else acc.morningMaleAudioUrl
+            }
+
             TimeOfDay.DAYTIME -> acc.daytimeMusicUrl
-            TimeOfDay.EVENING -> acc.eveningMusicUrl
+            TimeOfDay.EVENING -> {
+                if (gender == Gender.MALE) acc.eveningFemaleAudioUrl else acc.eveningMaleAudioUrl
+            }
         }
     }
 
-    private suspend fun getAccompaniment() {
-        viewModelScope.async {
-            val accompaniment = getAccompanimentUseCase.invoke(accompanimentId)
-            accompaniment?.let {
-                val title = when (timeOfDay) {
-                    TimeOfDay.MORNING -> it.morningTitle
-                    TimeOfDay.DAYTIME -> it.daytimeTitle
-                    TimeOfDay.EVENING -> it.eveningTitle
-                }
-                val audioUrl = when (timeOfDay) {
-                    TimeOfDay.MORNING -> it.morningMusicUrl
-                    TimeOfDay.DAYTIME -> it.daytimeMusicUrl
-                    TimeOfDay.EVENING -> it.eveningMusicUrl
-                }
-
-                val soundEffects = getResourcesUseCase.invoke(CLASS_ALIAS_VOICE_MUSIC)
-                    .map { resource -> resource.toSoundEffectUi() }
-                val avatars = getResourcesUseCase.invoke(CLASS_ALIAS_VOICE_AVATAR)
-                    .map { resource -> resource.toAvatarUi() }
-
-                val avatarPreviewIds = configFetcher.getVoiceAvatarPreviewsIds()
-
-                reduceState {
-                    copy(
-                        accompaniment = accompaniment,
-                        title = title,
-                        audioUrl = audioUrl,
-                        avatarsList = avatars,
-                        avatarPreviewIds = avatarPreviewIds,
-                        soundEffectsList = soundEffects
-                    )
-                }
+    private fun getAccompaniment() {
+        viewModelScope.launch {
+            val accompaniment = getAccompanimentUseCase(accompanimentId) ?: return@launch
+            val title = when (timeOfDay) {
+                TimeOfDay.MORNING -> accompaniment.morningTitle
+                TimeOfDay.DAYTIME -> accompaniment.daytimeTitle
+                TimeOfDay.EVENING -> accompaniment.eveningTitle
             }
-
-        }.await()
+            val audioUrl = when (timeOfDay) {
+                TimeOfDay.MORNING -> accompaniment.morningMusicUrl
+                TimeOfDay.DAYTIME -> accompaniment.daytimeMusicUrl
+                TimeOfDay.EVENING -> accompaniment.eveningMusicUrl
+            }
+            val soundEffects =
+                getResourcesUseCase(CLASS_ALIAS_VOICE_MUSIC).map { it.toSoundEffectUi() }
+            val avatars = getResourcesUseCase(CLASS_ALIAS_VOICE_AVATAR).map { it.toAvatarUi() }
+            val avatarPreviewIds = configFetcher.getVoiceAvatarPreviewsIds()
+            val gender = appPreferences.getGender()
+            reduceState {
+                copy(
+                    accompaniment = accompaniment,
+                    title = title,
+                    audioUrl = audioUrl,
+                    avatarsList = avatars,
+                    avatarPreviewIds = avatarPreviewIds,
+                    soundEffectsList = soundEffects,
+                    gender = gender
+                )
+            }
+        }
     }
 
     fun onPageSelected(index: Int) {
         intent {
             if (index < 0 || index >= state.pages.size) return@intent
-            reduceState { copy(currentPageIndex = index) }
+            reduce { state.copy(currentPageIndex = index) }
         }
     }
 
@@ -103,6 +110,7 @@ class AudioPlayerViewModel @Inject constructor(
 
     fun onSoundEffectSelected(index: Int) {
         intent {
+            if (state.selectedSoundEffectIndex == index) return@intent
             val soundEffect = state.soundEffectsList.getOrNull(index) ?: return@intent
             reduce { state.copy(selectedSoundEffectIndex = index) }
         }
@@ -113,6 +121,20 @@ class AudioPlayerViewModel @Inject constructor(
             reduce { state.copy(selectedSoundEffectIndex = -1) }
         }
     }
+
+    fun onAvatarSelected(avatar: AvatarUi?) {
+        reduceState { copy(selectedAvatar = avatar) }
+    }
+
+    fun onPlayStateChanged(playState: PlayState) {
+        intent {
+            reduce {
+                state.copy(
+                    playState = playState
+                )
+            }
+        }
+    }
 }
 
 sealed class PlayerPage() {
@@ -121,6 +143,7 @@ sealed class PlayerPage() {
 }
 
 data class AudioPlayerState(
+    val playState: PlayState = PlayState.LOADING,
     val accompaniment: Accompaniment? = null,
     val title: String? = null,
     val audioUrl: String? = null,
@@ -132,15 +155,20 @@ data class AudioPlayerState(
     val avatarsList: List<AvatarUi> = emptyList(),
     val soundEffectsList: List<SoundEffectUi> = emptyList(),
     val selectedSoundEffectIndex: Int = 0,
-    val entryPoint: AudioPlayerEntryPoint = AudioPlayerEntryPoint.DAY
+    val entryPoint: AudioPlayerEntryPoint = AudioPlayerEntryPoint.DAY,
+    val timeOfDay: TimeOfDay = TimeOfDay.DAYTIME,
+    val gender: Gender = Gender.UNSPECIFIED
 )
 
+@Immutable
 data class AvatarUi(
     val id: Int,
     val title: String,
-    val imageUrl: String
+    val imageUrl: String,
+    val isCustom: Boolean = false
 )
 
+@Immutable
 data class SoundEffectUi(
     val id: Int,
     val title: String,

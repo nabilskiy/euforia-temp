@@ -54,6 +54,8 @@ val DescriptionDisabled = Color(0xFF8C8C8C)
 val StreakBackground = Color(0xFF2A2A2D)
 val SecondaryText = Color(0xFFC6C6C6)
 val Orange = Color(0xFFFF9800)
+val AvatarBackground = Color(0xFF2F3034)
+val AppBarBackground = Color(0xFF1C1C1E)
 val SoundscapeColors = listOf(
     Color(0xFFEA6464),
     Color(0xFF64BBEA),

@@ -31,7 +31,7 @@ class ResourceRepository @Inject constructor(
 
     suspend fun syncAll() {
         val aliases = "$CLASS_ALIAS_VOICE_AVATAR,$CLASS_ALIAS_VOICE_MUSIC"
-        val result = api.getResources(classAlias = aliases,)
+        val result = api.getResources(classAlias = aliases)
         result.onSuccess { networkResources ->
             val entities = networkResources.map(NetworkResource::toEntity)
             // Keep database consistent with network

@@ -2,7 +2,6 @@ package digital.euforia.app.ui.player.audio.page
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -15,15 +14,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -40,13 +44,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import digital.euforia.app.R
+import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.model.getLabelRes
 import digital.euforia.app.ui.player.InfoView
+import digital.euforia.app.ui.player.audio.AppBarHeight
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.player.audio.AvatarUi
 import digital.euforia.app.ui.player.audio.PlaybackProgressView
@@ -54,11 +63,12 @@ import digital.euforia.app.ui.player.audio.SoundEffectUi
 import digital.euforia.app.ui.theme.PlayButtonBackground
 import digital.euforia.app.ui.theme.PlayButtonDarkBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.theme.appbarMedium
+import digital.euforia.app.ui.theme.appbarSmall
 import digital.euforia.app.ui.theme.eveningColors
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.HeadphonesInfoView
 import digital.euforia.app.ui.util.widget.ProgressIndicator
-import digital.euforia.app.ui.util.widget.clickableSingle
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.vibe.AnimationType
 import digital.euforia.app.ui.util.widget.vibe.PlayState
@@ -68,8 +78,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun PlayerPage(
     entryPoint: AudioPlayerEntryPoint,
+    timeOfDay: TimeOfDay,
     title: String,
-    progress: Float,
     playState: PlayState,
     selectedSoundIndex: Int,
     avatarPreviewIds: List<Int>,
@@ -77,6 +87,8 @@ fun PlayerPage(
     avatarUi: AvatarUi?,
     avatarsList: List<AvatarUi>,
     soundsEffects: List<SoundEffectUi>,
+    currentTimeMs: Float,
+    durationMs: Float,
     onAvatarClick: () -> Unit,
     onMuteClick: () -> Unit,
     onSoundEffectClick: (Int) -> Unit,
@@ -111,11 +123,36 @@ fun PlayerPage(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val animationType = if (avatarUi != null) {
+            AnimationType.CIRCLE
+        } else {
+            AnimationType.SPHERES
+        }
         PlaybackAnimation(
             state = playState,
-            animationType = AnimationType.SPHERES,
+            animationType = animationType,
             paddingState = animatedPadding
         )
+
+        if (animationType == AnimationType.CIRCLE && avatarUi != null) {
+            Box(
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f).align(Alignment.Center)
+                    .padding(48.dp).clip(CircleShape)
+                    .background(Color.Black)
+            ) {
+                AsyncImage(
+                    modifier = Modifier.fillMaxSize().align(Alignment.Center),
+                    model = avatarUi.imageUrl,
+                    contentDescription = null
+                )
+            }
+        }
+
+        AppBar(
+            timeOfDay = timeOfDay,
+            title = title
+        )
+
         PlayButton(
             playState = playState,
             paddingState = animatedPadding,
@@ -132,7 +169,7 @@ fun PlayerPage(
         }
         Column(
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             SoundsRow(
                 soundsEffects = soundsEffects,
@@ -143,8 +180,8 @@ fun PlayerPage(
                 onClick = onSoundEffectClick
             )
             PlaybackProgressView(
-                currentTime = 0.8f,
-                duration = 1f,
+                currentTime = currentTimeMs,
+                duration = durationMs,
                 colors = eveningColors.reversed(),
                 onSeek = onSeekTo
             )
@@ -239,7 +276,7 @@ fun BoxScope.InfoView(modifier: Modifier = Modifier, isVisible: Boolean) {
 }
 
 @Composable
-fun SoundsRow(
+fun ColumnScope.SoundsRow(
     soundsEffects: List<SoundEffectUi>,
     selectedIndex: Int,
     avatarPreviewUrl: String?,
@@ -247,11 +284,21 @@ fun SoundsRow(
     onMuteClick: () -> Unit,
     onClick: (Int) -> Unit
 ) {
+    if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
+        Text(
+//            modifier = Modifier.padding(bottom = 4.dp),
+            text = soundsEffects[selectedIndex].title,
+            color = White,
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = SemiBold),
+            textAlign = TextAlign.Center,
+        )
+
+    }
     LazyRow(
         modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 30.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp)
     ) {
         item {
             AvatarPreviewItem(
@@ -367,5 +414,49 @@ private fun AvatarPreviewItem(
                 tint = Color.Unspecified
             )
         }
+    }
+}
+
+@Composable
+private fun BoxScope.AppBar(timeOfDay: TimeOfDay, title: String) {
+    Row(
+        modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp)
+            .heightIn(min = AppBarHeight).align(Alignment.TopCenter).fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(modifier = Modifier.size(24.dp))
+        TitleView(
+            timeOfDay = timeOfDay,
+            title = title
+        )
+
+        Icon(
+            modifier = Modifier.size(24.dp),
+            painter = painterResource(id = R.drawable.ic_menu),
+            contentDescription = null,
+            tint = Color.Unspecified
+        )
+    }
+}
+
+@Composable
+private fun RowScope.TitleView(timeOfDay: TimeOfDay, title: String) {
+    Column(
+        modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(timeOfDay.getLabelRes()),
+            color = White,
+            style = appbarMedium,
+        )
+        Text(
+            modifier = Modifier.padding(top = 2.dp),
+            text = title,
+            color = White.copy(alpha = 0.6f),
+            style = appbarSmall,
+        )
     }
 }

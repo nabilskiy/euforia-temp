@@ -17,6 +17,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.White
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.util.Calendar
 import kotlin.math.max
 import kotlin.math.min
@@ -40,7 +43,19 @@ fun PlaybackProgressView(
     onSeek: (Float) -> Unit
 ) {
     val safeDuration = if (duration <= 0f || duration.isNaN()) 1f else duration
-    val progressRaw = currentTime / safeDuration
+
+    // Local slider state to decouple UI from external updates while the user drags
+    val clampedExternal = min(currentTime, safeDuration)
+    val sliderState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(clampedExternal) }
+    val isSeekingState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // Keep local state in sync with external time when not seeking
+    if (!isSeekingState.value) {
+        sliderState.value = clampedExternal
+    }
+
+    val progressRaw = sliderState.value / safeDuration
     val currentProgress = min(1f, max(0f, progressRaw))
 
     Row(
@@ -59,10 +74,21 @@ fun PlaybackProgressView(
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 8.dp)
-//                .height(6.dp)
             ,
-            value = min(currentTime, safeDuration),
-            onValueChange = onSeek,
+            value = sliderState.value,
+            onValueChange = { v ->
+                isSeekingState.value = true
+                sliderState.value = min(v, safeDuration)
+            },
+            onValueChangeFinished = {
+                val target = sliderState.value
+                onSeek(target)
+                // Keep local control for a short grace period to avoid a visual jump
+                scope.launch {
+                    delay(300)
+                    isSeekingState.value = false
+                }
+            },
             valueRange = 0f..safeDuration,
             colors = SliderDefaults.colors(
                 thumbColor = Color.Transparent,

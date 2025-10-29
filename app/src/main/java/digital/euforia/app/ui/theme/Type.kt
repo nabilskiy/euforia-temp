@@ -80,8 +80,8 @@ val Typography = Typography(
     ),
     labelSmall = TextStyle(
         fontFamily = Inter,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 10.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     ),
@@ -127,4 +127,19 @@ val Typography = Typography(
         lineHeight = 40.sp,
         letterSpacing = 0.sp
     )
+)
+
+
+val appbarMedium = TextStyle(
+    fontFamily = Inter,
+    fontSize = 16.sp,
+    fontWeight = FontWeight.SemiBold,
+    lineHeight = 22.sp,
+    letterSpacing = (-0.4).sp
+)
+val appbarSmall = TextStyle(
+    fontFamily = Inter,
+    fontSize = 14.sp,
+    fontWeight = FontWeight.Light,
+    lineHeight = 14.sp
 )

@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import digital.euforia.app.data.util.parseJsonToFlatMap
+import digital.euforia.app.domain.model.onboarding.Gender
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -23,6 +24,7 @@ class AppPreferences(
     private val keyLanguage = stringPreferencesKey("language")
     private val keyName = stringPreferencesKey("name")
     private val keyEmail = stringPreferencesKey("email")
+    private val keyGender = intPreferencesKey("gender")
     private val keyNotificationPermissionGranted =
         booleanPreferencesKey("notification_permission_granted")
     private val keyCompletedDays = intPreferencesKey("completed_days")
@@ -112,6 +114,17 @@ class AppPreferences(
     suspend fun setEmail(email: String) {
         store.edit { preferences ->
             preferences[keyEmail] = email
+        }
+    }
+
+    suspend fun getGender(): Gender {
+        val genderIndex = store.data.firstOrNull()?.get(keyGender) ?: Gender.UNSPECIFIED.ordinal
+        return Gender.entries.toTypedArray().getOrElse(genderIndex) { Gender.UNSPECIFIED }
+    }
+
+    suspend fun setGender(gender: Gender) {
+        store.edit { preferences ->
+            preferences[keyGender] = gender.ordinal
         }
     }
 

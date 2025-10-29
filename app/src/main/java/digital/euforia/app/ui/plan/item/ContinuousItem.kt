@@ -195,10 +195,7 @@ private fun ContinuousDaysProgressBar(
                     Text(
                         maxLines = 1,
                         text = stringResource(step.textRes),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold
-                        ),
+                        style = MaterialTheme.typography.labelSmall,
                         color = markerColor,
                         modifier = Modifier
                             .align(Alignment.BottomEnd)

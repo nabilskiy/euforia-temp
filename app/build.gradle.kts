@@ -161,6 +161,7 @@ dependencies {
     implementation(libs.airbnb.lottie.compose)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
+    implementation(libs.media3.session)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     ksp(libs.hilt.android.compiler)
