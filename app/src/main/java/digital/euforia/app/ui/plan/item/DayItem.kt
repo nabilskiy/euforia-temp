@@ -1,6 +1,11 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package digital.euforia.app.ui.plan.item
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -70,7 +75,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 
-fun LazyListScope.dayItem(
+@Composable
+fun SharedTransitionScope.dayItem(
     days: List<DayUi>,
     completedDays: Int,
     freeDemoDays: Int,
@@ -79,9 +85,10 @@ fun LazyListScope.dayItem(
     selectedDayIndex: Int,
     timeOfDay: TimeOfDay,
     timeOfDayConfig: TimeOfDayConfig,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onDaySelected: (Int) -> Unit,
     onDayTimeItemClick: (DayTimeItemUi) -> Unit
-) = item(key = PlanViewItems.DAYS, contentType = PlanViewItems.DAYS) {
+) {
     val day = days.getOrNull(selectedDayIndex)
 
     Column(modifier = Modifier.timeOfDayBackgroundAnimation(timeOfDay)) {
@@ -120,6 +127,7 @@ fun LazyListScope.dayItem(
                 AccompanimentPagerPage(
                     day = pageDay,
                     timeOfDayConfig = timeOfDayConfig,
+                    animatedVisibilityScope = animatedVisibilityScope,
                     onDayTimeItemClick = onDayTimeItemClick
                 )
             }
@@ -128,20 +136,28 @@ fun LazyListScope.dayItem(
 }
 
 @Composable
-private fun AccompanimentPagerPage(
+private fun SharedTransitionScope.AccompanimentPagerPage(
     day: DayUi,
     timeOfDayConfig: TimeOfDayConfig,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onDayTimeItemClick: (DayTimeItemUi) -> Unit
 ) {
+    val (first, second, third) = day.items
+//    val id = "player"
+    val shared1 = rememberSharedContentState(key = "${first.item.accompanimentId}+${first.item.timeOfDay.name}")
+    val shared2 = rememberSharedContentState(key = "${second.item.accompanimentId}+${second.item.timeOfDay.name}")
+    val shared3 = rememberSharedContentState(key = "${third.item.accompanimentId}+${third.item.timeOfDay.name}")
+
     if (day.items.size == 3) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(260.dp),
             horizontalArrangement = spacedBy(8.dp)
         ) {
             AccompanimentButton(
-                modifier = Modifier.fillMaxHeight().weight(1f),
+                modifier = Modifier.fillMaxHeight().weight(1f)
+                    .sharedElement(shared1, animatedVisibilityScope),
                 accompaniment = day.accompaniment,
-                item = day.items.first(),
+                item = first,
                 timeOfDayConfig = timeOfDayConfig,
                 isCompleted = false,
                 buttonDimensions = AccompanimentButtonDimensions.PRIMARY,
@@ -153,17 +169,19 @@ private fun AccompanimentPagerPage(
                 verticalArrangement = spacedBy(8.dp)
             ) {
                 AccompanimentButton(
-                    modifier = Modifier.fillMaxHeight().weight(1f),
+                    modifier = Modifier.fillMaxHeight().weight(1f)
+                        .sharedElement(shared2, animatedVisibilityScope),
                     accompaniment = day.accompaniment,
-                    item = day.items[1],
+                    item = second,
                     timeOfDayConfig = timeOfDayConfig,
                     isCompleted = false,
                     onClick = onDayTimeItemClick
                 )
                 AccompanimentButton(
-                    modifier = Modifier.fillMaxHeight().weight(1f),
+                    modifier = Modifier.fillMaxHeight().weight(1f)
+                        .sharedElement(shared3, animatedVisibilityScope),
                     accompaniment = day.accompaniment,
-                    item = day.items.last(),
+                    item = third,
                     timeOfDayConfig = timeOfDayConfig,
                     isCompleted = true,
                     onClick = onDayTimeItemClick

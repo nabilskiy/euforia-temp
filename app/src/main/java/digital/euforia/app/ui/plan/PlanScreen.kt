@@ -1,6 +1,11 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package digital.euforia.app.ui.plan
 
 import androidx.annotation.Keep
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,9 +37,10 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
-fun PlanScreen(
+fun SharedTransitionScope.PlanScreen(
     navController: NavHostController,
-    viewModel: PlanViewModel
+    viewModel: PlanViewModel,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
@@ -56,13 +62,14 @@ fun PlanScreen(
         topPrograms = state.topPackages,
         bannerConfig = state.bannerConfig,
         extraPackage = state.extraPackage,
+        animatedVisibilityScope = animatedVisibilityScope,
         onDaySelected = viewModel::onDaySelected,
         onDayTimeItemClick = viewModel::onDayTimeItemClick
     )
 }
 
 @Composable
-private fun PlanContent(
+private fun SharedTransitionScope.PlanContent(
     days: List<DayUi>,
     completedDays: Int,
     selectedDayIndex: Int,
@@ -77,22 +84,26 @@ private fun PlanContent(
     topPrograms: List<RankedPackage>,
     bannerConfig: BannerConfig?,
     extraPackage: ExtraPackage?,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onDaySelected: (Int) -> Unit,
     onDayTimeItemClick: (DayTimeItemUi) -> Unit
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize().background(color = PrimaryBackground)) {
-        dayItem(
-            days = days,
-            completedDays = completedDays,
-            freeDemoDays = freeDemoDays,
-            isPremium = isPremium,
-            isDemo = isDemo,
-            selectedDayIndex = selectedDayIndex,
-            timeOfDay = timeOfDay,
-            timeOfDayConfig = timeOfDayConfig,
-            onDaySelected = onDaySelected,
-            onDayTimeItemClick = onDayTimeItemClick
-        )
+        item(key = PlanViewItems.DAYS, contentType = PlanViewItems.DAYS) {
+            dayItem(
+                days = days,
+                completedDays = completedDays,
+                freeDemoDays = freeDemoDays,
+                isPremium = isPremium,
+                isDemo = isDemo,
+                selectedDayIndex = selectedDayIndex,
+                timeOfDay = timeOfDay,
+                timeOfDayConfig = timeOfDayConfig,
+                animatedVisibilityScope = animatedVisibilityScope,
+                onDaySelected = onDaySelected,
+                onDayTimeItemClick = onDayTimeItemClick
+            )
+        }
         tasksItem(
             isDemo = isDemo,
             tasks = dailyTasks,
@@ -134,6 +145,7 @@ private fun handleSideEffect(sideEffect: PlanSideEffect, navController: NavHostC
                 )
             )
         }
+
         else -> {}
     }
 }

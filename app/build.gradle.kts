@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt.android)
+    // Use the modern Hilt Gradle plugin ID only
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.devtools.ksp)
     alias(libs.plugins.navigation.safeargs)
@@ -110,14 +110,19 @@ android {
 }
 
 dependencies {
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.compose.animation) {
+//        version {
+//            strictly("1.7.0") // або будь-яку 1.7.x/1.8.x, яка відповідає твоєму BOM
+//        }
+    }
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -133,17 +138,11 @@ dependencies {
     implementation(libs.kotlin.stdlib.jdk8)
     implementation(libs.kotlinx.coroutines.play)
     implementation(libs.kotlinx.serialization)
-    implementation(libs.compose.runtime)
-    implementation(libs.compose.runtimeLivedata.ktx)
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.util)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.constraintlayout.compose)
-    implementation(libs.compose.ui.tooling)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.splashscreen)
@@ -152,7 +151,7 @@ dependencies {
     implementation(libs.orbit.compose)
     implementation(libs.accompanist.pager.indicators)
     implementation(libs.accompanist.navigation.animation)
-    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
+    implementation(libs.accompanist.permissions)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.coil.core)
     implementation(libs.coil.compose)
@@ -187,7 +186,8 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.kotest.assertions)
     testImplementation(libs.mock)
-    debugImplementation(libs.ui.tooling)
+    debugImplementation(libs.androidx.ui.tooling)
+//    debugImplementation(libs.ui.tooling)
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)
     implementation(libs.haze)

@@ -61,6 +61,12 @@ class AudioPlayerViewModel @Inject constructor(
         }
     }
 
+    fun getCurrentSoundEffectUi(): SoundEffectUi? {
+        val state = container.stateFlow.value
+        val index = state.selectedSoundEffectIndex
+        return state.soundEffectsList.getOrNull(index)
+    }
+
     private fun getAccompaniment() {
         viewModelScope.launch {
             val accompaniment = getAccompanimentUseCase(accompanimentId) ?: return@launch
@@ -154,7 +160,7 @@ data class AudioPlayerState(
     val selectedAvatar: AvatarUi? = null,
     val avatarsList: List<AvatarUi> = emptyList(),
     val soundEffectsList: List<SoundEffectUi> = emptyList(),
-    val selectedSoundEffectIndex: Int = 0,
+    val selectedSoundEffectIndex: Int = -1,
     val entryPoint: AudioPlayerEntryPoint = AudioPlayerEntryPoint.DAY,
     val timeOfDay: TimeOfDay = TimeOfDay.DAYTIME,
     val gender: Gender = Gender.UNSPECIFIED

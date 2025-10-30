@@ -1,7 +1,10 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package digital.euforia.app.ui.home
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn

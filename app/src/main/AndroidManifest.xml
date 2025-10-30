@@ -31,10 +31,6 @@
 
         <service
             android:name=".service.AudioPlaybackService"
-            android:exported="false" />
-
-        <service
-            android:name=".service.AudioMediaService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback"
             android:enabled="true">

@@ -34,12 +34,10 @@ enum class PlayState {
      * Animation is paused with reduced movement and effects
      */
     PAUSED,
-
     LOADING,
-
     LOADED,
-
-    READY
+    READY,
+    COMPLETED
 }
 
 enum class AnimationType {

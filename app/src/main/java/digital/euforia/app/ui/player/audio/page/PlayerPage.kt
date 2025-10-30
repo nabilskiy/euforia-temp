@@ -1,6 +1,7 @@
 package digital.euforia.app.ui.player.audio.page
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.model.getColors
 import digital.euforia.app.domain.model.getLabelRes
 import digital.euforia.app.ui.player.InfoView
 import digital.euforia.app.ui.player.audio.AppBarHeight
@@ -74,7 +77,10 @@ import digital.euforia.app.ui.util.widget.vibe.AnimationType
 import digital.euforia.app.ui.util.widget.vibe.PlayState
 import digital.euforia.app.ui.util.widget.vibe.PlaybackAnimation
 import kotlinx.coroutines.delay
+import digital.euforia.app.ui.navigation.LocalSharedTransitionScope
+import digital.euforia.app.ui.navigation.LocalAnimatedVisibilityScope
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun PlayerPage(
     entryPoint: AudioPlayerEntryPoint,
@@ -131,7 +137,8 @@ fun PlayerPage(
         PlaybackAnimation(
             state = playState,
             animationType = animationType,
-            paddingState = animatedPadding
+            paddingState = animatedPadding,
+            colors = timeOfDay.getColors()
         )
 
         if (animationType == AnimationType.CIRCLE && avatarUi != null) {
@@ -182,7 +189,7 @@ fun PlayerPage(
             PlaybackProgressView(
                 currentTime = currentTimeMs,
                 duration = durationMs,
-                colors = eveningColors.reversed(),
+                colors = timeOfDay.getColors().reversed(),
                 onSeek = onSeekTo
             )
         }
@@ -191,7 +198,9 @@ fun PlayerPage(
 
 
 @Composable
+@androidx.compose.animation.ExperimentalSharedTransitionApi
 private fun BoxScope.PlayButton(
+    modifier: Modifier = Modifier,
     playState: PlayState,
     paddingState: Dp,
     onPlay: () -> Unit,
@@ -284,6 +293,34 @@ fun ColumnScope.SoundsRow(
     onMuteClick: () -> Unit,
     onClick: (Int) -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+
+    LaunchedEffect(selectedIndex, soundsEffects.size) {
+        if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
+            val targetIndex = selectedIndex + 2 // account for Avatar + Mute items
+
+            // Wait until LazyRow has a non-zero viewport to compute a proper center offset
+            var viewportWidth = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
+            var attempts = 0
+            while (viewportWidth <= 0 && attempts < 5) {
+                delay(16)
+                attempts++
+                viewportWidth = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
+            }
+
+            if (viewportWidth > 0) {
+                // Center selected item within the viewport
+                val itemWidthPx = with(density) { 86.dp.roundToPx() } // item box size in SoundsRow
+                val desiredStartPx = (viewportWidth / 2) - (itemWidthPx / 2)
+                listState.animateScrollToItem(index = targetIndex, scrollOffset = -desiredStartPx)
+            } else {
+                // Fallback: just scroll to the item without centering
+                listState.animateScrollToItem(index = targetIndex)
+            }
+        }
+    }
+
     if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
         Text(
 //            modifier = Modifier.padding(bottom = 4.dp),
@@ -295,6 +332,7 @@ fun ColumnScope.SoundsRow(
 
     }
     LazyRow(
+        state = listState,
         modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

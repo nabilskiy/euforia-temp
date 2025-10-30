@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 29+: Explicitly disable nav bar contrast enforcement and keep nav bar transparent -->
+    <style name="Theme.Euforia" parent="NightAdjusted.Theme.Euforia">
+        <!-- Keep system bars transparent at the theme level -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarDividerColor">@android:color/transparent</item>
+
+        <!-- Disable Android 10+ enforced contrast scrim on the navigation bar -->
+        <item name="android:enforceNavigationBarContrast">false</item>
+
+        <!-- Ensure we do not request dark icons on a transparent (dark) nav bar -->
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
