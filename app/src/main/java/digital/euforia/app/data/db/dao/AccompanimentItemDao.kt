@@ -16,7 +16,7 @@ interface AccompanimentItemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<AccompanimentItem>)
 
-    @Update
+    @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(item: AccompanimentItem)
 
     @Query("SELECT * FROM accompaniment_item WHERE id = :id")

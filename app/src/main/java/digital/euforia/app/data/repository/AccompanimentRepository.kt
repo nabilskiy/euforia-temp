@@ -10,6 +10,7 @@ import digital.euforia.app.data.db.entity.AccompanimentItem
 import digital.euforia.app.data.db.entity.AccompanimentWithItems
 import digital.euforia.app.domain.model.TimeOfDay
 import kotlinx.coroutines.flow.Flow
+import timber.log.Timber
 import javax.inject.Inject
 
 class AccompanimentRepository @Inject constructor(
@@ -24,21 +25,22 @@ class AccompanimentRepository @Inject constructor(
         api.getAccompanimentsPerWeek(demo).onSuccess { networkAccompaniments ->
             val entities = networkAccompaniments.map { it.toEntity() }
             if (entities.isNotEmpty()) {
-                // Keep database consistent with network
-                accompanimentDao.clearAll()
                 val ids = entities.map { it.id }
+                Timber.tag("ACC_SYNC").d("$ids")
                 accompanimentDao.deleteAllExcept(ids)
-                accompanimentDao.insertAll(entities)
+                accompanimentDao.upsertAll(entities)
 
                 // For each accompaniment, ensure it has 3 items (one per TimeOfDay)
                 entities.forEach { accompaniment ->
                     val existingItems = accompanimentItemDao.getAllByAccompaniment(accompaniment.id)
+                    Timber.tag("ACC_SYNC").d("Accompaniment ${accompaniment.id} has items: $existingItems")
                     if (existingItems.isEmpty()) {
                         val items = listOf(
                             AccompanimentItem(accompanimentId = accompaniment.id, timeOfDay = TimeOfDay.MORNING),
                             AccompanimentItem(accompanimentId = accompaniment.id, timeOfDay = TimeOfDay.DAYTIME),
                             AccompanimentItem(accompanimentId = accompaniment.id, timeOfDay = TimeOfDay.EVENING),
                         )
+                        Timber.tag("ACC_SYNC").d("Inserting items for accompaniment ${accompaniment.id}")
                         accompanimentItemDao.insertAll(items)
                     }
                 }
@@ -59,5 +61,14 @@ class AccompanimentRepository @Inject constructor(
 
     suspend fun getAccompanimentById(id: Int): Accompaniment? {
         return accompanimentDao.getById(id)
+    }
+
+    suspend fun getAccompanimentWithItemsById(id: Int): AccompanimentWithItems? {
+        return accompanimentDao.getWithItems(id)
+    }
+
+    // Returns the number of accompaniments for which all related items are completed
+    suspend fun getCompletedAccompanimentsCount(): Flow<Int> {
+        return accompanimentDao.getCompletedAccompanimentsCount()
     }
 }

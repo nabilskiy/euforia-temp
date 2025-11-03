@@ -15,14 +15,9 @@ import androidx.media3.session.MediaController
 import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.OptIn
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.SessionCommand
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
-import kotlinx.coroutines.delay
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -45,10 +39,10 @@ fun SharedTransitionScope.AudioPlayerScreen(
     var showSheet by remember { mutableStateOf(false) }
     var volume by remember { mutableFloatStateOf(0.35f) } // 0f..1f
     val shared =
-        rememberSharedContentState(key = "${state.accompaniment?.id}+${state.timeOfDay.name}")
+        rememberSharedContentState(key = "${state.accompanimentWithItems?.accompaniment?.id}+${state.timeOfDay.name}")
 
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect)
+        handleSideEffect(sideEffect, navController)
     }
 
     val url = viewModel.getMusicUrlForTimeOfDay()
@@ -75,8 +69,8 @@ fun SharedTransitionScope.AudioPlayerScreen(
 
     val (currentMs, durationMs) = rememberPlaybackProgress(controller)
 
-    val sharedKey = state.accompaniment?.let { acc ->
-        "acc_${acc.id}_${state.timeOfDay.name}"
+    val sharedKey = state.accompanimentWithItems?.let { acc ->
+        "acc_${acc.accompaniment.id}_${state.timeOfDay.name}"
     }
 
     val ui = AudioPlayerUiState(
@@ -137,7 +131,8 @@ fun SharedTransitionScope.AudioPlayerScreen(
         },
         onAvatarClick = viewModel::onAvatarSelected,
         navigateAvatars = viewModel::onNavigateToAvatars,
-        navigatePlayer = viewModel::onNavigateToPlayer
+        navigatePlayer = viewModel::onNavigateToPlayer,
+        saveProgress = { viewModel.savePlaybackProgress(currentMs / durationMs) }
     )
 }
 
@@ -164,8 +159,9 @@ fun setSfxVolume(controller: MediaController, vol: Float) {
     controller.sendCustomCommand(cmd, args)
 }
 
-private fun handleSideEffect(sideEffect: AudioPlayerSideEffect) {
+private fun handleSideEffect(sideEffect: AudioPlayerSideEffect, navController: NavHostController) {
     when (sideEffect) {
+        AudioPlayerSideEffect.NavigateBack -> navController.popBackStack()
         else -> {}
     }
 }

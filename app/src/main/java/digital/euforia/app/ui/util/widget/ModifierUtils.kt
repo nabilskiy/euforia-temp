@@ -39,3 +39,6 @@ fun Modifier.fadeTop(height: Dp = 30.dp): Modifier = this
             blendMode = BlendMode.DstIn
         )
     }
+
+inline fun Modifier.ifTrue(condition: Boolean, block: Modifier.() -> Modifier): Modifier =
+    if (condition) this.block() else this

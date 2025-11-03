@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,10 +61,16 @@ fun SharedTransitionScope.AudioPlayerScaffold(
     onSoundEffectClick: (Int) -> Unit,
     onAvatarClick: (AvatarUi?) -> Unit,
     navigateAvatars: () -> Unit,
-    navigatePlayer: () -> Unit
+    navigatePlayer: () -> Unit,
+    saveProgress: () -> Unit
 ) {
     BackHandler {
-        if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) navigatePlayer() else onBack()
+        if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) {
+            navigatePlayer()
+        } else {
+            saveProgress()
+//            onBack()
+        }
     }
 
     val pagerState = rememberPagerState(initialPage = ui.currentPageIndex) { ui.pages.size }
@@ -81,7 +88,13 @@ fun SharedTransitionScope.AudioPlayerScaffold(
         isVisible = true
     }
 
-    Box(modifier = modifier.fillMaxSize().background(brush = Brush.linearGradient(ui.timeOfDay.getColors().map { it.copy(alpha = 0.4f) }))) {
+    Box(
+        modifier = modifier.fillMaxSize().background(
+            brush = Brush.linearGradient(
+                ui.timeOfDay.getColors().map { it.copy(alpha = 0.4f) }),
+            shape = RoundedCornerShape(20.dp)
+        )
+    ) {
         AnimatedVisibility(
             visible = isVisible,
             enter = fadeIn(animationSpec = tween(durationMillis = 2000)),
@@ -122,7 +135,7 @@ fun SharedTransitionScope.AudioPlayerScaffold(
                 }
             }
             AudioPlayerAppBar(ui.currentPageIndex, onBackClick = {
-                if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) navigatePlayer() else onBack()
+                if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) navigatePlayer() else saveProgress()
             })
         }
 
@@ -141,7 +154,7 @@ private fun AudioPlayerAppBar(currentPageIndex: Int, onBackClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .statusBarsPadding()
-                .heightIn(min = AppBarHeight)
+                .heightIn(min = AppBarHeightLarge)
         ) {
             when (target) {
                 0 -> {

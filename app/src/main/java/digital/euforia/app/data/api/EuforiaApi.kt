@@ -34,6 +34,7 @@ interface EuforiaApi {
         @Query("demo") demo: Boolean = true
     ): ResultWrapper<NetworkAccompaniment>
 
+    @GET("settings")
     suspend fun settings(): ResultWrapper<NetworkSettings>
 
     @GET("packages")

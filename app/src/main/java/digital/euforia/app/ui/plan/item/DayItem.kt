@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -51,11 +50,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.Accompaniment
+import digital.euforia.app.data.db.entity.getCompletedPhrases
+import digital.euforia.app.data.db.entity.getCurrentPhrase
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.ui.plan.DayTimeItemUi
 import digital.euforia.app.ui.plan.DayUi
-import digital.euforia.app.ui.plan.PlanViewItems
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.White
@@ -72,6 +72,7 @@ import digital.euforia.app.ui.util.widget.AccompanimentButtonDimensions
 import digital.euforia.app.ui.util.widget.MaxTextView
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -142,11 +143,15 @@ private fun SharedTransitionScope.AccompanimentPagerPage(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onDayTimeItemClick: (DayTimeItemUi) -> Unit
 ) {
+    if (day.items.isEmpty()) return
+
     val (first, second, third) = day.items
-//    val id = "player"
-    val shared1 = rememberSharedContentState(key = "${first.item.accompanimentId}+${first.item.timeOfDay.name}")
-    val shared2 = rememberSharedContentState(key = "${second.item.accompanimentId}+${second.item.timeOfDay.name}")
-    val shared3 = rememberSharedContentState(key = "${third.item.accompanimentId}+${third.item.timeOfDay.name}")
+    val shared1 =
+        rememberSharedContentState(key = "${first.item.accompanimentId}+${first.item.timeOfDay.name}")
+    val shared2 =
+        rememberSharedContentState(key = "${second.item.accompanimentId}+${second.item.timeOfDay.name}")
+    val shared3 =
+        rememberSharedContentState(key = "${third.item.accompanimentId}+${third.item.timeOfDay.name}")
 
     if (day.items.size == 3) {
         Row(
@@ -159,7 +164,6 @@ private fun SharedTransitionScope.AccompanimentPagerPage(
                 accompaniment = day.accompaniment,
                 item = first,
                 timeOfDayConfig = timeOfDayConfig,
-                isCompleted = false,
                 buttonDimensions = AccompanimentButtonDimensions.PRIMARY,
                 onClick = onDayTimeItemClick
             )
@@ -174,7 +178,6 @@ private fun SharedTransitionScope.AccompanimentPagerPage(
                     accompaniment = day.accompaniment,
                     item = second,
                     timeOfDayConfig = timeOfDayConfig,
-                    isCompleted = false,
                     onClick = onDayTimeItemClick
                 )
                 AccompanimentButton(
@@ -183,7 +186,6 @@ private fun SharedTransitionScope.AccompanimentPagerPage(
                     accompaniment = day.accompaniment,
                     item = third,
                     timeOfDayConfig = timeOfDayConfig,
-                    isCompleted = true,
                     onClick = onDayTimeItemClick
                 )
             }
@@ -196,7 +198,6 @@ private fun AccompanimentButton(
     modifier: Modifier,
     accompaniment: Accompaniment,
     item: DayTimeItemUi,
-    isCompleted: Boolean,
     timeOfDayConfig: TimeOfDayConfig,
     isLocked: Boolean = false,
     isToday: Boolean = false,
@@ -226,12 +227,10 @@ private fun AccompanimentButton(
         }
 
         TimeOfDayTitleView(
-            title = accompaniment.getTitleByTimeOfDay(item),
-            timeOfDay = item.item.timeOfDay,
+            accompaniment = accompaniment,
+            item = item,
+            dayTimeItem = item,
             buttonDimensions = buttonDimensions,
-            isCompleted = isCompleted,
-            completedItems = 0,
-            totalItems = 0,
         )
     }
 }
@@ -330,13 +329,13 @@ private fun LockedItemBackground() {
 
 @Composable
 private fun BoxScope.TimeOfDayTitleView(
-    title: String,
-    timeOfDay: TimeOfDay,
+    accompaniment: Accompaniment,
+    item: DayTimeItemUi,
+    dayTimeItem: DayTimeItemUi,
     buttonDimensions: AccompanimentButtonDimensions,
-    isCompleted: Boolean,
-    completedItems: Int,
-    totalItems: Int,
 ) {
+    val title = accompaniment.getTitleByTimeOfDay(item)
+
     Column(
         modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
         verticalArrangement = spacedBy(12.dp),
@@ -345,20 +344,24 @@ private fun BoxScope.TimeOfDayTitleView(
         Row(
             verticalAlignment = CenterVertically
         ) {
-            val completedText = if (completedItems > 0 && totalItems > 0) {
-                " $completedItems/$totalItems"
-            } else {
+            val completedCount = if (dayTimeItem.item.timeOfDay != TimeOfDay.DAYTIME/* || dayTimeItem.state*/) {
                 ""
+            } else {
+                val completed = accompaniment.getCompletedPhrases(item.item).size + 1
+                val total = accompaniment.phrases.size
+                if (completed > total) "" else " $completed/$total"
             }
 
-            Icon(
-                modifier = Modifier.size(20.dp),
-                painter = painterResource(R.drawable.ic_checkbox_full),
-                contentDescription = null,
-                tint = White.copy(alpha = 0.2f)
-            )
+            if (dayTimeItem.state == DayTimeItemUi.State.COMPLETED) {
+                Icon(
+                    modifier = Modifier.size(20.dp),
+                    painter = painterResource(R.drawable.ic_checkbox_full),
+                    contentDescription = null,
+                    tint = White.copy(alpha = 0.2f)
+                )
+            }
             Text(
-                text = "${stringResource(id = timeOfDay.getTitleRes()).uppercase()}$completedText",
+                text = "${stringResource(id = dayTimeItem.item.timeOfDay.getTitleRes()).uppercase()}$completedCount",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = White.copy(alpha = 0.2f)
             )
@@ -515,31 +518,30 @@ fun subscribeToPagerUpdates(
     }
 }
 
+@Composable
 private fun Accompaniment.getTitleByTimeOfDay(
     item: DayTimeItemUi
 ): String {
     return when (item.item.timeOfDay) {
         TimeOfDay.MORNING -> morningTitle
         TimeOfDay.DAYTIME -> {
-            val phrasesList = phrases
-            if (phrasesList.isEmpty()) return daytimeTitle
-
-            val viewedId = item.item.viewedPhraseId
-            if (viewedId == null) {
-                return phrasesList.first().daytimeTitle
-            }
-
-            val idx = phrasesList.indexOfFirst { it.id == viewedId }
-            return if (idx == -1) {
-                // If the viewed ID is not found, default to the first phrase title
-                phrasesList.first().daytimeTitle
-            } else if (idx < phrasesList.lastIndex) {
-                // Return the next phrase's daytime title
-                phrasesList[idx + 1].daytimeTitle
-            } else {
-                // If the current is the last, return the last one's title
-                phrasesList.last().daytimeTitle
-            }
+            getCurrentPhrase(item.item)?.daytimeTitle
+                ?: stringResource(R.string.vibes_daytime_completed)
+//
+////            val phrasesList = phrases
+//            val phrasesIds = phrases.map { it.id }
+//            if (phrases.isEmpty()) return daytimeTitle
+//
+//            val viewedId = item.item.viewedPhraseId
+//            if (viewedId == null) {
+//                return phrases.first().daytimeTitle
+//            }
+//
+//            val phrase = phrases.firstOrNull { it != phrasesIds }
+////                phrases.indexOfFirst { it.id == viewedId }
+//            return phrase?.// Return the next phrase's daytime title
+//            daytimeTitle ?: // If the viewed ID is not found, default to the first phrase title
+//            phrases.first().daytimeTitle
         }
 
         TimeOfDay.EVENING -> eveningTitle

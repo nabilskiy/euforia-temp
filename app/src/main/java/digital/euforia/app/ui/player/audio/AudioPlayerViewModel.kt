@@ -1,25 +1,32 @@
 package digital.euforia.app.ui.player.audio
 
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.annotation.Keep
 import androidx.compose.runtime.Immutable
+import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.R
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
-import digital.euforia.app.data.db.entity.Accompaniment
+import digital.euforia.app.data.db.entity.AccompanimentWithItems
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_VOICE_AVATAR
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_VOICE_MUSIC
 import digital.euforia.app.data.store.AppPreferences
 import javax.inject.Inject
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.model.config.DemoUnlockDayConfig
 import digital.euforia.app.domain.model.onboarding.Gender
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentUseCase
+import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentWithItemsUseCase
+import digital.euforia.app.domain.usecase.accompaniment.SaveAccompanimentProgressUseCase
+import digital.euforia.app.domain.usecase.accompaniment.UpdateAccompanimentItemUseCase
 import digital.euforia.app.domain.usecase.resources.GetResourcesUseCase
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.vibe.PlayState
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -29,7 +36,10 @@ class AudioPlayerViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val configFetcher: EuforiaRemoteConfigFetcher,
     private val getAccompanimentUseCase: GetAccompanimentUseCase,
+    private val getAccompanimentWithItemsUseCase: GetAccompanimentWithItemsUseCase,
     private val getResourcesUseCase: GetResourcesUseCase,
+    private val updateAccompanimentItemUseCase: UpdateAccompanimentItemUseCase,
+    private val saveAccompanimentProgressUseCase: SaveAccompanimentProgressUseCase,
     private val appPreferences: AppPreferences
 ) : ViewModel(), ContainerHost<AudioPlayerState, AudioPlayerSideEffect> {
 
@@ -45,20 +55,47 @@ class AudioPlayerViewModel @Inject constructor(
         }
     )
 
-    fun getMusicUrlForTimeOfDay(): String? {
+    fun getMusicUrlForTimeOfDay(): Uri? {
         val state = container.stateFlow.value
-        val acc = state.accompaniment ?: return null
+        val accompanimentWithItems = state.accompanimentWithItems ?: return null
+        val accompaniment = accompanimentWithItems.accompaniment
         val gender = state.gender
-        return when (timeOfDay) {
+        val isMale = gender == Gender.MALE
+
+        val url = when (timeOfDay) {
             TimeOfDay.MORNING -> {
-                if (gender == Gender.MALE) acc.morningFemaleAudioUrl else acc.morningMaleAudioUrl
+                if (isMale) accompaniment.morningFemaleAudioUrl else accompaniment.morningMaleAudioUrl
             }
 
-            TimeOfDay.DAYTIME -> acc.daytimeMusicUrl
+            TimeOfDay.DAYTIME -> {
+                val item = accompanimentWithItems.items.first { it.timeOfDay == TimeOfDay.DAYTIME }
+                val nextPhrase = accompaniment.phrases.firstOrNull { it.id !in item.viewedPhraseId }
+
+                nextPhrase?.let {
+                    if (isMale) it.femaleAudioUrl else it.maleAudioUrl
+                } ?: finishedPhraseFallback(isMale)
+            }
+
             TimeOfDay.EVENING -> {
-                if (gender == Gender.MALE) acc.eveningFemaleAudioUrl else acc.eveningMaleAudioUrl
+                if (isMale) accompaniment.eveningFemaleAudioUrl else accompaniment.eveningMaleAudioUrl
             }
         }
+
+        return url?.toUri()
+    }
+
+    private fun finishedPhraseFallback(isMale: Boolean): String {
+        val resId = if (isMale) {
+            R.raw.voice_finished_phrase_female
+        } else {
+            R.raw.voice_finished_phrase_male
+        }
+
+        return Uri.Builder()
+            .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+            .path(resId.toString())
+            .build()
+            .toString()
     }
 
     fun getCurrentSoundEffectUi(): SoundEffectUi? {
@@ -69,7 +106,9 @@ class AudioPlayerViewModel @Inject constructor(
 
     private fun getAccompaniment() {
         viewModelScope.launch {
-            val accompaniment = getAccompanimentUseCase(accompanimentId) ?: return@launch
+            val accompanimentWithItems =
+                getAccompanimentWithItemsUseCase(accompanimentId) ?: return@launch
+            val accompaniment = accompanimentWithItems.accompaniment
             val title = when (timeOfDay) {
                 TimeOfDay.MORNING -> accompaniment.morningTitle
                 TimeOfDay.DAYTIME -> accompaniment.daytimeTitle
@@ -84,16 +123,18 @@ class AudioPlayerViewModel @Inject constructor(
                 getResourcesUseCase(CLASS_ALIAS_VOICE_MUSIC).map { it.toSoundEffectUi() }
             val avatars = getResourcesUseCase(CLASS_ALIAS_VOICE_AVATAR).map { it.toAvatarUi() }
             val avatarPreviewIds = configFetcher.getVoiceAvatarPreviewsIds()
+            val dayUnlockConfig = configFetcher.getDemoUnlockDayConfig()
             val gender = appPreferences.getGender()
             reduceState {
                 copy(
-                    accompaniment = accompaniment,
+                    accompanimentWithItems = accompanimentWithItems,
                     title = title,
                     audioUrl = audioUrl,
                     avatarsList = avatars,
                     avatarPreviewIds = avatarPreviewIds,
                     soundEffectsList = soundEffects,
-                    gender = gender
+                    gender = gender,
+                    unlockDayConfig = dayUnlockConfig
                 )
             }
         }
@@ -141,6 +182,24 @@ class AudioPlayerViewModel @Inject constructor(
             }
         }
     }
+
+    fun savePlaybackProgress(progress: Float) {
+        intent {
+
+            viewModelScope.async {
+                val state = container.stateFlow.value
+                val accompanimentWithItems = state.accompanimentWithItems ?: return@async
+                saveAccompanimentProgressUseCase.invoke(
+                    accompanimentWithItems = accompanimentWithItems,
+                    playbackProgress = progress,
+                    timeOfDay = timeOfDay
+                )
+            }.await()
+
+            postSideEffect(AudioPlayerSideEffect.NavigateBack)
+        }
+        //nav back sideeffect
+    }
 }
 
 sealed class PlayerPage() {
@@ -150,7 +209,7 @@ sealed class PlayerPage() {
 
 data class AudioPlayerState(
     val playState: PlayState = PlayState.LOADING,
-    val accompaniment: Accompaniment? = null,
+    val accompanimentWithItems: AccompanimentWithItems? = null,
     val title: String? = null,
     val audioUrl: String? = null,
     val pages: List<PlayerPage> = listOf(PlayerPage.Vibes, PlayerPage.Avatars),
@@ -163,7 +222,8 @@ data class AudioPlayerState(
     val selectedSoundEffectIndex: Int = -1,
     val entryPoint: AudioPlayerEntryPoint = AudioPlayerEntryPoint.DAY,
     val timeOfDay: TimeOfDay = TimeOfDay.DAYTIME,
-    val gender: Gender = Gender.UNSPECIFIED
+    val gender: Gender = Gender.UNSPECIFIED,
+    val unlockDayConfig: DemoUnlockDayConfig? = null
 )
 
 @Immutable
@@ -186,4 +246,6 @@ data class SoundEffectUi(
 @Keep
 enum class AudioPlayerEntryPoint { ONBOARDING, DAY }
 
-sealed class AudioPlayerSideEffect {}
+sealed class AudioPlayerSideEffect {
+    object NavigateBack : AudioPlayerSideEffect()
+}

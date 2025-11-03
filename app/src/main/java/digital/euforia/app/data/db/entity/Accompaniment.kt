@@ -65,3 +65,17 @@ data class Accompaniment(
 
     @ColumnInfo(name = "published_at") val publishedAt: Long,
 )
+
+fun Accompaniment.getCurrentPhrase(accompanimentItem: AccompanimentItem): Phrase? {
+    val viewedPhraseIds = accompanimentItem.viewedPhraseId.toSet()
+    return phrases.firstOrNull { phrase ->
+        phrase.id !in viewedPhraseIds
+    }
+}
+
+fun Accompaniment.getCompletedPhrases(accompanimentItem: AccompanimentItem): List<Phrase> {
+    val viewedPhraseIds = accompanimentItem.viewedPhraseId.toSet()
+    return phrases.filter { phrase ->
+        phrase.id in viewedPhraseIds
+    }
+}

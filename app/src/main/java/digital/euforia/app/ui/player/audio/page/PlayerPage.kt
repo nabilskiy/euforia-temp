@@ -58,7 +58,7 @@ import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.getColors
 import digital.euforia.app.domain.model.getLabelRes
 import digital.euforia.app.ui.player.InfoView
-import digital.euforia.app.ui.player.audio.AppBarHeight
+import digital.euforia.app.ui.player.audio.AppBarHeightLarge
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.player.audio.AvatarUi
 import digital.euforia.app.ui.player.audio.PlaybackProgressView
@@ -68,7 +68,6 @@ import digital.euforia.app.ui.theme.PlayButtonDarkBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.theme.appbarSmall
-import digital.euforia.app.ui.theme.eveningColors
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.HeadphonesInfoView
 import digital.euforia.app.ui.util.widget.ProgressIndicator
@@ -77,8 +76,6 @@ import digital.euforia.app.ui.util.widget.vibe.AnimationType
 import digital.euforia.app.ui.util.widget.vibe.PlayState
 import digital.euforia.app.ui.util.widget.vibe.PlaybackAnimation
 import kotlinx.coroutines.delay
-import digital.euforia.app.ui.navigation.LocalSharedTransitionScope
-import digital.euforia.app.ui.navigation.LocalAnimatedVisibilityScope
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -459,7 +456,7 @@ private fun AvatarPreviewItem(
 private fun BoxScope.AppBar(timeOfDay: TimeOfDay, title: String) {
     Row(
         modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp)
-            .heightIn(min = AppBarHeight).align(Alignment.TopCenter).fillMaxWidth(),
+            .heightIn(min = AppBarHeightLarge).align(Alignment.TopCenter).fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

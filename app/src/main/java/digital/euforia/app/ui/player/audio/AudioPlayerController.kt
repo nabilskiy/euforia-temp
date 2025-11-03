@@ -3,6 +3,7 @@
 package digital.euforia.app.ui.player.audio
 
 import android.content.ComponentName
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,7 +20,7 @@ import digital.euforia.app.service.AudioPlaybackService
 
 @Composable
 fun rememberMediaController(
-    timeOfDayUrl: String?,
+    timeOfDayUrl: Uri?,
     onIsPlayingChanged: (Boolean) -> Unit = {},
     onEnded: () -> Unit = {}
 ): MediaController? {
@@ -31,7 +32,7 @@ fun rememberMediaController(
     val updatedOnEnded = rememberUpdatedState(newValue = onEnded)
 
     LaunchedEffect(timeOfDayUrl) {
-        if (!timeOfDayUrl.isNullOrBlank() && controllerState.value == null) {
+        if (!timeOfDayUrl?.path.isNullOrBlank() && controllerState.value == null) {
             val token = SessionToken(context, ComponentName(context, AudioPlaybackService::class.java))
             val future = MediaController.Builder(context, token).buildAsync()
             future.addListener({

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "49e248f4fdc8384d435f1bfbe1cd6f0b",
+    "identityHash": "b1ddd2bbd3113dd045fbac3db97f4525",
     "entities": [
       {
         "tableName": "SampleEntity",
@@ -579,7 +579,7 @@
       },
       {
         "tableName": "accompaniment_item",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `is_completed` INTEGER NOT NULL, `time_of_day` TEXT NOT NULL, `accompaniment_id` INTEGER NOT NULL, `view_count` INTEGER NOT NULL, `viewed_phrase_id` INTEGER, `viewed_at` INTEGER, `is_rated` INTEGER NOT NULL, `rating` INTEGER, `playing_time` INTEGER, `playing_duration` INTEGER, `total_playing_duration` INTEGER, FOREIGN KEY(`viewed_phrase_id`) REFERENCES `phrase`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`accompaniment_id`) REFERENCES `accompaniment`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `is_completed` INTEGER NOT NULL, `time_of_day` TEXT NOT NULL, `accompaniment_id` INTEGER NOT NULL, `view_count` INTEGER NOT NULL, `viewed_phrase_id` TEXT NOT NULL, `viewed_at` INTEGER, `is_rated` INTEGER NOT NULL, `rating` INTEGER, `playing_time` INTEGER, `playing_duration` INTEGER, `total_playing_duration` INTEGER, FOREIGN KEY(`accompaniment_id`) REFERENCES `accompaniment`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -614,7 +614,8 @@
           {
             "fieldPath": "viewedPhraseId",
             "columnName": "viewed_phrase_id",
-            "affinity": "INTEGER"
+            "affinity": "TEXT",
+            "notNull": true
           },
           {
             "fieldPath": "viewedAt",
@@ -675,17 +676,6 @@
           }
         ],
         "foreignKeys": [
-          {
-            "table": "phrase",
-            "onDelete": "SET NULL",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "viewed_phrase_id"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          },
           {
             "table": "accompaniment",
             "onDelete": "CASCADE",
@@ -1786,7 +1776,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '49e248f4fdc8384d435f1bfbe1cd6f0b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b1ddd2bbd3113dd045fbac3db97f4525')"
     ]
   }
 }

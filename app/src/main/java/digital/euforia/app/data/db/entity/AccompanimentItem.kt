@@ -15,13 +15,6 @@ import digital.euforia.app.domain.model.TimeOfDay
     tableName = "accompaniment_item",
     foreignKeys = [
         ForeignKey(
-            entity = Phrase::class,
-            parentColumns = ["id"],
-            childColumns = ["viewed_phrase_id"],
-            onDelete = ForeignKey.SET_NULL,
-            onUpdate = ForeignKey.NO_ACTION
-        ),
-        ForeignKey(
             entity = Accompaniment::class,
             parentColumns = ["id"],
             childColumns = ["accompaniment_id"],
@@ -42,7 +35,7 @@ data class AccompanimentItem(
 //    @ColumnInfo(name = "title") val title: String,
 
     @ColumnInfo(name = "view_count") val viewCount: Int = 0,
-    @ColumnInfo(name = "viewed_phrase_id") val viewedPhraseId: Int? = null,
+    @ColumnInfo(name = "viewed_phrase_id") val viewedPhraseId: List<Int> = emptyList(),
     @ColumnInfo(name = "viewed_at") val viewedAt: Long? = null,
 
     @ColumnInfo(name = "is_rated") val isRated: Boolean = false,

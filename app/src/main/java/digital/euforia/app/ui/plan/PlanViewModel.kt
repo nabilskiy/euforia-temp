@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.AccompanimentItem
+import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.data.util.combine
@@ -46,7 +47,8 @@ class PlanViewModel @Inject constructor(
     private val getTranslationUseCase: GetTranslationUseCase,
     private val getBannerConfigUseCase: GetBannerConfigUseCase,
     private val computeContinuousDaysUseCase: ComputeContinuousDaysUseCase,
-    private val config: EuforiaRemoteConfigFetcher
+    private val config: EuforiaRemoteConfigFetcher,
+    private val accompanimentRepository: AccompanimentRepository,
 ) : ViewModel(), ContainerHost<PlanState, PlanSideEffect> {
     override val container = container<PlanState, PlanSideEffect>(
         initialState = PlanState(),
@@ -93,7 +95,8 @@ class PlanViewModel @Inject constructor(
 
     private fun observeStates() {
         viewModelScope.launch {
-            val completedDaysFlow = appPreferences.getCompletedDaysFlow()
+            val completedDaysFlow = accompanimentRepository.getCompletedAccompanimentsCount()
+//            val completedDaysFlow = appPreferences.getCompletedDaysFlow()
             val completedDailyTasksFlow = appPreferences.getCompletedDailyTasksFlow()
             val isPremiumFlow = profilePreferences.getIsPremiumFlow()
             val isDemoFlow = profilePreferences.getIsDemoFlow()
@@ -130,6 +133,7 @@ class PlanViewModel @Inject constructor(
                     )
                 }
                 state.copy(
+                    selectedDayIndex = completedDays,
                     completedDays = completedDays,
                     isPremium = isPremium,
                     isDemo = isDemo,

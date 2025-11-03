@@ -5,6 +5,7 @@ import com.squareup.moshi.Types
 import digital.euforia.app.data.model.config.NetworkAppSettingsConfig
 import digital.euforia.app.domain.model.config.AppSettingsConfig
 import digital.euforia.app.domain.model.config.BannerConfig
+import digital.euforia.app.domain.model.config.DemoUnlockDayConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
 import digital.euforia.app.domain.model.plan.TodayPresentType
@@ -99,6 +100,14 @@ class EuforiaRemoteConfigFetcher(
             ?: emptyList()
     }
 
+    fun getDemoUnlockDayConfig() : DemoUnlockDayConfig {
+        return getConfig(
+            key = KEY_VIBES_DEMO_UNLOCK_DAY_CONFIG,
+            moshiClazz = NetworkDemoUnlockDayConfig::class.java,
+            map = { it.toDemoUnlockDayConfig() }
+        ).dataOrNull ?: DemoUnlockDayConfig()
+    }
+
     companion object {
         private const val KEY_APP_SETTINGS = "app_settings"
         private const val KEY_ALLOWED_LANGUAGES = "allow_languages"
@@ -118,5 +127,6 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_STRINGS = "strings"
         private const val KEY_EXTRA_PACKAGE_ID = "extra_package_id"
         private const val KEY_VOICE_AVATAR_PREVIEWS_ID = "voice_avatar_previews_ids"
+        private const val KEY_VIBES_DEMO_UNLOCK_DAY_CONFIG = "vibes_demo_unlock_day_config"
     }
 }

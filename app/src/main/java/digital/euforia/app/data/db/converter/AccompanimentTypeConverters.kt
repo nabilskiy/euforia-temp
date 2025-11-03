@@ -11,4 +11,19 @@ class AccompanimentTypeConverters {
     fun toTimeOfDay(value: String): TimeOfDay {
         return TimeOfDay.valueOf(value)
     }
+
+    @TypeConverter
+    fun fromIntList(list: List<Int>?): String? {
+        return list?.joinToString(",")
+    }
+
+    @TypeConverter
+    fun toIntList(value: String?): List<Int>? {
+        if (value.isNullOrEmpty()) return emptyList()
+        return value.split(',')
+            .filter { it.isNotEmpty() }
+            .mapNotNull { part ->
+                part.toIntOrNull()
+            }
+    }
 }
