@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import digital.euforia.app.R
 import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.onboarding.Gender
 import digital.euforia.app.domain.model.onboarding.Goal
 import digital.euforia.app.domain.model.onboarding.Interest
@@ -33,6 +35,7 @@ import javax.inject.Inject
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     val appPreferences: AppPreferences,
+    val profilePreferences: ProfilePreferences,
     val getOnboardingPagesUseCase: GetOnboardingPagesUseCase,
     val getLanguageOptionsUseCase: GetLanguageOptionsUseCase,
     val getGoalsUseCase: GetGoalsUseCase,
@@ -103,10 +106,8 @@ class OnboardingViewModel @Inject constructor(
         isNextPageAllowed(
             onAllowed = {
                 intent {
-//        val currentState = container.stateFlow.value
                     val nextPagePosition =
                         if (!skipPage) state.currentPage.position + 1 else state.currentPage.position + 2
-//            val nextPagePosition = state.currentPage.position + 1
 
                     if (nextPagePosition < state.pages.size) {
                         val newCurrentPage = state.currentPage.copy(
@@ -120,9 +121,13 @@ class OnboardingViewModel @Inject constructor(
                         }
                         applyNextButtonVisibility(newCurrentPage)
                         reduce { state.copy(currentPage = newCurrentPage) }
-//            updateCurrentPage(newCurrentPage)
                     } else {
-//            navigateToHome()
+                        // Onboarding finished
+                        profilePreferences.setName(state.name.orEmpty())
+                        profilePreferences.setEmail(state.email.orEmpty())
+                        profilePreferences.setGender(state.selectedGender)
+                        appPreferences.setOnboardingCompleted(true)
+                        postSideEffect(OnboardingSideEffect.NavigateAudioPlayer())
                     }
                 }
             },
@@ -361,6 +366,10 @@ data class SamplePlaybackState(
 sealed class OnboardingSideEffect {
     data object NavigateHome : OnboardingSideEffect()
     data object NavigatePaywall : OnboardingSideEffect()
+    data class NavigateAudioPlayer(
+        val accompanimentId: Int = 67,
+        val timeOfDay: TimeOfDay = TimeOfDay.EVENING
+    ) : OnboardingSideEffect()
 }
 
 private val audioResList: List<Int> = listOf(

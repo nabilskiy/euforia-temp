@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.player.audio.page
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
@@ -9,6 +10,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -32,9 +35,17 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DefaultTooltipCaretShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,19 +56,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import coil.compose.AsyncImage
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.getColors
 import digital.euforia.app.domain.model.getLabelRes
-import digital.euforia.app.ui.player.InfoView
 import digital.euforia.app.ui.player.audio.AppBarHeightLarge
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.player.audio.AvatarUi
@@ -70,7 +83,10 @@ import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.theme.appbarSmall
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.HeadphonesInfoView
+import digital.euforia.app.ui.util.widget.MenuItem
+import digital.euforia.app.ui.util.widget.OptionsMenu
 import digital.euforia.app.ui.util.widget.ProgressIndicator
+import digital.euforia.app.ui.util.widget.TriangleTooltipBubble
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.vibe.AnimationType
 import digital.euforia.app.ui.util.widget.vibe.PlayState
@@ -97,6 +113,76 @@ fun PlayerPage(
     onSoundEffectClick: (Int) -> Unit,
     onPause: () -> Unit,
     onPlay: () -> Unit,
+    onSeekTo: (Float) -> Unit,
+    onListenLaterClick: () -> Unit
+) {
+    when (entryPoint) {
+        AudioPlayerEntryPoint.DAY -> {
+            DefaultPlayerOverlay(
+                playState = playState,
+                avatarPreviewIds = avatarPreviewIds,
+                avatarsList = avatarsList,
+                avatarUi = avatarUi,
+                timeOfDay = timeOfDay,
+                title = title,
+                onPause = onPause,
+                onPlay = onPlay,
+                entryPoint = entryPoint,
+                soundsEffects = soundsEffects,
+                selectedSoundIndex = selectedSoundIndex,
+                onAvatarClick = onAvatarClick,
+                onMuteClick = onMuteClick,
+                onSoundEffectClick = onSoundEffectClick,
+                currentTimeMs = currentTimeMs,
+                durationMs = durationMs,
+                onSeekTo = onSeekTo
+            )
+        }
+
+        AudioPlayerEntryPoint.ONBOARDING -> {
+            OnboardingPlayerOverlay(
+                playState = playState,
+                avatarPreviewIds = avatarPreviewIds,
+                avatarsList = avatarsList,
+                avatarUi = avatarUi,
+                timeOfDay = timeOfDay,
+                title = title,
+                onPause = onPause,
+                onPlay = onPlay,
+                entryPoint = entryPoint,
+                soundsEffects = soundsEffects,
+                selectedSoundIndex = selectedSoundIndex,
+                onAvatarClick = onAvatarClick,
+                onMuteClick = onMuteClick,
+                onSoundEffectClick = onSoundEffectClick,
+                currentTimeMs = currentTimeMs,
+                durationMs = durationMs,
+                onSeekTo = onSeekTo,
+                onListenLaterClick = onListenLaterClick
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalSharedTransitionApi::class)
+private fun DefaultPlayerOverlay(
+    playState: PlayState,
+    avatarPreviewIds: List<Int>,
+    avatarsList: List<AvatarUi>,
+    avatarUi: AvatarUi?,
+    timeOfDay: TimeOfDay,
+    title: String,
+    onPause: () -> Unit,
+    onPlay: () -> Unit,
+    entryPoint: AudioPlayerEntryPoint,
+    soundsEffects: List<SoundEffectUi>,
+    selectedSoundIndex: Int,
+    onAvatarClick: () -> Unit,
+    onMuteClick: () -> Unit,
+    onSoundEffectClick: (Int) -> Unit,
+    currentTimeMs: Float,
+    durationMs: Float,
     onSeekTo: (Float) -> Unit
 ) {
     val animatedPadding by animateDpAsState(
@@ -193,6 +279,160 @@ fun PlayerPage(
     }
 }
 
+@Composable
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun OnboardingPlayerOverlay(
+    playState: PlayState,
+    avatarPreviewIds: List<Int>,
+    avatarsList: List<AvatarUi>,
+    avatarUi: AvatarUi?,
+    timeOfDay: TimeOfDay,
+    title: String,
+    onPause: () -> Unit,
+    onPlay: () -> Unit,
+    entryPoint: AudioPlayerEntryPoint,
+    soundsEffects: List<SoundEffectUi>,
+    selectedSoundIndex: Int,
+    onAvatarClick: () -> Unit,
+    onMuteClick: () -> Unit,
+    onSoundEffectClick: (Int) -> Unit,
+    currentTimeMs: Float,
+    durationMs: Float,
+    onSeekTo: (Float) -> Unit,
+    onListenLaterClick: () -> Unit
+) {
+
+    val animatedPadding by animateDpAsState(
+        if (playState == PlayState.READY) {
+            200.dp
+        } else {
+            0.dp
+        },
+        animationSpec = tween(durationMillis = 1000, delayMillis = 0),
+        label = "padding"
+    )
+
+    var isHintShown by remember { mutableStateOf(false) }
+    var previewUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(avatarPreviewIds) {
+        var index = 0
+        while (true) {
+            delay(3000L)
+            previewUrl = avatarsList.firstOrNull { avatarUi ->
+                avatarUi.id == avatarPreviewIds.getOrNull(index)
+            }?.imageUrl
+
+            index = if (avatarPreviewIds.isNotEmpty()) {
+                (index + 1) % avatarPreviewIds.size
+            } else 0
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        val animationType = if (avatarUi != null) {
+            AnimationType.CIRCLE
+        } else {
+            AnimationType.SPHERES
+        }
+        PlaybackAnimation(
+            state = playState,
+            animationType = animationType,
+            paddingState = animatedPadding,
+            colors = timeOfDay.getColors()
+        )
+
+        if (animationType == AnimationType.CIRCLE && avatarUi != null) {
+            Box(
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f).align(Alignment.Center)
+                    .padding(48.dp).clip(CircleShape)
+                    .background(Color.Black)
+            ) {
+                AsyncImage(
+                    modifier = Modifier.fillMaxSize().align(Alignment.Center),
+                    model = avatarUi.imageUrl,
+                    contentDescription = null
+                )
+            }
+        }
+
+        val isControlsVisible =
+            playState != PlayState.READY && playState != PlayState.LOADING && playState != PlayState.LOADED
+
+        LaunchedEffect(isControlsVisible) {
+            delay(3000L)
+            isHintShown = true
+            delay(6000L)
+            isHintShown = false
+        }
+
+        AnimatedVisibility(
+            visible = isControlsVisible,
+            enter = slideInVertically { -it },
+            exit = slideOutVertically { -it }
+        ) {
+            AppBar(
+                timeOfDay = timeOfDay,
+                title = title,
+                menuItems = listOf(
+                    MenuItem(
+                        titleRes = R.string.listen_later,
+                        onClick = onListenLaterClick
+                    )
+                )
+            )
+        }
+
+
+        PlayButton(
+            playState = playState,
+            paddingState = animatedPadding,
+            onPause = onPause,
+            onPlay = onPlay,
+        )
+
+        AnimatedContent(
+            isControlsVisible,
+            label = "controlsVisibility",
+            transitionSpec = {
+                fadeIn(animationSpec = tween(500)) togetherWith
+                        fadeOut(animationSpec = tween(500))
+            }
+        ) { isVisible ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (isVisible) {
+                    Column(
+                        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        SoundsRow(
+                            soundsEffects = soundsEffects,
+                            selectedIndex = selectedSoundIndex,
+                            avatarPreviewUrl = previewUrl,
+                            isHintShown = isHintShown,
+                            onAvatarClick = onAvatarClick,
+                            onMuteClick = onMuteClick,
+                            onClick = onSoundEffectClick
+                        )
+                        PlaybackProgressView(
+                            currentTime = currentTimeMs,
+                            duration = durationMs,
+                            colors = timeOfDay.getColors().reversed(),
+                            onSeek = onSeekTo
+                        )
+                    }
+                } else {
+                    InfoView(isVisible = playState == PlayState.READY)
+                    HeadphonesInfoView(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 24.dp)
+                            .navigationBarsPadding().align(Alignment.BottomCenter)
+                    )
+                }
+            }
+        }
+
+    }
+}
 
 @Composable
 @androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -286,24 +526,26 @@ fun ColumnScope.SoundsRow(
     soundsEffects: List<SoundEffectUi>,
     selectedIndex: Int,
     avatarPreviewUrl: String?,
+    isHintShown: Boolean = false,
     onAvatarClick: () -> Unit,
     onMuteClick: () -> Unit,
     onClick: (Int) -> Unit
 ) {
     val listState = rememberLazyListState()
     val density = androidx.compose.ui.platform.LocalDensity.current
-
     LaunchedEffect(selectedIndex, soundsEffects.size) {
         if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
             val targetIndex = selectedIndex + 2 // account for Avatar + Mute items
 
             // Wait until LazyRow has a non-zero viewport to compute a proper center offset
-            var viewportWidth = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
+            var viewportWidth =
+                listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
             var attempts = 0
             while (viewportWidth <= 0 && attempts < 5) {
                 delay(16)
                 attempts++
-                viewportWidth = listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
+                viewportWidth =
+                    listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
             }
 
             if (viewportWidth > 0) {
@@ -338,6 +580,7 @@ fun ColumnScope.SoundsRow(
         item {
             AvatarPreviewItem(
                 url = avatarPreviewUrl,
+                isHintShown = isHintShown,
                 onClick = onAvatarClick
             )
         }
@@ -422,9 +665,11 @@ fun MuteItem(isSelected: Boolean, onClick: () -> Unit) {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AvatarPreviewItem(
     url: String?,
+    isHintShown: Boolean = false,
     onClick: () -> Unit
 ) {
     Box(
@@ -449,11 +694,38 @@ private fun AvatarPreviewItem(
                 tint = Color.Unspecified
             )
         }
+        val tooltipState = rememberTooltipState(isPersistent = true)
+
+        LaunchedEffect(isHintShown) {
+            if (isHintShown) {
+                tooltipState.show()
+            } else {
+                tooltipState.dismiss()
+            }
+        }
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+            tooltip = {
+                TriangleTooltipBubble(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = stringResource(id = R.string.vibes_avatar_change_hint),
+                    caretWidth = 12.dp,
+                    caretHeight = 8.dp,
+                    caretOffsetX = 28.dp,
+                )
+            },
+            state = tooltipState,
+        ) {}
     }
 }
 
 @Composable
-private fun BoxScope.AppBar(timeOfDay: TimeOfDay, title: String) {
+private fun BoxScope.AppBar(
+    timeOfDay: TimeOfDay, title: String,
+    menuItems: List<MenuItem> = emptyList(),
+) {
+    var expanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp)
             .heightIn(min = AppBarHeightLarge).align(Alignment.TopCenter).fillMaxWidth(),
@@ -466,12 +738,19 @@ private fun BoxScope.AppBar(timeOfDay: TimeOfDay, title: String) {
             title = title
         )
 
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_menu),
-            contentDescription = null,
-            tint = Color.Unspecified
-        )
+        Box {
+            Icon(
+                modifier = Modifier.size(24.dp).noRippleClickable { expanded = !expanded },
+                painter = painterResource(id = R.drawable.ic_menu),
+                contentDescription = null,
+                tint = Color.Unspecified
+            )
+            OptionsMenu(
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                menuItems = menuItems
+            )
+        }
     }
 }
 

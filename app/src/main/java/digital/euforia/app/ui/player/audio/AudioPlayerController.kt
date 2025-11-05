@@ -21,6 +21,7 @@ import digital.euforia.app.service.AudioPlaybackService
 @Composable
 fun rememberMediaController(
     timeOfDayUrl: Uri?,
+    playWhenReady: Boolean = true,
     onIsPlayingChanged: (Boolean) -> Unit = {},
     onEnded: () -> Unit = {}
 ): MediaController? {
@@ -40,7 +41,8 @@ fun rememberMediaController(
                 controllerState.value = c
                 c.setMediaItem(MediaItem.fromUri(timeOfDayUrl))
                 c.prepare()
-                c.play()
+                if (playWhenReady) c.playWhenReady = true
+//                c.play()
             }, context.mainExecutor)
         }
     }

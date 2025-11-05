@@ -35,8 +35,7 @@ class SplashViewModel @Inject constructor(
                 if (isOnboardingCompleted) {
                     postEffect(SplashSideEffect.NavigateHome)
                 } else {
-//                    postEffect(SplashSideEffect.NavigateOnboarding)
-                    postEffect(SplashSideEffect.NavigateHome)
+                    postEffect(SplashSideEffect.NavigateOnboarding)
                 }
             }
         }

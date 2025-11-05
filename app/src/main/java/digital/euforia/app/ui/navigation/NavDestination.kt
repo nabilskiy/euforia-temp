@@ -50,4 +50,8 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     @Serializable
     @Keep
     data class AudioPlayer(val accompanimentId: Int, val timeOfDay: TimeOfDay, val entryPoint: AudioPlayerEntryPoint)
+
+    @Serializable
+    @Keep
+    data object DevOptions : HomeDestination()
 }

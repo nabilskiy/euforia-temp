@@ -53,8 +53,10 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.Home
+import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.Onboarding
 import digital.euforia.app.ui.onboarding.pager.PagerPage
+import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.theme.EuforiaTheme
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
@@ -380,6 +382,17 @@ private fun handleSideEffect(
                 popUpTo(Onboarding) { inclusive = true }
             }
         }
+        is OnboardingSideEffect.NavigateAudioPlayer -> {
+            navController.navigate(HomeDestination.AudioPlayer(
+                accompanimentId = sideEffect.accompanimentId,
+                timeOfDay = sideEffect.timeOfDay,
+                entryPoint = AudioPlayerEntryPoint.ONBOARDING,
+            )) {
+                popUpTo(Onboarding) { inclusive = true }
+            }
+        }
+
+
 
         else -> {}
     }

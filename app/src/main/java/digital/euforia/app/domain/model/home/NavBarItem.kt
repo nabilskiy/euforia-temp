@@ -12,7 +12,8 @@ enum class NavBarItem(
     PLAN(destination = HomeDestination.Plan, iconRes = R.drawable.ic_nav_plan),
     PROGRAMS(destination = HomeDestination.Programs, iconRes = R.drawable.ic_nav_program),
     SOUNDSCAPES(destination = HomeDestination.Soundscapes, iconRes = R.drawable.ic_nav_soundscapes),
-    SETTINGS(destination = HomeDestination.Settings, iconRes = R.drawable.ic_nav_settings),
+    SETTINGS(destination = HomeDestination.DevOptions, iconRes = R.drawable.ic_nav_settings),
+//    SETTINGS(destination = HomeDestination.Settings, iconRes = R.drawable.ic_nav_settings),
     SETTINGS_MAX(destination = HomeDestination.Settings, iconRes = R.drawable.ic_nav_max);
 }
 

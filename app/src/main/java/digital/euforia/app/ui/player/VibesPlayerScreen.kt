@@ -163,7 +163,7 @@ private fun BoxScope.PlayButton(
 }
 
 @Composable
-fun BoxScope.InfoView(modifier: Modifier = Modifier, isVisible: Boolean) {
+private fun BoxScope.InfoView(modifier: Modifier = Modifier, isVisible: Boolean) {
     val localizedRes = LocalLocalizedRes.current
     AnimatedVisibility(
         modifier = modifier.fillMaxWidth(),

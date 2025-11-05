@@ -31,8 +31,7 @@ class GetOnboardingPagesUseCase @Inject constructor(
                         add(OnboardingPage.NotificationsPage)
                     }
                     if (remoteConfigFetcher.getIntroEmailStepShow()) add(OnboardingPage.EmailPage)
-                    add(OnboardingPage.PreparePage)
-                    add(OnboardingPage.PlayerPage)
+
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching onboarding pages from remote config")

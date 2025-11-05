@@ -96,6 +96,21 @@ fun BoxScope.BottomNavigation(
     selectedIndex: Int,
     onNavItemSelected: (Int) -> Unit
 ) {
+    // Keep selected index in sync with current destination (also on system back)
+    androidx.compose.runtime.LaunchedEffect(navController, items, selectedIndex) {
+        navController.currentBackStackEntryFlow.collect { backStackEntry ->
+            val dest = backStackEntry.destination
+            // Find index of the nav item whose route matches current destination
+            val route = dest.route?.substringBefore("?")
+            val newIndex = items.indexOfFirst { item ->
+                route == item.destination::class.qualifiedName
+            }
+            if (newIndex != -1 && newIndex != selectedIndex) {
+                onNavItemSelected(newIndex)
+            }
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
 
         Row(

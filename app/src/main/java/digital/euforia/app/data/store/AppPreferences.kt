@@ -22,9 +22,6 @@ class AppPreferences(
 ) {
     private val keyDeviceToken = stringPreferencesKey("deviceToken")
     private val keyLanguage = stringPreferencesKey("language")
-    private val keyName = stringPreferencesKey("name")
-    private val keyEmail = stringPreferencesKey("email")
-    private val keyGender = intPreferencesKey("gender")
     private val keyNotificationPermissionGranted =
         booleanPreferencesKey("notification_permission_granted")
     private val keyCompletedDays = intPreferencesKey("completed_days")
@@ -97,37 +94,6 @@ class AppPreferences(
         }
     }
 
-    suspend fun getName(): String? {
-        return store.data.firstOrNull()?.get(keyName)
-    }
-
-    suspend fun setName(name: String) {
-        store.edit { preferences ->
-            preferences[keyName] = name
-        }
-    }
-
-    suspend fun getEmail(): String? {
-        return store.data.firstOrNull()?.get(keyEmail)
-    }
-
-    suspend fun setEmail(email: String) {
-        store.edit { preferences ->
-            preferences[keyEmail] = email
-        }
-    }
-
-    suspend fun getGender(): Gender {
-        val genderIndex = store.data.firstOrNull()?.get(keyGender) ?: Gender.UNSPECIFIED.ordinal
-        return Gender.entries.toTypedArray().getOrElse(genderIndex) { Gender.UNSPECIFIED }
-    }
-
-    suspend fun setGender(gender: Gender) {
-        store.edit { preferences ->
-            preferences[keyGender] = gender.ordinal
-        }
-    }
-
     suspend fun getCompletedDays(): Int {
         return store.data.firstOrNull()?.get(keyCompletedDays) ?: 0
     }
@@ -152,6 +118,12 @@ class AppPreferences(
 
     suspend fun isOnboardingCompleted(): Boolean {
         return store.data.firstOrNull()?.get(keyIsOnboardingCompleted) ?: false
+    }
+
+    fun isOnboardingCompletedFlow(): Flow<Boolean> {
+        return store.data.map { preferences ->
+            preferences[keyIsOnboardingCompleted] ?: false
+        }
     }
 
     suspend fun getFirstLaunchDate(): Instant? {

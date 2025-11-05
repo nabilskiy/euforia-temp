@@ -7,8 +7,10 @@ import digital.euforia.app.data.network.AuthToken
 import digital.euforia.app.data.network.AuthTokenProvider
 import digital.euforia.app.data.network.DeviceToken
 import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.di.ApplicationCoroutineScopeDefault
 import digital.euforia.app.domain.usecase.InitUseCase
+import digital.euforia.app.domain.usecase.accompaniment.SyncAccompanimentsUseCase
 import digital.euforia.app.domain.usecase.translation.SyncTranslationsUseCase
 import digital.euforia.app.domain.usecase.app_settings.SyncAppSettingsUseCase
 import digital.euforia.app.domain.usecase.resources.SyncResourcesUseCase
@@ -29,6 +31,9 @@ class App : Application() {
     lateinit var appPreferences: AppPreferences
 
     @Inject
+    lateinit var profilePreferences: ProfilePreferences
+
+    @Inject
     lateinit var initUseCase: InitUseCase
 
     @Inject
@@ -40,12 +45,16 @@ class App : Application() {
     @Inject
     lateinit var syncResourcesUseCase: SyncResourcesUseCase
 
+    @Inject
+    lateinit var syncAccompanimentsUseCase: SyncAccompanimentsUseCase
+
     override fun onCreate() {
         super.onCreate()
         initLogger()
         initTokens()
         syncAppSettings()
         syncTranslations()
+        syncAccompaniments()
         syncResources()
     }
 
@@ -71,5 +80,12 @@ class App : Application() {
 
     private fun syncResources() {
         coroutineScope.launch { syncResourcesUseCase() }
+    }
+
+    private fun syncAccompaniments() {
+        coroutineScope.launch {
+            val isDemo = profilePreferences.getIsDemo()
+            syncAccompanimentsUseCase(isDemo)
+        }
     }
 }

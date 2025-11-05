@@ -42,8 +42,8 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun syncAccompaniments() {
         viewModelScope.async {
-            val isDemo = profilePreferences.getIsDemo()
-            syncAccompanimentsUseCase(isDemo)
+//            val isDemo = profilePreferences.getIsDemo()
+//            syncAccompanimentsUseCase(isDemo)
             syncTopProgramsUseCase()
         }.await()
     }

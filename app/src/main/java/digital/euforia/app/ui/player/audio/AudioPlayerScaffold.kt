@@ -124,7 +124,8 @@ fun SharedTransitionScope.AudioPlayerScaffold(
                         onSoundEffectClick = onSoundEffectClick,
                         onPause = onPause,
                         onPlay = onPlay,
-                        onSeekTo = onSeekTo
+                        onSeekTo = onSeekTo,
+                        onListenLaterClick = saveProgress
                     )
 
                     else -> AvatarsPage(
@@ -134,16 +135,23 @@ fun SharedTransitionScope.AudioPlayerScaffold(
                     )
                 }
             }
-            AudioPlayerAppBar(ui.currentPageIndex, onBackClick = {
-                if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) navigatePlayer() else saveProgress()
-            })
+            AudioPlayerAppBar(
+                currentPageIndex = ui.currentPageIndex,
+                entryPoint = ui.entryPoint,
+                onBackClick = {
+                    if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) navigatePlayer() else saveProgress()
+                })
         }
 
     }
 }
 
 @Composable
-private fun AudioPlayerAppBar(currentPageIndex: Int, onBackClick: () -> Unit) {
+private fun AudioPlayerAppBar(
+    currentPageIndex: Int,
+    entryPoint: AudioPlayerEntryPoint,
+    onBackClick: () -> Unit
+) {
     AnimatedContent(
         targetState = currentPageIndex, label = "icon_transition",
         transitionSpec = {
@@ -158,13 +166,15 @@ private fun AudioPlayerAppBar(currentPageIndex: Int, onBackClick: () -> Unit) {
         ) {
             when (target) {
                 0 -> {
-                    Icon(
-                        modifier = Modifier.align(Alignment.CenterStart).size(24.dp)
-                            .noRippleClickable(onClick = onBackClick),
-                        painter = painterResource(id = R.drawable.ic_close),
-                        contentDescription = null,
-                        tint = Color.Unspecified
-                    )
+                    if (entryPoint == AudioPlayerEntryPoint.DAY) {
+                        Icon(
+                            modifier = Modifier.align(Alignment.CenterStart).size(24.dp)
+                                .noRippleClickable(onClick = onBackClick),
+                            painter = painterResource(id = R.drawable.ic_close),
+                            contentDescription = null,
+                            tint = Color.Unspecified
+                        )
+                    }
                 }
 
                 else -> {

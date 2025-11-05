@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.SessionCommand
+import digital.euforia.app.ui.navigation.Home
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
 
 @OptIn(UnstableApi::class)
@@ -49,9 +50,11 @@ fun SharedTransitionScope.AudioPlayerScreen(
 
     val controller = rememberMediaController(
         timeOfDayUrl = url,
+        playWhenReady = state.entryPoint == AudioPlayerEntryPoint.DAY,
         onIsPlayingChanged = { isPlaying ->
             viewModel.onPlayStateChanged(if (isPlaying) PlayState.PLAYING else PlayState.PAUSED)
-        }
+        },
+        onEnded = { viewModel.savePlaybackProgress(1f)}
     )
 
     // Release player when leaving the screen
@@ -162,6 +165,10 @@ fun setSfxVolume(controller: MediaController, vol: Float) {
 private fun handleSideEffect(sideEffect: AudioPlayerSideEffect, navController: NavHostController) {
     when (sideEffect) {
         AudioPlayerSideEffect.NavigateBack -> navController.popBackStack()
+        AudioPlayerSideEffect.NavigateHome -> navController.navigate(Home) {
+            popUpTo("home") { inclusive = false }
+        }
+
         else -> {}
     }
 }
