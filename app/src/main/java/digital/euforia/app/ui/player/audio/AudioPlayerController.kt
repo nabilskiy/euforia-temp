@@ -23,7 +23,8 @@ fun rememberMediaController(
     timeOfDayUrl: Uri?,
     playWhenReady: Boolean = true,
     onIsPlayingChanged: (Boolean) -> Unit = {},
-    onEnded: () -> Unit = {}
+    onEnded: () -> Unit = {},
+    onSeek: () -> Unit = {}
 ): MediaController? {
     val context = LocalContext.current
     val controllerState = remember { mutableStateOf<MediaController?>(null) }
@@ -57,6 +58,16 @@ fun rememberMediaController(
             }
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED) updatedOnEnded.value.invoke()
+            }
+
+            override fun onSeekBackIncrementChanged(seekBackIncrementMs: Long) {
+                onSeek()
+                super.onSeekBackIncrementChanged(seekBackIncrementMs)
+            }
+
+            override fun onSeekForwardIncrementChanged(seekForwardIncrementMs: Long) {
+                onSeek()
+                super.onSeekForwardIncrementChanged(seekForwardIncrementMs)
             }
         }
         controller.addListener(listener)

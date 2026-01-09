@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,12 +35,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import digital.euforia.app.R
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.domain.model.home.NavBarItem
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.HomeNavigation
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.NavBarIcon
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.widget.MaxBadge
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -60,6 +63,7 @@ fun HomeScreen(
         navController = navController,
         navItems = state.navBarItems,
         selectedIndex = state.selectedItemIndex,
+        analyticSender = viewModel.analyticSender,
         onNavItemSelected = viewModel::onNavBarItemSelected
     )
 }
@@ -69,6 +73,7 @@ private fun HomeContent(
     navController: NavHostController,
     navItems: List<NavBarItem>,
     selectedIndex: Int,
+    analyticSender: AnalyticSender,
     onNavItemSelected: (Int) -> Unit
 ) {
     val isBottomBarShown = remember { mutableStateOf(true) }
@@ -83,6 +88,7 @@ private fun HomeContent(
                 navController = navController,
                 items = navItems,
                 selectedIndex = selectedIndex,
+                analyticSender = analyticSender,
                 onNavItemSelected = onNavItemSelected
             )
         }
@@ -94,10 +100,11 @@ fun BoxScope.BottomNavigation(
     navController: NavHostController,
     items: List<NavBarItem>,
     selectedIndex: Int,
+    analyticSender: AnalyticSender,
     onNavItemSelected: (Int) -> Unit
 ) {
     // Keep selected index in sync with current destination (also on system back)
-    androidx.compose.runtime.LaunchedEffect(navController, items, selectedIndex) {
+    LaunchedEffect(navController, items, selectedIndex) {
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
             val dest = backStackEntry.destination
             // Find index of the nav item whose route matches current destination
@@ -132,6 +139,12 @@ fun BoxScope.BottomNavigation(
                     isSelected = selectedIndex == index,
                     onClick = {
                         if (selectedIndex != index) {
+                            when(item) {
+                                NavBarItem.PLAN -> analyticSender.tabTodayClick()
+                                NavBarItem.PROGRAMS -> analyticSender.tabLibraryClick()
+                                NavBarItem.SOUNDSCAPES -> analyticSender.tabScenesClick()
+                                else -> analyticSender.tabProfileClick()
+                            }
                             onNavItemSelected(index)
                             navController.navigate(item.destination) {
                                 // Pop up to the start destination of the graph to
@@ -173,6 +186,9 @@ fun RowScope.BottomNavigationItem(item: NavBarItem, isSelected: Boolean, onClick
             contentDescription = null,
             modifier = Modifier.align(Alignment.Center)
         )
+        if (item == NavBarItem.SETTINGS_MAX) {
+            MaxBadge(Modifier.align(Alignment.BottomCenter))
+        }
     }
 
 }

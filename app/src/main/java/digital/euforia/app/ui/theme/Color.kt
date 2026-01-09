@@ -27,6 +27,8 @@ val OnboardingSphereColors = listOf(
     Color(0xFF9934A2),
     Color(0xFF0C42AE),
 )
+val SoonColor = Color(0xFF0C42AE)
+val DialogButton = Color(0xFF275ECE)
 
 val Error = Color(0xFFDC4446)
 val ButtonDisabled = Color(0xFF3A3B3E)
@@ -42,7 +44,7 @@ val Vibe2Color = Color(0xFF9B59B6)
 val Vibe3Color = Color(0xFF3498DB)
 val MaxBackground = Color(0xFFF8F6E9)
 val MorningAccompanimentMain = Color(0xFFBF5C57)
-val MorningAccompanimentAccent = Color(0xFFB43C6D )
+val MorningAccompanimentAccent = Color(0xFFB43C6D)
 val DaytimeAccompanimentMain = Color(0xFF30A124)
 val DaytimeAccompanimentAccent = Color(0xFF336666)
 val EveningAccompanimentMain = Color(0xFF0C42AE)
@@ -57,6 +59,8 @@ val SecondaryText = Color(0xFFC6C6C6)
 val Orange = Color(0xFFFF9800)
 val AvatarBackground = Color(0xFF2F3034)
 val AppBarBackground = Color(0xFF1C1C1E)
+val DayBlue = Color(0xFF4375F5)
+val Red = Color(0xFFC22B22)
 val SoundscapeColors = listOf(
     Color(0xFFEA6464),
     Color(0xFF64BBEA),
@@ -80,6 +84,13 @@ val MaxGradientReversed = Brush.linearGradient(
         Color(0xFF8A2BE2),
     )
 )
+val MaxGradientReversedHorizontal = Brush.horizontalGradient(
+    colors = listOf(
+        Color(0xFFFFB347),
+        Color(0xFFFF3A5F),
+        Color(0xFF8A2BE2),
+    )
+)
 
 val TasksGradient = Brush.verticalGradient(
     colors = listOf(
@@ -88,12 +99,39 @@ val TasksGradient = Brush.verticalGradient(
         Color(0x80E29B31)  // Brown
     )
 )
+
+val PremiumGradient = Brush.horizontalGradient(
+    colors = listOf(
+        Color(0x80204FC0), // Dark Blue
+        Color(0x80FF5589), // Dark Pink
+        Color(0x80E29B31)  // Brown
+    )
+)
+
+val CalendarGradient = Brush.horizontalGradient(
+    colors = listOf(
+        Color(0xAA204FC0), // Dark Blue
+        Color(0xAAFF5589), // Dark Pink
+        Color(0xAAE29B31)  // Brown
+    )
+)
+
+val CalendarColors = listOf(
+    Color(0xAA204FC0), // Dark Blue
+    Color(0xAAFF5589), // Dark Pink
+    Color(0xAAE29B31)  // Brown
+)
+val DarkBlue = Color(0xAA204FC0)
+val DarkPink = Color(0xAAFF5589)
+val Brown = Color(0xAAE29B31)
+
 // Evening кольори (як в онбордингу)
 val eveningColors = listOf(
     Color(0xFF003399),  // Темно-синій
     Color(0xFF8B3A92),  // Фіолетовий
     Color(0xFF0D748A)   // Темно-бірюзовий
 )
+
 // Evening кольори (як в онбордингу)
 val eveningColors2 = listOf(
     Color(0xFF0C428E),  // Темно-синій
@@ -107,9 +145,10 @@ val morningColors = listOf(
     Color(0xFF853665),  // Темно-рожевий
     Color(0xFFA3745A)   // Коричневий
 )
+
 // Morning кольори
 val morningColors2 = listOf(
-    Color(0xFFC05F57 ),  // Темно-синій
+    Color(0xFFC05F57),  // Темно-синій
     Color(0xFFB43C6D),  // Темно-рожевий
     Color(0xFFB43C6D)   // Коричневий
 )

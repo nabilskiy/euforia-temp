@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <layer-list>
+            <!-- Outer gradient to act as the border -->
+            <item>
+                <shape android:shape="rectangle">
+                    <corners android:radius="12dp" />
+                    <gradient
+                        android:angle="0"
+                        android:startColor="#E29B31"
+                        android:centerColor="#FF5589"
+                        android:endColor="#204FC0"
+                        android:type="linear" />
+                </shape>
+            </item>
+            <!-- Inner content with inset to reveal the gradient border -->
+            <item android:left="1dp" android:top="1dp" android:right="1dp" android:bottom="1dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="#202328" />
+                    <corners android:radius="12dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+    <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <shape>
+                    <padding android:bottom="1dp" android:left="1dp" android:right="1dp" android:top="1dp" />
+                    <solid android:color="@android:color/transparent" />
+                    <corners android:radius="12dp" />
+                </shape>
+            </item>
+            <item>
+                <shape>
+                    <solid android:color="#202328" />
+                    <corners android:radius="12dp" />
+                    <stroke android:width="2.5dp" android:color="@color/colorBlack" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+    <item>
+        <layer-list>
+            <item>
+                <shape>
+                    <padding android:bottom="1dp" android:left="1dp" android:right="1dp" android:top="1dp" />
+                    <solid android:color="@android:color/transparent" />
+                    <corners android:radius="12dp" />
+                </shape>
+            </item>
+            <item>
+                <shape>
+                    <solid android:color="#202328" />
+                    <corners android:radius="12dp" />
+                    <stroke android:width="2.5dp" android:color="@color/colorBlack" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+</selector>

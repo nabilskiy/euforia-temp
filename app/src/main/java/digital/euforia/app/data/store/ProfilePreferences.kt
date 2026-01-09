@@ -13,6 +13,8 @@ import digital.euforia.app.domain.model.subscription.toSubscriptionLevel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class ProfilePreferences(
     private val store: DataStore<Preferences>
@@ -24,6 +26,10 @@ class ProfilePreferences(
     private val keyName = stringPreferencesKey("name")
     private val keyEmail = stringPreferencesKey("email")
     private val keyGender = intPreferencesKey("gender")
+    private val keySubsToken = stringPreferencesKey("subsToken")
+    private val keyIsSubscriptionValid = booleanPreferencesKey("isSubscriptionValid")
+
+
     suspend fun setSubscriptionLevel(level: SubscriptionLevel) {
         store.edit { preferences ->
             preferences[keySubscriptionLevel] = level.ordinal
@@ -59,6 +65,13 @@ class ProfilePreferences(
         }
     }
 
+    // Helper for Java callers (non-suspend). Launches coroutine in provided scope.
+    fun setIsPremiumAsync(isPremium: Boolean, scope: CoroutineScope) {
+        scope.launch {
+            setIsPremium(isPremium)
+        }
+    }
+
     suspend fun setIsDemo(isDemo: Boolean) {
         store.edit { preferences ->
             preferences[keyIsDemo] = isDemo
@@ -75,6 +88,7 @@ class ProfilePreferences(
             preferences[keyIsDemo] ?: true
         }
     }
+
     suspend fun getName(): String? {
         return store.data.firstOrNull()?.get(keyName)
     }
@@ -103,6 +117,32 @@ class ProfilePreferences(
     suspend fun setGender(gender: Gender) {
         store.edit { preferences ->
             preferences[keyGender] = gender.ordinal
+        }
+    }
+
+    suspend fun getSubsToken(): String? {
+        return store.data.firstOrNull()?.get(keySubsToken)
+    }
+
+    suspend fun setSubsToken(token: String) {
+        store.edit { preferences ->
+            preferences[keySubsToken] = token
+        }
+    }
+
+    suspend fun isSubscriptionValid(): Boolean {
+        return store.data.firstOrNull()?.get(keyIsSubscriptionValid) ?: false
+    }
+
+    suspend fun setIsSubscriptionValid(isValid: Boolean) {
+        store.edit { preferences ->
+            preferences[keyIsSubscriptionValid] = isValid
+        }
+    }
+
+    suspend fun clearAll() {
+        store.edit { preferences ->
+            preferences.clear()
         }
     }
 }

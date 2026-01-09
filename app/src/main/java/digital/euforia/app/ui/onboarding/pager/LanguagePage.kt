@@ -29,6 +29,7 @@ import digital.euforia.app.ui.theme.LabelText
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.AnimatedListCheckItem
 import digital.euforia.app.ui.util.widget.AudioEqualizerView
+import digital.euforia.app.ui.util.LocalLocalizedRes
 
 @Composable
 fun LanguagePage(
@@ -77,6 +78,7 @@ fun LanguageItemView(
     isPlaying: Boolean = false,
     onSelect: (Language) -> Unit
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val checkIconRes =
         if (isSelected) R.drawable.ic_checkbox_checked else R.drawable.ic_checkbox_unchecked
     val titleColor = if (language.isSupported) Color.White else Color.White.copy(alpha = 0.3f)
@@ -95,7 +97,7 @@ fun LanguageItemView(
         )
         Text(
             modifier = Modifier.weight(1f),
-            text = stringResource(language.titleRes),
+            text = localizedRes.string(language.titleRes),
             color = titleColor,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
         )
@@ -120,10 +122,11 @@ fun LanguageItemView(
 
 @Composable
 fun SoonTextView(textRes: Int) {
+    val localizedRes = LocalLocalizedRes.current
     Text(
         modifier = Modifier.background(White, RoundedCornerShape(4.dp))
             .padding(vertical = 2.dp, horizontal = 8.dp),
-        text = stringResource(textRes).uppercase(),
+        text = localizedRes.string(textRes).uppercase(),
         color = LabelText,
         style = MaterialTheme.typography.displaySmall.copy(fontSize = 10.sp)
     )

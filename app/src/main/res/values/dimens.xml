@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Changed from API version -->
+    <dimen name="floating_button_margin">16dp</dimen>
+    <dimen name="status_bar_height">24dp</dimen>
+    <dimen name="toolbar_height">80dp</dimen>
+    <dimen name="toolbar_padding_top">24dp</dimen>
+
+    <!-- Changed from density -->
+    <dimen name="intro_card_top_margin">80dp</dimen>
+    <dimen name="intro_card_bottom_margin">100dp</dimen>
+    <dimen name="intro_card_horizontal_margin">30dp</dimen>
+    <dimen name="intro_card_vertical_margin">24dp</dimen>
+    <dimen name="intro_header_img_height">100dp</dimen>
+    <dimen name="intro_text_top_margin">8dp</dimen>
+    <dimen name="intro_text_bottom_margin">2dp</dimen>
+    <dimen name="intro_text_horizontal_margin">24dp</dimen>
+    <dimen name="intro_text_size">16dp</dimen>
+    <dimen name="intro_terms_bottom_margin">24dp</dimen>
+    <dimen name="intro_terms_horizontal_margin">24dp</dimen>
+    <dimen name="intro_terms_size">11sp</dimen>
+
+    <!-- Scenes values -->
+    <dimen name="scenes_recycler_margin_normal">24dp</dimen>
+    <dimen name="scenes_recycler_margin_from_icon">96dp</dimen>
+
+    <!-- Dialog -->
+    <dimen name="dialog_text_size">15sp</dimen>
+
+    <!-- Default sizes -->
+    <dimen name="size_340">340dp</dimen>
+    <dimen name="size_300">300dp</dimen>
+    <dimen name="size_142">142dp</dimen>
+    <dimen name="size_140">140dp</dimen>
+    <dimen name="size_124">124dp</dimen>
+    <dimen name="size_104">104dp</dimen>
+    <dimen name="size_145">145dp</dimen>
+    <dimen name="size_100">100dp</dimen>
+    <dimen name="size_1000">1000dp</dimen>
+    <dimen name="size_92">92dp</dimen>
+    <dimen name="size_80">80dp</dimen>
+    <dimen name="size_74">74dp</dimen>
+    <dimen name="size_72">72dp</dimen>
+    <dimen name="size_64">64dp</dimen>
+    <dimen name="size_60">60dp</dimen>
+    <dimen name="size_56">56dp</dimen>
+    <dimen name="size_48">48dp</dimen>
+    <dimen name="size_40">40dp</dimen>
+    <dimen name="size_34">34dp</dimen>
+    <dimen name="size_32">32dp</dimen>
+    <dimen name="size_30">30dp</dimen>
+    <dimen name="size_36">36dp</dimen>
+    <dimen name="size_28">28dp</dimen>
+    <dimen name="size_24">24dp</dimen>
+    <dimen name="size_20">20dp</dimen>
+    <dimen name="size_16">16dp</dimen>
+    <dimen name="size_15">15dp</dimen>
+    <dimen name="size_12">12dp</dimen>
+    <dimen name="size_11">11dp</dimen>
+    <dimen name="size_8">8dp</dimen>
+    <dimen name="size_6">6dp</dimen>
+    <dimen name="size_5">5dp</dimen>
+    <dimen name="size_4">4dp</dimen>
+    <dimen name="size_3">3dp</dimen>
+    <dimen name="size_2">2dp</dimen>
+    <dimen name="size_1f5">1.5dp</dimen>
+    <dimen name="size_1">1dp</dimen>
+    <dimen name="size_5f">0.5dp</dimen>
+    <dimen name="size_0">0dp</dimen>
+
+    <!-- Default font sizes -->
+    <dimen name="font_12">12sp</dimen>
+    <dimen name="font_14">14sp</dimen>
+    <dimen name="font_15">15sp</dimen>
+    <dimen name="font_16">16sp</dimen>
+    <dimen name="font_18">18sp</dimen>
+    <dimen name="font_20">20sp</dimen>
+    <dimen name="font_22">22sp</dimen>
+    <dimen name="font_24">24sp</dimen>
+    <dimen name="font_28">28sp</dimen>
+
+    <dimen name="card_editor_bleed_margin">12dp</dimen>
+    <dimen name="card_editor_min_object_size">64dp</dimen>
+    <dimen name="gallery_image_spacing">5dp</dimen>
+    <dimen name="gallery_bucket_spacing">8dp</dimen>
+    <dimen name="photo_editor_filter_thumb_spacing">12dp</dimen>
+
+</resources>

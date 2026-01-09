@@ -1,0 +1,64 @@
+[
+    {
+        "country": "USA",
+        "country_native": "United States of America",
+        "code": "US",
+        "contacts": [
+            {
+                "name": "Emergency Number",
+                "phone": "911"
+            },
+            {
+                "name": "National Alliance on Mental Illness (NAMI) Helpline",
+                "phone": "911"
+            },
+            {
+                "name": "988 Suicide & Crisis Lifeline",
+                "phone": "(800) 950-6264"
+            },
+             {
+                "name": "YouthLine (for teenagers)",
+                "phone": "(877) 968-8491"
+            },
+            {
+                "name": "National Domestic Violence Hotline",
+                "phone": "(800) 799-7233"
+            },
+            {
+                "name": "Rape, Abuse, and Incest National Network (RAINN) National Sexual Assault Hotline",
+                "phone": "(800) 656-4673"
+            },
+            {
+                "name": "Ayuda En Español",     
+                "phone": "(888) 628-9454"
+            },
+            {
+                "name": "Military Helpline",
+                "phone": "(888) 457-4838"
+            },
+            {
+                "name": "Substance Abuse & Mental Health Services Administration (SAMHSA)",
+                "phone": "1-800-662-HELP (4357)"
+            },
+            {
+                "name": "Vets4Warriors",
+                "phone": "1-855-838-8255"
+            }
+        ]
+    },
+    {
+        "country": "Canada",
+        "country_native": "Canada",
+        "code": "CA",
+        "contacts": [
+            {
+                "name": "Naseeha Mental Helpline",
+                "phone": "1-866-627-3342"
+            },
+            {
+                "name": "NISA Helpline",
+                "phone": "(888) 315-6472"
+            }
+        ]
+    }
+]

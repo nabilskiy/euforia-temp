@@ -1,0 +1,648 @@
+[
+    {
+        "country": "Ukraine",
+        "country_native": "Україна",
+        "code": "UA",
+        "contacts": [
+            {
+                "name": "Служба порятунку",
+                "phone": "112"
+            },
+            {
+                "name": "Мінреінтеграції з кризових питань. Консультації з питань евакуації та допомоги ВПО.",
+                "phone": "1548"
+            },
+            {
+                "name": "Гаряча лінія для жертв домашнього насильства",
+                "phone": "15-47"
+            },
+            {
+                "name": "Національна гаряча лінія для дітей та молоді",
+                "phone": "0 800 500 225"
+            },
+            {
+                "name": "Безоплатна правова допомога",
+                "phone": "0 800 213 103"
+            },
+            {
+                "name": "Кризовий центр “Соціотерапія”",
+                "phone": "+38 (096) 274-59-54"
+            }
+        ]
+    },
+    {
+        "country": "France",
+        "country_native": "République française",
+        "code": "FR",
+        "contacts": [
+            {
+                "name": "Croix-Rouge écoute",
+                "phone": "800-858-858"
+            },
+            {
+                "name": "SOS Amitié (association)",
+                "phone": "972-394-050"
+            }
+        ]
+    },
+    {
+        "country": "Germany",
+        "country_native": "Bundesrepublik Deutschland",
+        "code": "DE",
+        "contacts": [
+            {
+                "name": "TelefonSeelsorge",
+                "phone": "0800 - 111 0 111"
+            },
+            {
+                "name": "Guttempler",
+                "phone": "1803652407"
+            }
+        ]
+    },
+    {
+        "country": "Austria",
+        "country_native": "Republik Österreich",
+        "code": "AT",
+        "contacts": [
+            {
+                "name": "Rat auf Draht",
+                "phone": "147"
+            },
+            {
+                "name": "TelefonSeelsorge – Notruf 142",
+                "phone": "142"
+            }
+        ]
+    },
+    {
+        "country": "Latvia",
+        "country_native": "Latvijas Republika",
+        "code": "LV",
+        "contacts": [
+            {
+                "name": "Child Helpline",
+                "phone": "116111"
+            },
+            {
+                "name": "SKALBES",
+                "phone": "67222922"
+            }
+        ]
+    },
+    {
+        "country": "Estonia",
+        "country_native": "Eesti Vabariik",
+        "code": "EE",
+        "contacts": [
+            {
+                "name": "Crisis hotline",
+                "phone": "1247"
+            },
+            {
+                "name": "Eluliin",
+                "phone": "3726558088"
+            }
+        ]
+    },
+    {
+        "country": "United Kingdom",
+        "country_native": "United Kingdom",
+        "code": "GB",
+        "contacts": [
+            {
+                "name": "Shout",
+                "phone": "85258"
+            },
+            {
+                "name": "Samaritans",
+                "phone": "116-123"
+            }
+        ]
+    },
+    {
+        "country": "Belgium",
+        "country_native": "Koninkrijk België",
+        "code": "BE",
+        "contacts": [
+            {
+                "name": "Zelfmoordlijn",
+                "phone": "1813"
+            },
+            {
+                "name": "Télé-Accueil",
+                "phone": "107"
+            }
+        ]
+    },
+    {
+        "country": "Luxembourg",
+        "country_native": "Groussherzogtum Lëtzebuerg",
+        "code": "LU",
+        "contacts": [
+            {
+                "name": "Centre psycho-social et d'accompagnement scolaires - service d'ecoute/helpline",
+                "phone": "8002-9393"
+            },
+            {
+                "name": "SOS Détresse",
+                "phone": "454545"
+            }
+        ]
+    },
+    {
+        "country": "Italy",
+        "country_native": "Repubblica Italiana",
+        "code": "IT",
+        "contacts": [
+            {
+                "name": "Telefono Azzurro",
+                "phone": "19696"
+            },
+            {
+                "name": "Telefono Amico Italia",
+                "phone": "223272327"
+            }
+        ]
+    },
+    {
+        "country": "Spain",
+        "country_native": "Reino de España",
+        "code": "ES",
+        "contacts": [
+            {
+                "name": "The Samaritans Spain",
+                "phone": "900-525-100"
+            },
+            {
+                "name": "Crisis SOS Helpline",
+                "phone": "33146214646"
+            }
+        ]
+    },
+    {
+        "country": "Norway",
+        "country_native": "Kingdom of Norway",
+        "code": "NO",
+        "contacts": [
+            {
+                "name": "Mental Helse Hjelpetelefonen",
+                "phone": "116123"
+            },
+            {
+                "name": "Kirkens SOS",
+                "phone": "22400040"
+            }
+        ]
+    },
+    {
+        "country": "Switzerland",
+        "country_native": "Swiss Confederation",
+        "code": "CH",
+        "contacts": [
+            {
+                "name": "147.ch",
+                "phone": "147"
+            },
+            {
+                "name": "Verband Tel 143 - Die Dargebotene Hand",
+                "phone": "143"
+            }
+        ]
+    },
+    {
+        "country": "Sweden",
+        "country_native": "Konungariket Sverige",
+        "code": "SE",
+        "contacts": [
+            {
+                "name": "Mind Sjalvmordslinjen",
+                "phone": "90-101"
+            },
+            {
+                "name": "Lifeline",
+                "phone": "46-10 - 498 10 10"
+            }
+        ]
+    },
+    {
+        "country": "Poland",
+        "country_native": "Rzeczpospolita Polska",
+        "code": "PL",
+        "contacts": [
+            {
+                "name": "Anonimowy Przyjaciel (Anonymous friend)",
+                "phone": "895270000"
+            },
+            {
+                "name": "Kryzysowy Telefon Zaufania 116 123",
+                "phone": "116123"
+            }
+        ]
+    },
+    {
+        "country": "Romania",
+        "country_native": "România",
+        "code": "RO",
+        "contacts": [
+            {
+                "name": "TelVerde Antisuicid",
+                "phone": "800801200"
+            },
+            {
+                "name": "Telefonul Copilului",
+                "phone": "166111"
+            }
+        ]
+    },
+    {
+        "country": "Netherlands",
+        "country_native": "Koninkrijk der Nederlanden",
+        "code": "NL",
+        "contacts": [
+            {
+                "name": "113 Zelfmoordpreventie",
+                "phone": "0800-0113"
+            },
+            {
+                "name": "Alles oké? Supportlijn",
+                "phone": "0800-0450"
+            }
+        ]
+    },
+    {
+        "country": "Czech Republic (Czechia)",
+        "country_native": "Česká republika",
+        "code": "CZ",
+        "contacts": [
+            {
+                "name": "Modrá linka",
+                "phone": "608902410"
+            },
+            {
+                "name": "Linka první psychické pomoci",
+                "phone": "116123"
+            }
+        ]
+    },
+    {
+        "country": "Greece",
+        "country_native": "Ελληνική Δημοκρατία",
+        "code": "GR",
+        "contacts": [
+            {
+                "name": "Γραμμή Παρέμβασης για την Αυτοκτονία 1018",
+                "phone": "1018"
+            },
+            {
+                "name": "Εθνική Τηλεφωνική Γραμμή για τα Παιδιά SOS 1056",
+                "phone": "1056"
+            }
+        ]
+    },
+    {
+        "country": "Portugal",
+        "country_native": "República Portuguesa",
+        "code": "PT",
+        "contacts": [
+            {
+                "name": "Vozes Amigas de Esperança",
+                "phone": "222030707"
+            },
+            {
+                "name": "Telefone da Amizade",
+                "phone": "228323535"
+            }
+        ]
+    },
+    {
+        "country": "Hungary",
+        "country_native": "Magyarország",
+        "code": "HU",
+        "contacts": [
+            {
+                "name": "Kék Vonal Gyermekkrízis Alapítvány",
+                "phone": "166111"
+            },
+            {
+                "name": "Lesz",
+                "phone": "116123"
+            }
+        ]
+    },
+    {
+        "country": "Serbia",
+        "country_native": "Република Србија",
+        "code": "RS",
+        "contacts": [
+            {
+                "name": "Centar Srce",
+                "phone": "0800-300-303"
+            },
+            {
+                "name": "National suicide prevention hotline.",
+                "phone": "011 7777-000"
+            }
+        ]
+    },
+    {
+        "country": "Bulgaria",
+        "country_native": "Република България",
+        "code": "BG",
+        "contacts": [
+            {
+                "name": "Национална телефонна линия за деца - National Telephone Line for Children",
+                "phone": "116111"
+            },
+            {
+                "name": "Sofia Hotline",
+                "phone": "35924917223"
+            }
+        ]
+    },
+    {
+        "country": "Denmark",
+        "country_native": "Danmark",
+        "code": "DK",
+        "contacts": [
+            {
+                "name": "Livslinien",
+                "phone": "70201201"
+            },
+            {
+                "name": "Psykiatrifonden, Mental Health Helpline",
+                "phone": "39252525"
+            }
+        ]
+    },
+    {
+        "country": "Slovakia",
+        "country_native": "Slovenská republika",
+        "code": "SK",
+        "contacts": [
+            {
+                "name": "Linka dôvery Nezábudka",
+                "phone": "800800566"
+            },
+            {
+                "name": "IPčko",
+                "phone": "800500333"
+            }
+        ]
+    },
+    {
+        "country": "Slovenia",
+        "country_native": "Republika Slovenija",
+        "code": "SI",
+        "contacts": [
+            {
+                "name": "Klic v duševni stiski - A Call In Mental Distress",
+                "phone": "(01) 520-99-00"
+            },
+            {
+                "name": "Telefon Samarijan",
+                "phone": "116-123"
+            }
+        ]
+    },
+    {
+        "country": "Ireland",
+        "country_native": "Éire",
+        "code": "IE",
+        "contacts": [
+            {
+                "name": "Samaritans (Ireland)",
+                "phone": "116123"
+            },
+            {
+                "name": "Pieta",
+                "phone": "1800247247"
+            }
+        ]
+    },
+    {
+        "country": "Croatia",
+        "country_native": "Republika Hrvatska",
+        "code": "HR",
+        "contacts": [
+            {
+                "name": "Plavi Telefon",
+                "phone": "+385 (1) 4833 888"
+            },
+            {
+                "name": "HRABRI Telefon",
+                "phone": "116111"
+            }
+        ]
+    },
+    {
+        "country": "Moldova",
+        "country_native": "Republica Moldova",
+        "code": "MD",
+        "contacts": [
+            {
+                "name": "La Strada Moldova",
+                "phone": "80088008"
+            },
+            {
+                "name": "Telefon Copilului",
+                "phone": "116111"
+            }
+        ]
+    },
+    {
+        "country": "Bosnia and Herzegovina",
+        "country_native": "Bosna i Hercegovina",
+        "code": "BA",
+        "contacts": [
+            {
+                "name": "Plavi Telefon - Blue Phone",
+                "phone": "80050305"
+            },
+            {
+                "name": "Centar Srce",
+                "phone": "0800-300303"
+            }
+        ]
+    },
+    {
+        "country": "Albania",
+        "country_native": "Republika e Shqipërisë",
+        "code": "AL",
+        "contacts": [
+            {
+                "name": "Alo 116",
+                "phone": "116"
+            },
+            {
+                "name": "Linja e Keshillimit для Gra dhe Vajza",
+                "phone": "116117"
+            }
+        ]
+    },
+    {
+        "country": "Lithuania",
+        "country_native": "Lietuvos Respublika",
+        "code": "LT",
+        "contacts": [
+            {
+                "name": "Jaunimo linija",
+                "phone": "880028888"
+            },
+            {
+                "name": "Pagalbos Moterims Linija",
+                "phone": "880066366"
+            }
+        ]
+    },
+    {
+        "country": "North Macedonia",
+        "country_native": "Република Северна Македонија",
+        "code": "MK",
+        "contacts": [
+            {
+                "name": "Kriz centar",
+                "phone": "02/3173-424"
+            },
+            {
+                "name": "Pregnant Women and Mothers In Need Psychological Support",
+                "phone": "78378766"
+            }
+        ]
+    },
+    {
+        "country": "Montenegro",
+        "country_native": "Crna Gora",
+        "code": "ME",
+        "contacts": [
+            {
+                "name": "SOS telefon za žene i djecu žrtve nasilja - Podgorica / SOS telephone for Women and Children victims of violence - Podgorica",
+                "phone": "38220232254"
+            },
+            {
+                "name": "Montenegro Hotline",
+                "phone": "112"
+            }
+        ]
+    },
+    {
+        "country": "Malta",
+        "country_native": "Repubblika ta' Malta",
+        "code": "MT",
+        "contacts": [
+            {
+                "name": "Crisis Resolution Malta",
+                "phone": "99339966"
+            },
+            {
+                "name": "Supportline 179",
+                "phone": "179"
+            }
+        ]
+    },
+    {
+        "country": "Iceland",
+        "country_native": "Ísland",
+        "code": "IS",
+        "contacts": [
+            {
+                "name": "Rauði krossinn",
+                "phone": "1717"
+            },
+            {
+                "name": "Pieta Organization",
+                "phone": "5522218"
+            }
+        ]
+    },
+    {
+        "country": "Monaco",
+        "country_native": "Principauté de Monaco",
+        "code": "MC",
+        "contacts": [
+            {
+                "name": "Numero vert pour les victimes de violences - Monaco",
+                "phone": "800919010"
+            },
+            {
+                "name": "DASO",
+                "phone": "(+377) 98 98 41 00"
+            }
+        ]
+    },
+    {
+        "country": "Russian Federation",
+        "country_native": "Российская Федерация",
+        "code": "RU",
+        "contacts": [
+            {
+                "name": "Анна Центр Всероссийский телефон доверия",
+                "phone": "88007000600"
+            },
+            {
+                "name": "Москва Телефон экстренной психологической помощи",
+                "phone": "051"
+            }
+        ]
+    },
+    {
+        "country": "Belarus",
+        "country_native": "Рэспубліка Беларусь",
+        "code": "BY",
+        "contacts": [
+            {
+                "name": "Телефон доверия",
+                "phone": "375298990401"
+            },
+            {
+                "name": "Телефон доверия для взрослого населения",
+                "phone": "+375 (17) 352-44-44"
+            }
+        ]
+    },
+    {
+        "country": "England",
+        "country_native": "England",
+        "code": "GB",
+        "contacts": [
+            {
+                "name": "CALM Helpline",
+                "phone": "800585858"
+            },
+            {
+                "name": "Breaking the Silence Helpline",
+                "phone": "1274497535"
+            }
+        ]
+    },
+    {
+        "country": "Finland",
+        "country_native": "Suomen tasavalta",
+        "code": "FI",
+        "contacts": [
+            {
+                "name": "Kriisipuhelin",
+                "phone": "(092) 525-0111"
+            },
+            {
+                "name": "Kriisipuhelin - Svenska",
+                "phone": "925250112"
+            }
+        ]
+    },
+    {
+        "country": "Scotland",
+        "country_native": "Scotland",
+        "code": "GB",
+        "contacts": [
+            {
+                "name": "Breathing Space Scotland",
+                "phone": "(080) 083-8587"
+            },
+            {
+                "name": "Edinburgh Crisis Centre Helpline",
+                "phone": "8088010414"
+            }
+        ]
+    }
+]

@@ -7,6 +7,7 @@ import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_VOICE_A
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_VOICE_MUSIC
 import digital.euforia.app.data.model.NetworkResource
 import digital.euforia.app.data.model.toEntity
+import digital.euforia.app.domain.util.ResultWrapper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -29,16 +30,14 @@ class ResourceRepository @Inject constructor(
         resourceDao.insertAll(entities)
     }
 
-    suspend fun syncAll() {
+    suspend fun syncAll() : ResultWrapper<Unit> {
         val aliases = "$CLASS_ALIAS_VOICE_AVATAR,$CLASS_ALIAS_VOICE_MUSIC"
         val result = api.getResources(classAlias = aliases)
-        result.onSuccess { networkResources ->
+        return result.map { networkResources ->
             val entities = networkResources.map(NetworkResource::toEntity)
             // Keep database consistent with network
             resourceDao.deleteAllExcept(entities.map { it.id })
             resourceDao.insertAll(entities)
-        }.onFailure {
-            Timber.e("Failed to sync resources: ${it.message}")
         }
     }
 

@@ -230,12 +230,14 @@ enum class AccompanimentButtonDimensions(
     val ballSizeDp: Float, val orbitRadius: Float,
     val iconSize: Dp = 56.dp,
     val iconPadding: Dp = 8.dp,
-    val titleFontSize: TextUnit = 20.sp
+    val titleFontSize: TextUnit = 20.sp,
+    val titleLineHeight: TextUnit = 24.sp
 ) {
     PRIMARY(ballSizeDp = 420f, orbitRadius = 220f),
     SECONDARY(
         ballSizeDp = 300f, orbitRadius = 200f,
         iconSize = 32.dp, iconPadding = 6.dp,
-        titleFontSize = 14.sp
+        titleFontSize = 14.sp,
+        titleLineHeight = 18.sp
     )
 }

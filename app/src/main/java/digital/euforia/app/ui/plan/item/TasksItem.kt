@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,11 +25,13 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
@@ -35,20 +39,28 @@ import digital.euforia.app.domain.model.plan.DailyTask
 import digital.euforia.app.ui.plan.PlanViewItems
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.DescriptionDisabled
+import digital.euforia.app.ui.theme.MaxGradient
+import digital.euforia.app.ui.theme.PremiumGradient
 import digital.euforia.app.ui.theme.TasksGradient
 import digital.euforia.app.ui.theme.TitleDisabled
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.AnimatedSizeBox
+import digital.euforia.app.ui.util.widget.PremiumButton
 
 fun LazyListScope.tasksItem(
     isDemo: Boolean,
+    isPremium: Boolean,
     tasks: List<DailyTask>,
-    completedTasks: Int
+    completedTasks: Int,
+    onPremiumClick: () -> Unit
 ) = item(key = PlanViewItems.TASKS, contentType = PlanViewItems.TASKS) {
+    val localizedRes = LocalLocalizedRes.current
     Column {
         val titleRes =
             if (isDemo) R.string.today_progress_free_title else R.string.today_progress_premium_title
         Text(
-            text = stringResource(titleRes),
+            text = localizedRes.string(titleRes),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
             color = White,
             modifier = Modifier.padding(start = 16.dp, top = 64.dp, end = 16.dp, bottom = 4.dp)
@@ -68,7 +80,46 @@ fun LazyListScope.tasksItem(
                 }
             }
         }
+        if (!isPremium) {
+            PremiumButton(onClick = onPremiumClick)
+        }
     }
+}
+
+@Composable
+fun PremiumButton(onClick: () -> Unit) {
+    val localizedRes = LocalLocalizedRes.current
+    Box(
+        modifier = Modifier
+            .padding(top = 48.dp, start = 16.dp, end = 16.dp)
+    ) {
+        PremiumButton(
+            text = localizedRes.string(R.string.vibes_skip_demo_period_button),
+            onClick = onClick
+        )
+    }
+//    AnimatedSizeBox(
+//        onClick = onClick,
+//        modifier = Modifier
+//            .padding(top = 48.dp, start = 16.dp, end = 16.dp)
+//            .height(56.dp)
+//            .fillMaxWidth(),
+//    ) {
+//        Box(
+//            modifier = Modifier
+//                .background(brush = PremiumGradient, shape = CircleShape)
+//                .clip(CircleShape)
+//                .fillMaxWidth()
+//                .padding(vertical = 12.dp),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Text(
+//                text = stringResource(R.string.vibes_skip_demo_period_button),
+//                style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
+//                color = White
+//            )
+//        }
+//    }
 }
 
 @Composable
@@ -104,6 +155,7 @@ private fun ColumnScope.DailyTaskItem(
     isCompleted: Boolean,
     heightMap: MutableMap<Int, Dp>
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val density = androidx.compose.ui.platform.LocalDensity.current
     Row(
         modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp).onGloballyPositioned {
@@ -124,12 +176,12 @@ private fun ColumnScope.DailyTaskItem(
         ) {
             Text(
                 modifier = Modifier.heightIn(min = 24.dp),
-                text = stringResource(task.titleRes),
+                text = localizedRes.string(task.titleRes),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
                 color = if (isCompleted) TitleDisabled else White
             )
             Text(
-                text = stringResource(task.descriptionRes),
+                text = localizedRes.string(task.descriptionRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isCompleted) DarkGray else DescriptionDisabled
             )

@@ -2,9 +2,11 @@ package digital.euforia.app.ui.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import digital.euforia.app.R
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.TimeOfDay
@@ -20,8 +22,11 @@ import digital.euforia.app.domain.usecase.onboarding.GetInterestsUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetLanguageOptionsUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetOnboardingPagesUseCase
 import digital.euforia.app.domain.usecase.onboarding.ValidateEmailUseCase
+import digital.euforia.app.ui.util.BackgroundPlayerHelper
 import digital.euforia.app.ui.util.MediaPlayerHelper
 import digital.euforia.app.ui.util.reduceState
+import android.content.Intent
+import android.net.Uri
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -30,6 +35,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -42,6 +48,7 @@ class OnboardingViewModel @Inject constructor(
     val getInterestsUseCase: GetInterestsUseCase,
     val getAppLanguageUseCase: GetAppLanguageUseCase,
     val validateEmailUseCase: ValidateEmailUseCase,
+    val analyticSender: AnalyticSender,
     @ApplicationContext val context: android.content.Context,
 ) : ViewModel(),
     ContainerHost<OnboardingState, OnboardingSideEffect> {
@@ -51,6 +58,12 @@ class OnboardingViewModel @Inject constructor(
             observeLanguage()
             initOnboardingState()
             observerNotificationPermission()
+
+//            BackgroundPlayerHelper.playLooping(
+//                context = context,
+//                soundRes = R.raw.bgm_intro
+//            )
+            analyticSender.introShow()
         }
     )
 
@@ -62,6 +75,27 @@ class OnboardingViewModel @Inject constructor(
                 val languageOption = getByTag(languageTag)
                 reduceState { copy(selectedLanguage = languageOption) }
             }
+        }
+    }
+
+    fun onTermsClicked() {
+        analyticSender.introTermsClick()
+        openUrl(context.getString(R.string.link_terms))
+    }
+
+    fun onPrivacyClicked() {
+        analyticSender.introTermsClick()
+        openUrl(context.getString(R.string.link_privacy))
+    }
+
+    private fun openUrl(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (t: Throwable) {
+            Timber.w(t, "Failed to open url: $url")
         }
     }
 
@@ -97,15 +131,44 @@ class OnboardingViewModel @Inject constructor(
     fun onPageUpdated(position: Int) {
         val state = container.stateFlow.value
         val pageType = state.pages.getOrNull(position) ?: defaultOnboardingPages.first()
+        logPageOpened(pageType)
+    }
 
-//        intent { reduce { state.copy(currentPage = state.currentPage.copy(position, pageType)) } }
-//        updateCurrentPage(CurrentPage(position, pageType))
+    fun onSkipPage() {
+        intent {
+            logSkipPage(state.currentPage)
+            val nextPagePosition = state.currentPage.position + 1
+
+            if (nextPagePosition < state.pages.size) {
+                val newCurrentPage = state.currentPage.copy(
+                    position = nextPagePosition,
+                    pageType = state.pages[nextPagePosition]
+                )
+                if (newCurrentPage.pageType == OnboardingPage.LanguagePage) {
+                    playVoiceSample()
+                } else if (newCurrentPage.pageType == OnboardingPage.SamplesPage) {
+                    playSoundSamples()
+                }
+                applyNextButtonVisibility(newCurrentPage)
+                reduce { state.copy(currentPage = newCurrentPage) }
+            } else {
+                // Onboarding finished
+                profilePreferences.setName(state.name.orEmpty())
+                validateEmailUseCase.invoke(state.email.orEmpty()).let { isEmailValid ->
+                    if (isEmailValid) profilePreferences.setEmail(state.email.orEmpty())
+                }
+                profilePreferences.setGender(state.selectedGender)
+                appPreferences.setOnboardingCompleted(true)
+                postSideEffect(OnboardingSideEffect.NavigateAudioPlayer())
+            }
+        }
     }
 
     fun onNextPage(skipPage: Boolean = false) {
         isNextPageAllowed(
             onAllowed = {
                 intent {
+                    logNextPage(state.currentPage)
                     val nextPagePosition =
                         if (!skipPage) state.currentPage.position + 1 else state.currentPage.position + 2
 
@@ -328,7 +391,50 @@ class OnboardingViewModel @Inject constructor(
 
     override fun onCleared() {
         MediaPlayerHelper.release()
+        BackgroundPlayerHelper.stop()
         super.onCleared()
+    }
+
+    private fun logPageOpened(page: OnboardingPage) {
+        when (page) {
+            OnboardingPage.GenderPage -> analyticSender.introGenderShow()
+            OnboardingPage.LanguagePage -> analyticSender.introLangShow()
+            OnboardingPage.NamePage -> analyticSender.introNameShow()
+            OnboardingPage.NotificationsPage -> analyticSender.introNotificationsShow()
+            OnboardingPage.EmailPage -> analyticSender.introEmailShow()
+            OnboardingPage.InterestsPage -> analyticSender.introInterestsShow()
+            OnboardingPage.GoalPage -> analyticSender.introGoalsShow()
+            OnboardingPage.SamplesPage -> analyticSender.introScenesShow()
+//            OnboardingPage.GoalPage -> analyticSender.introGoalShow()
+//            OnboardingPage.SamplesPage -> analyticSender.introSampleShow()
+//            OnboardingPage.EmailPage -> analyticSender.introEmailShow()
+            else -> {}
+        }
+    }
+
+    private fun logNextPage(currentPage: CurrentPage) {
+        when (currentPage.pageType) {
+            OnboardingPage.GenderPage -> analyticSender.introGenderNext()
+            OnboardingPage.LanguagePage -> analyticSender.introLangNext()
+            OnboardingPage.NamePage -> analyticSender.introNameNext()
+            OnboardingPage.NotificationsPage -> analyticSender.introNotificationsNext()
+            OnboardingPage.EmailPage -> analyticSender.introEmailNext()
+            OnboardingPage.InterestsPage -> analyticSender.introInterestsNext()
+            OnboardingPage.GoalPage -> analyticSender.introGoalsShow()
+            OnboardingPage.SamplesPage -> analyticSender.introScenesNext()
+            else -> {}
+        }
+    }
+
+    private fun logSkipPage(currentPage: CurrentPage) {
+        when (currentPage.pageType) {
+            OnboardingPage.NamePage -> analyticSender.introNameSkip()
+            OnboardingPage.NotificationsPage -> analyticSender.introNotificationsSkip()
+            OnboardingPage.EmailPage -> analyticSender.introEmailSkip()
+            OnboardingPage.InterestsPage -> analyticSender.introInterestsSkip()
+            OnboardingPage.GoalPage -> analyticSender.introGoalsSkip()
+            else -> {}
+        }
     }
 }
 

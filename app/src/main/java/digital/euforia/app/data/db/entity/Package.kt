@@ -5,6 +5,7 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Relation
+import digital.euforia.app.ui.programs.ProgramUi
 
 /** Aggregation for reading full package with its children */
 data class PackageWithChildren(
@@ -88,7 +89,12 @@ data class Meditation(
 
     @Embedded(prefix = "audio_file_") val audio: File?,
     @Embedded(prefix = "video_file_") val video: File?,
-)
+) {
+
+    fun computeDurationMinutes(): Int {
+        return (audio?.duration ?: 0).div(60).coerceAtLeast(1)
+    }
+}
 
 @Entity(tableName = "exercises")
 data class Exercise(
@@ -126,7 +132,12 @@ data class Exercise(
 
     @Embedded(prefix = "audio_file_") val audio: File?,
     @Embedded(prefix = "video_file_") val video: VideoFile?,
-)
+) {
+
+    fun computeDurationMinutes(): Int {
+        return (video?.duration ?: audio?.duration ?: 0).div(60).coerceAtLeast(1)
+    }
+}
 
 @Entity(tableName = "articles")
 data class Article(
@@ -158,7 +169,12 @@ data class Article(
     @Embedded(prefix = "music_") val music: File?,
 
     @ColumnInfo(name = "content_length") val contentLength: Int?,
-)
+) {
+
+    fun computeDurationMinutes(): Int {
+        return (contentLength?.div(16.2))?.toInt()?.div(60)?.coerceAtLeast(1) ?: 0
+    }
+}
 
 /** Plain value objects for embedding video details in Exercise */
 data class VideoFile(

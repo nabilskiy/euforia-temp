@@ -58,7 +58,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
@@ -708,7 +707,7 @@ private fun AvatarPreviewItem(
             tooltip = {
                 TriangleTooltipBubble(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    text = stringResource(id = R.string.vibes_avatar_change_hint),
+                    text = LocalLocalizedRes.current.string(R.string.vibes_avatar_change_hint),
                     caretWidth = 12.dp,
                     caretHeight = 8.dp,
                     caretOffsetX = 28.dp,
@@ -762,7 +761,7 @@ private fun RowScope.TitleView(timeOfDay: TimeOfDay, title: String) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = stringResource(timeOfDay.getLabelRes()),
+            text = LocalLocalizedRes.current.string(timeOfDay.getLabelRes()),
             color = White,
             style = appbarMedium,
         )

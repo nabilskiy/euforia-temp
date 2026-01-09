@@ -59,6 +59,7 @@ import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.ExtraButtonColor
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.util.widget.noRippleClickable
 
@@ -70,6 +71,7 @@ fun AvatarsPage(
     selectedAvatar: AvatarUi?,
     onAvatarClick: (AvatarUi?) -> Unit
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val gridState = rememberLazyGridState()
     val hazeState = rememberHazeState()
     val statusBarPadding = WindowInsets.statusBars
@@ -147,6 +149,7 @@ fun AvatarItem(
     hazeState: HazeState? = null,
     onClick: (AvatarUi?) -> Unit
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val borderWidth = if (isSelected) 2.dp else 0.dp
     val borderColor = if (isSelected) White else Color.Transparent
     val border = if (isSelected) BorderStroke(2.dp, White) else null
@@ -182,7 +185,7 @@ fun AvatarItem(
                     Text(
                         modifier = Modifier
                             .padding(horizontal = 5.dp, vertical = 3.dp),
-                        text = stringResource(R.string.vibes_avatars_demo).uppercase(),
+                        text = localizedRes.string(R.string.vibes_avatars_demo).uppercase(),
                         color = White,
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -214,6 +217,7 @@ private fun AvatarImage(url: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun BoxScope.AppBar(modifier: Modifier, onActionsClick: () -> Unit) {
+    val localizedRes = LocalLocalizedRes.current
     Row(
         modifier = modifier
             .noRippleClickable {}.statusBarsPadding().padding(horizontal = 16.dp)
@@ -225,7 +229,7 @@ private fun BoxScope.AppBar(modifier: Modifier, onActionsClick: () -> Unit) {
     ) {
         Spacer(modifier = Modifier.size(24.dp))
         Text(
-            text = stringResource(R.string.vibes_avatars_title),
+            text = localizedRes.string(R.string.vibes_avatars_title),
             color = White,
             style = appbarMedium,
         )

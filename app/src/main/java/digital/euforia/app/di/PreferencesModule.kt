@@ -49,6 +49,14 @@ class PreferencesModule {
 
     @Singleton
     @Provides
+    fun provideDataStore(
+        @ApplicationContext applicationContext: Context
+    ): DataStore<Preferences> {
+        return applicationContext.dataStore
+    }
+
+    @Singleton
+    @Provides
     @Named(NAMED_MOSHI_NETWORK)
     fun provideMoshiNetwork(): Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())

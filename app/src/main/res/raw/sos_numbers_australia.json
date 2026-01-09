@@ -1,0 +1,88 @@
+[
+    {
+        "country": "Australia",
+        "country_native": "Commonwealth of Australia",
+        "code": "AU",
+        "contacts": [
+            {
+                "name": "Domestic Violence Crisis Service",
+                "phone": "(026) 280-0900"
+            },
+            {
+                "name": "Canberra Rape Crisis Centre",
+                "phone": "(026) 247-2525"
+            }
+        ]
+    },
+    {
+        "country": "Papua New Guinea",
+        "country_native": "Independen Stet bilong Papua Niugini",
+        "code": "PG",
+        "contacts": [
+            {
+                "name": "1-TOK Kaunselin Helpim Lain",
+                "phone": "7150-8000"
+            }
+        ]
+    },
+    {
+        "country": "New Zealand",
+        "country_native": "Aotearoa",
+        "code": "NZ",
+        "contacts": [
+            {
+                "name": "Healthline",
+                "phone": "800611116"
+            },
+            {
+                "name": "Samaritans",
+                "phone": "800726666"
+            }
+        ]
+    },
+    {
+        "country": "Fiji",
+        "country_native": "Matanitu Tugalala o Viti",
+        "code": "FJ",
+        "contacts": [
+            {
+                "name": "Lifeline Fiji",
+                "phone": "1543"
+            },
+            {
+                "name": "Empower Pacific 24/7 Counselling Helpline",
+                "phone": "7765-626"
+            }
+        ]
+    },
+    {
+        "country": "New Caledonia",
+        "country_native": "Nouvelle-Calédonie",
+        "code": "NC",
+        "contacts": [
+            {
+                "name": "SOS écoute",
+                "phone": "0530-30"
+            },
+            {
+                "name": "Suicide Prevention",
+                "phone": "1-800-273-8255"
+            }
+        ]
+    },
+    {
+        "country": "Guam",
+        "country_native": "Guåhan",
+        "code": "GU",
+        "contacts": [
+            {
+                "name": "988 Lifeline - Guam Behavioral Health & Wellness Center Crisis Hotline",
+                "phone": "988"
+            },
+            {
+                "name": "Healing Hearts Crisis Center",
+                "phone": "(671) 647-5351"
+            }
+        ]
+    }
+]

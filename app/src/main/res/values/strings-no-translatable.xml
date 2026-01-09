@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string translatable="false" name="link_terms">https://euforia.digital/info/terms</string>
+    <string translatable="false" name="link_privacy">https://euforia.digital/info/privacy</string>
+    <string translatable="false" name="link_copyright">https://euforia.digital/info/copyright</string>
+    <string translatable="false" name="link_about">https://euforia.digital/info/vibes</string>
+    <string translatable="false" name="copyright_euforia">© 2025, EUFORIA MENTAL HEALTH APPS LTD</string>
+</resources>

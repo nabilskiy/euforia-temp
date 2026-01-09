@@ -3,10 +3,12 @@ package digital.euforia.app.domain.usecase.accompaniment
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.AccompanimentWithItems
 import digital.euforia.app.data.repository.AccompanimentItemRepository
+import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.TimeOfDay
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.time.Instant
@@ -17,6 +19,8 @@ class SaveAccompanimentProgressUseCase @Inject constructor(
     private val appPreferences: AppPreferences,
     private val profilePreferences: ProfilePreferences,
     private val repository: AccompanimentItemRepository,
+    private val accompanimentRepository: AccompanimentRepository,
+//    private val accompanimentRepository: AccompanimentRepository,
     private val configFetcher: EuforiaRemoteConfigFetcher
 ) {
     @OptIn(ExperimentalTime::class)
@@ -81,6 +85,26 @@ class SaveAccompanimentProgressUseCase @Inject constructor(
                         repository.update(updatedItem)
                     }
                 }
+            }
+
+            if (isDemo) {
+                accompanimentRepository.getCompletedAccompanimentsCountFlow().firstOrNull()
+                    ?.let { completed ->
+
+                        if (completed >= 7) {
+                            Timber.tag("DemoProgress").d("Demo completed!")
+                            profilePreferences.setIsDemo(false)
+                            accompanimentRepository.syncAccompaniments(demo = false)
+                        }
+                    }
+//
+//                if (allCompleted) {
+//                    Timber.tag("DemoProgress").d("All items completed for accompaniment ${accompanimentWithItems.accompaniment.id}")
+//                    val lastDemoAccompanimentId = appPreferences.getLastDemoAccompanimentId()
+//                    if (accompanimentWithItems.accompaniment.id == lastDemoAccompanimentId) {
+//                        Timber.tag("DemoProgress").d("Demo completed!")
+//                        appPreferences.setIsDemoCompleted(true)
+//                    }
             }
         }
     }

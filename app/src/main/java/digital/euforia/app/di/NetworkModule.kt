@@ -17,6 +17,7 @@ import digital.euforia.app.data.network.TokenProvider
 import digital.euforia.app.data.network.TokensProvider
 import digital.euforia.app.data.network.adapter.ResultAdapterFactory
 import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.data.store.ProfilePreferences
 import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -47,8 +48,9 @@ class NetworkModule {
     @Singleton
     @Provides
     fun provideTokenProviders(
-        appPreferences: AppPreferences
-    ): TokensProvider = TokensProvider(appPreferences)
+        appPreferences: AppPreferences,
+        profilePreferences: ProfilePreferences,
+    ): TokensProvider = TokensProvider(appPreferences, profilePreferences)
 
     @Singleton
     @Provides

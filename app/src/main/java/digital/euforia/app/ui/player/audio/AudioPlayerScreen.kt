@@ -14,6 +14,8 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import androidx.media3.session.MediaController
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -27,6 +29,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.SessionCommand
 import digital.euforia.app.ui.navigation.Home
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
+import digital.euforia.app.ui.subscription.UserActivity
+import digital.euforia.app.ui.subscription.UserActivity.PURCHASE_SUCCESS
+import timber.log.Timber
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -41,11 +46,6 @@ fun SharedTransitionScope.AudioPlayerScreen(
     var volume by remember { mutableFloatStateOf(0.35f) } // 0f..1f
     val shared =
         rememberSharedContentState(key = "${state.accompanimentWithItems?.accompaniment?.id}+${state.timeOfDay.name}")
-
-    viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect, navController)
-    }
-
     val url = viewModel.getMusicUrlForTimeOfDay()
 
     val controller = rememberMediaController(
@@ -54,8 +54,35 @@ fun SharedTransitionScope.AudioPlayerScreen(
         onIsPlayingChanged = { isPlaying ->
             viewModel.onPlayStateChanged(if (isPlaying) PlayState.PLAYING else PlayState.PAUSED)
         },
-        onEnded = { viewModel.savePlaybackProgress(1f)}
+        onEnded = {
+            //todo show paywall
+            viewModel.savePlaybackProgress(1f)
+        },
+        onSeek = {
+            viewModel.logOnSeek()
+        }
     )
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        Timber.tag("PLAN_SCREEN").d("Activity result: $result")
+        if (result.resultCode == PURCHASE_SUCCESS) {
+//            isCongratsVisible.value = true
+        }
+        viewModel.onNavigateHome()
+        // handle result here
+    }
+    val launchSubscriptionActivity: () -> Unit = {
+        controller?.pause()
+        val intent = Intent(context, UserActivity::class.java).apply {
+            putExtra(UserActivity.EXTRA_SCREEN_ID, 18)
+        }
+        launcher.launch(intent)
+    }
+    viewModel.collectSideEffect { sideEffect ->
+        handleSideEffect(sideEffect, navController, launchSubscriptionActivity)
+    }
+
 
     // Release player when leaving the screen
     DisposableEffect(Unit) {
@@ -113,9 +140,15 @@ fun SharedTransitionScope.AudioPlayerScreen(
         durationMs = durationMs,
         shared = shared,
         animatedVisibilityScope = animatedVisibilityScope,
+        isNetworkAvailable = state.isNetworkAvailable,
+        errorState = state.errorState,
+        logListenLaterEvent = viewModel::onListenLaterClicked,
         onBack = { navController.popBackStack() },
         onPageSelected = viewModel::onPageSelected,
-        onPlay = { controller?.play() },
+        onPlay = {
+            controller?.play()
+            viewModel.logPlayClicked()
+        },
         onPause = { controller?.pause() },
         onSeekTo = { positionMs -> controller?.seekTo(positionMs.toLong()) },
         onMuteClick = {
@@ -135,7 +168,9 @@ fun SharedTransitionScope.AudioPlayerScreen(
         onAvatarClick = viewModel::onAvatarSelected,
         navigateAvatars = viewModel::onNavigateToAvatars,
         navigatePlayer = viewModel::onNavigateToPlayer,
-        saveProgress = { viewModel.savePlaybackProgress(currentMs / durationMs) }
+        saveProgress = { viewModel.savePlaybackProgress(currentMs / durationMs) },
+        onRetryClick = viewModel::onRetryClicked,
+        onDownloadsClick = viewModel::onDownloadsClicked
     )
 }
 
@@ -162,11 +197,18 @@ fun setSfxVolume(controller: MediaController, vol: Float) {
     controller.sendCustomCommand(cmd, args)
 }
 
-private fun handleSideEffect(sideEffect: AudioPlayerSideEffect, navController: NavHostController) {
+private fun handleSideEffect(
+    sideEffect: AudioPlayerSideEffect, navController: NavHostController,
+    launchSubscriptionActivity: () -> Unit,
+) {
     when (sideEffect) {
         AudioPlayerSideEffect.NavigateBack -> navController.popBackStack()
         AudioPlayerSideEffect.NavigateHome -> navController.navigate(Home) {
             popUpTo("home") { inclusive = false }
+        }
+
+        AudioPlayerSideEffect.NavigatePaywall -> {
+            launchSubscriptionActivity()
         }
 
         else -> {}

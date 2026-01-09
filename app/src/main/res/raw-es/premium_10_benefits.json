@@ -1,0 +1,38 @@
+[
+    {
+        "title": "Voz de Euforia",
+        "imageUrl": "img://ic_about_premium_1"
+    },
+    {
+        "title": "Avatares de Fotos",
+        "imageUrl": "img://ic_about_premium_2"
+    },
+    {
+        "title": "Paisajes Sonoros",
+        "imageUrl": "img://ic_about_premium_3"
+    },
+    {
+        "title": "Meditaciones",
+        "imageUrl": "img://ic_about_premium_4"
+    },
+    {
+        "title": "Artículos",
+        "imageUrl": "img://ic_about_premium_5"
+    },
+    {
+        "title": "Ejercicios",
+        "imageUrl": "img://ic_about_premium_6"
+    },
+    {
+        "title": "Acceso sin conexión",
+        "imageUrl": "img://ic_about_premium_7"
+    },
+    {
+        "title": "Sin anuncios y restricciones",
+        "imageUrl": "img://ic_about_premium_8"
+    },
+    {
+        "title": "Actualizaciones y Prioridad",
+        "imageUrl": "img://ic_about_premium_9"
+    }
+]

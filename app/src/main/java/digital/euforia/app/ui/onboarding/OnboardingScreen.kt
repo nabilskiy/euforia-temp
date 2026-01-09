@@ -65,6 +65,7 @@ import digital.euforia.app.ui.util.rememberImeState
 import digital.euforia.app.ui.util.widget.AnimatedSizeButton
 import digital.euforia.app.ui.util.widget.AnimatedVerticalShrink
 import digital.euforia.app.ui.util.widget.DelayedVisibilityAnimation
+import digital.euforia.app.ui.util.widget.TermsAndPrivacyText
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -162,7 +163,10 @@ private fun OnboardingContent(
                         clearInputFocus()
                         viewModel.onPreviousPage()
                     },
-                    onSkipClick = {},
+                    onSkipClick = {
+                        viewModel.onSkipPage()
+                        clearInputFocus()
+                    },
                 )
                 HorizontalPager(
                     modifier = Modifier.weight(1f),
@@ -203,8 +207,8 @@ private fun OnboardingContent(
                         viewModel.onNextPage()
                     }
                 },
-                onPrivacyClick = {},
-                onTermsClick = {},
+                onPrivacyClick = { viewModel.onPrivacyClicked() },
+                onTermsClick = { viewModel.onTermsClicked() },
             )
         }
     }
@@ -329,7 +333,11 @@ private fun BoxScope.FooterView(
 //                }
             }
         )
-        TermsText(isTermsShown)
+        TermsText(
+            isTermsShown = isTermsShown,
+            onTermsClick = onTermsClick,
+            onPrivacyClick = onPrivacyClick,
+        )
     }
 
 //    if (requestedOnce) {
@@ -340,16 +348,25 @@ private fun BoxScope.FooterView(
 }
 
 @Composable
-private fun TermsText(isTermsShown: Boolean) {
+private fun TermsText(
+    isTermsShown: Boolean,
+    onTermsClick: () -> Unit,
+    onPrivacyClick: () -> Unit,
+) {
     val localizedResources = LocalLocalizedRes.current
     AnimatedVerticalShrink(isTermsShown) {
-        Text(
+        TermsAndPrivacyText(
             modifier = Modifier.padding(top = 30.dp),
-            text = localizedResources.string(R.string.intro_terms),
-            style = MaterialTheme.typography.labelMedium,
-            color = White.copy(0.7f),
-            textAlign = TextAlign.Center,
+            onTermsClick = onTermsClick,
+            onPrivacyClick = onPrivacyClick,
         )
+//        Text(
+//            modifier = Modifier.padding(top = 30.dp),
+//            text = localizedResources.string(R.string.intro_terms),
+//            style = MaterialTheme.typography.labelMedium,
+//            color = White.copy(0.7f),
+//            textAlign = TextAlign.Center,
+//        )
     }
 }
 
@@ -382,16 +399,18 @@ private fun handleSideEffect(
                 popUpTo(Onboarding) { inclusive = true }
             }
         }
+
         is OnboardingSideEffect.NavigateAudioPlayer -> {
-            navController.navigate(HomeDestination.AudioPlayer(
-                accompanimentId = sideEffect.accompanimentId,
-                timeOfDay = sideEffect.timeOfDay,
-                entryPoint = AudioPlayerEntryPoint.ONBOARDING,
-            )) {
+            navController.navigate(
+                HomeDestination.AudioPlayer(
+                    accompanimentId = sideEffect.accompanimentId,
+                    timeOfDay = sideEffect.timeOfDay,
+                    entryPoint = AudioPlayerEntryPoint.ONBOARDING,
+                )
+            ) {
                 popUpTo(Onboarding) { inclusive = true }
             }
         }
-
 
 
         else -> {}

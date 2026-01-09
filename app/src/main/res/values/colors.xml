@@ -9,4 +9,51 @@
     <color name="white">#FFFFFFFF</color>
     <color name="background">#000000</color>
     <color name="splash_background">#000000</color>
+
+
+    <color name="colorPrimary">#101014</color>
+    <color name="colorPrimaryDark">#24242a</color>
+    <color name="colorAccent">#618bf5</color>
+    <color name="colorAccentDark">#385EBC</color>
+
+    <color name="colorIntroTerms">#7f8497</color>
+    <color name="colorIntroTitle">@color/colorWhite</color>
+
+    <color name="colorEmpty">#202027</color>
+
+    <color name="colorBackgroundPopupPremium">#ECEEEE</color>
+    <color name="colorGreen">#27AE60</color>
+    <color name="colorRed">#d50000</color>
+    <color name="colorRedVariant">#B00020</color>
+    <color name="colorDark">#455650</color>
+    <color name="colorOlive">#789e90</color>
+    <color name="colorDarkLight">#666666</color>
+    <color name="colorStatusBar">#2c000000</color>
+    <color name="colorBackgroundGrey">#eeeeee</color>
+    <color name="colorSearchShadow">#8000</color>
+    <color name="colorNavigation">@color/colorBlack</color>
+    <color name="colorIcons">#616161</color>
+    <color name="colorHint">#707475</color>
+    <color name="colorTextAccentLight">#FFF09F</color>
+    <color name="colorTag">#F7F6E7</color>
+    <color name="colorOverlayGreenLight">#54789E90</color>
+
+    <color name="colorWhite">#fff</color>
+    <color name="colorBlack">#000</color>
+    <color name="colorWhite20">#4fff</color>
+    <color name="colorWhite80">#CCFFFFFF</color>
+    <color name="colorDark20">#4000</color>
+    <color name="colorGrey">#8a8a8a</color>
+    <color name="colorGold">#ffa000</color>
+    <color name="colorGray25">#404040</color>
+    <color name="colorBackground">@color/colorPrimary</color>
+    <color name="colorBlack90">#1A1A1A</color>
+    <color name="colorItemSelection">#17EA582F</color>
+    <color name="colorSplashBackground">@color/colorPrimary</color>
+    <color name="colorSearchBackground">@color/colorPrimary</color>
+    <color name="colorDarkBackground">@color/colorPrimary</color>
+
+    <color name="mtrl_textinput_default_box_stroke_color">#7fff</color>
+
+    <color name="colorOverlayTintBlack">#99000000</color>
 </resources>

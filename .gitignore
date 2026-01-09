@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+/euforia.properties
+/app/keystore.jks

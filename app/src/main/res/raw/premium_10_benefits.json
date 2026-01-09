@@ -1,0 +1,38 @@
+[
+    {
+        "title": "Daily Therapy",
+        "imageUrl": "img://ic_about_premium_1"
+    },
+    {
+        "title": "Voice Avatars",
+        "imageUrl": "img://ic_about_premium_2"
+    },
+    {
+        "title": "Soundscapes",
+        "imageUrl": "img://ic_about_premium_3"
+    },
+    {
+        "title": "Meditations",
+        "imageUrl": "img://ic_about_premium_4"
+    },
+    {
+        "title": "Articles",
+        "imageUrl": "img://ic_about_premium_5"
+    },
+    {
+        "title": "Exercises",
+        "imageUrl": "img://ic_about_premium_6"
+    },
+    {
+        "title": "Offline Access",
+        "imageUrl": "img://ic_about_premium_7"
+    },
+    {
+        "title": "No Ads & Limitations",
+        "imageUrl": "img://ic_about_premium_8"
+    },
+    {
+        "title": "Updates & Priority",
+        "imageUrl": "img://ic_about_premium_9"
+    }
+]

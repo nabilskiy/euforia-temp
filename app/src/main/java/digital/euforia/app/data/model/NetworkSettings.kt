@@ -10,7 +10,7 @@ data class NetworkSettings(
     @field:Json(name = "phrases_limit") val phrasesLimit: Int,
     @field:Json(name = "accompaniments_offset_before") val accompanimentsOffsetBefore: Int,
     @field:Json(name = "accompaniments_offset_after") val accompanimentsOffsetAfter: Int,
-    @field:Json(name = "registrationBonus") val registrationBonus: Int,
+    @field:Json(name = "registrationBonus") val registrationBonus: Int?,
 )
 
 fun NetworkSettings.toEntity(): digital.euforia.app.data.db.entity.AppSettings {

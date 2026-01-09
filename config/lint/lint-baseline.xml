@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.13.0" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.0)" variant="fatal" version="8.13.0">
+
+    <issue
+        id="ExtraTranslation"
+        message="&quot;now_playing_vides_morning&quot; is translated here but not found in default locale"
+        errorLine1="    &lt;string name=&quot;now_playing_vides_morning&quot;>Morning vibes&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-uk/strings.xml"
+            line="520"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ExtraTranslation"
+        message="&quot;now_playing_vides_daytime&quot; is translated here but not found in default locale"
+        errorLine1="    &lt;string name=&quot;now_playing_vides_daytime&quot;>Daytime vibes&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-uk/strings.xml"
+            line="521"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ExtraTranslation"
+        message="&quot;now_playing_vides_evening&quot; is translated here but not found in default locale"
+        errorLine1="    &lt;string name=&quot;now_playing_vides_evening&quot;>Evening vibes&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-uk/strings.xml"
+            line="522"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ExtraTranslation"
+        message="&quot;sos_details&quot; is translated here but not found in default locale"
+        errorLine1="    &lt;string name=&quot;sos_details&quot;>Si te sientes en &amp;lt;p&amp;gt;estado psicoemocional crítico&amp;lt;/p&amp;gt;, no intentes superarlo por tu cuenta. Así como no nos automedicamos, la mente es parte del organismo y puede enfermarse como cualquier otra parte. La mejor solución sería contactar a un psicólogo o psicoterapeuta.\n\nSi no es viable en este momento, &amp;lt;p&amp;gt;alivia tu estado emocional&amp;lt;/p&amp;gt;. Es difícil conservar la energía, la autoestima y la capacidad de pensar con claridad en un cuerpo atormentado. Prueba las técnicas que activan el mecanismo natural de relajación.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-es/strings.xml"
+            line="531"
+            column="13"/>
+    </issue>
+
+</issues>

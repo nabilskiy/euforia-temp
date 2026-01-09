@@ -112,7 +112,7 @@
 
     <!-- Personal data -->
     <string name="personal_data_privacy">Privacy Policy</string>
-    <string name="personal_data_usage">App Privacy Information (App Store)</string>
+    <string name="personal_data_usage">App Privacy Information (Play Market)</string>
     <string name="personal_data_clear">Clear App Data</string>
     <string name="personal_data_title">Clear App Data</string>
     <string name="personal_data_clear_details">This process will permanently delete all data created during your use of the app, including:\n– Name.\n– Your preferences and the survey results.\n– Browsing history and favorites.\n– Uploaded files, meditations, articles, exercises and soundscapes, including created soundscapes.\n– Recommendations and suggestions.\n– Other data and cache.\nThis process cannot be undone.</string>
@@ -161,6 +161,11 @@
     <string name="intro_email_info">Your email is required for feedback, support and important announcements. It will be kept private and secure.</string>
     <string name="intro_next">Next</string>
     <string name="intro_terms"><![CDATA[By clicking "Next" you confirm that you\'ve read and accepted <privacy_link>Privacy<BON:noBreakSpace/>Policy</privacy_link> and <terms_link>User<BON:noBreakSpace/>Agreement</terms_link>]]></string>
+    <string name="intro_terms_1">By clicking "Next" you confirm that you\'ve read and accepted </string>
+    <string name="intro_terms_privacy">Privacy Policy</string>
+    <string name="intro_terms_2">and</string>
+    <string name="intro_terms_terms">User Agreement</string>
+
     <string name="intro_final_listen_welcome">Better with headphones</string>
     <string name="intro_final_title">Preparing your Euforia…</string>
     <string name="intro_final_subtitle">This could take a few seconds</string>
@@ -209,6 +214,31 @@
     <string name="subscription_compare_8">No Ads or Limitations</string>
     <string name="subscription_compare_footer">Get more with an annual MAX subscription. Pay once and enjoy a significant discount compared to monthly renewal. Subscribe for full app access and regular content updates throughout the year.</string>
 
+    <!--Legacy subscription resources-->
+    <string name="text_payment_not_available">Can\'t make payment. Please try again later.</string>
+    <string name="add_compositions_title">Selections</string>
+    <string name="premium_terms_text_small">Subscription automatically renews at the end of the current period. Cancel anytime on Google Play.</string>
+    <string name="per_month">\/month</string>
+    <string name="save_label">Save up to 50%</string>
+    <string name="best_price_label">Best choice</string>
+    <string name="get_premium">Upgrade now</string>
+    <string name="continue_without_premium">Later</string>
+    <string name="subscription_period_month">month</string>
+    <string name="subscription_period_year">year</string>
+    <string name="trial_period_3_days">3 days</string>
+    <string name="trial_period_7_days">7 days</string>
+    <string name="you_are_already_pro">You already have Premium access</string>
+    <string name="pro_popup_title">Subscription is now active</string>
+    <string name="pro_popup_message">You have full access to the Premium content and features</string>
+    <string name="pro_popup_close_button">Get started</string>
+    <string name="hint_tap_to_fullsceen">Tap to open in full-screen</string>
+    <string name="price_per_month">/mo.</string>
+    <string name="button_continue">Continue</string>
+    <string name="get_started">Get started</string>
+    <string name="more">More</string>
+    <string name="text_please_wait">Please wait</string>
+    <string name="text_premium_post_setup_error">Subscription is not currently available on your device. Please try again later.</string>
+
     <!-- About Premium -->
     <string name="about_premium_status_text"><![CDATA[Your subscription is active. Euforia MAX expires on %1$s. You can always manage your subscription from the menu <subs_manager_link>Billing &amp; Subscriptions</subs_manager_link>.]]></string>
     <string name="about_premium_done">OK</string>
@@ -251,6 +281,8 @@
     <string name="vibes_demo_period_skip_warning_title">First Therapy Week</string>
     <string name="vibes_demo_period_skip_warning_message">We recommend completing the 7-day introduction before moving on to the main sessions.</string>
     <string name="vibes_skip_demo_period">Finish First Week</string>
+    <string name="vibes_skip_demo_period_message">Unlock all content and get unique audio every day 🤩</string>
+    <string name="vibes_skip_demo_period_button">Unlock full access</string>
     <string name="vibes_rate">Rate</string>
     <string name="vibes_title_demo_date">Day %1$d</string>
     <string name="vibes_avatars_title">Choose Avatar</string>
@@ -420,6 +452,11 @@
     <string name="profile_faq">FAQs</string>
     <string name="profile_support">Support</string>
     <string name="profile_developer">Developer</string>
+    <string name="profile_tiktok">TikTok</string>
+    <string name="profile_youtube">YouTube</string>
+    <string name="profile_x">X</string>
+    <string name="profile_facebook">Facebook</string>
+    <string name="profile_instagram">Instagram</string>
 
     <!-- Settings -->
     <string name="name_placeholder">Name</string>
@@ -522,6 +559,15 @@
     <string name="notification_accompaniment_remind_later">Remind me in an hour</string>
 
     <!-- SOS -->
+    <!-- First paragraph -->
+    <string name="mental_text_part_1">If you are in a</string>
+    <string name="mental_text_highlight_1">critical psychological and emotional state,</string>
+    <string name="mental_text_part_2">do not try to cope on your own. Just like we don’t treat our teeth ourselves, the psyche is part of the body and can get sick like a tooth. The best solution is to see a psychotherapist.</string>
+
+    <!-- Second paragraph -->
+    <string name="mental_text_part_3">If this is not possible now, let’s</string>
+    <string name="mental_text_highlight_2">facilitate the emotional state.</string>
+    <string name="mental_text_part_4">In a body where fire and hurricanes rage, it is not easy to maintain energy, self-confidence, and the ability to think clearly. Try to start a natural calming mechanism with us.</string>
     <string name="sos_title">SOS</string>
     <string name="sos_option_1">Breath 4–7–8</string>
     <string name="sos_option_1_details">2 minutes</string>

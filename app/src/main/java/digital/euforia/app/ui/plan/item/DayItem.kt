@@ -28,6 +28,8 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -44,11 +46,16 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontWeight.Companion.Normal
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import digital.euforia.app.R
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.getCompletedPhrases
 import digital.euforia.app.data.db.entity.getCurrentPhrase
@@ -56,12 +63,16 @@ import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.ui.plan.DayTimeItemUi
 import digital.euforia.app.ui.plan.DayUi
+import digital.euforia.app.ui.plan.TodayOffset
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.DarkGray
+import digital.euforia.app.ui.theme.MaxGradient
+import digital.euforia.app.ui.theme.MaxGradientReversed
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.daytimeColors
 import digital.euforia.app.ui.theme.eveningColors
 import digital.euforia.app.ui.theme.morningColors
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.canvas.timeOfDayBackgroundAnimation
 import digital.euforia.app.ui.util.formatDateFromMillis
 import digital.euforia.app.ui.util.shadow
@@ -72,7 +83,6 @@ import digital.euforia.app.ui.util.widget.AccompanimentButtonDimensions
 import digital.euforia.app.ui.util.widget.MaxTextView
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -86,7 +96,10 @@ fun SharedTransitionScope.dayItem(
     selectedDayIndex: Int,
     timeOfDay: TimeOfDay,
     timeOfDayConfig: TimeOfDayConfig,
+    todayOffset: TodayOffset,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    analyticSender: AnalyticSender,
+    onPremiumClick: () -> Unit,
     onDaySelected: (Int) -> Unit,
     onDayTimeItemClick: (DayTimeItemUi) -> Unit
 ) {
@@ -101,10 +114,17 @@ fun SharedTransitionScope.dayItem(
                     completedDays = completedDays,
                     isDemo = isDemo,
                     isPremium = isPremium,
+                    todayOffset = todayOffset,
                     isNextEnabled = days.lastIndex > selectedDayIndex,
                     isPrevEnabled = selectedDayIndex > 0,
-                    onPrevClick = { onDaySelected(selectedDayIndex - 1) },
-                    onNextClick = { onDaySelected(selectedDayIndex + 1) }
+                    onPrevClick = {
+                        analyticSender.todayPrevDayClick()
+                        onDaySelected(selectedDayIndex - 1)
+                    },
+                    onNextClick = {
+                        analyticSender.todayNextDayClick()
+                        onDaySelected(selectedDayIndex + 1)
+                    }
                 )
             }
         }
@@ -125,11 +145,70 @@ fun SharedTransitionScope.dayItem(
             userScrollEnabled = true
         ) { position ->
             days.getOrNull(position)?.let { pageDay ->
-                AccompanimentPagerPage(
-                    day = pageDay,
-                    timeOfDayConfig = timeOfDayConfig,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    onDayTimeItemClick = onDayTimeItemClick
+                if (!pageDay.isSubscriptionDay) {
+                    AccompanimentPagerPage(
+                        day = pageDay,
+                        timeOfDayConfig = timeOfDayConfig,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        onDayTimeItemClick = onDayTimeItemClick
+                    )
+                } else {
+                    PremiumDayPage(onClick = onPremiumClick)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PremiumDayPage(onClick: () -> Unit) {
+    val localizedRes = LocalLocalizedRes.current
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .height(260.dp)
+            .clip(RoundedCornerShape(24.dp)),
+    ) {
+
+        AsyncImage(
+            modifier = Modifier.fillMaxSize(),
+            model = R.drawable.img_8day_bg,
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds
+        )
+        Column(
+            modifier = Modifier.align(Alignment.Center).padding(horizontal = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                modifier = Modifier.padding(),
+                text = localizedRes.string(R.string.vibes_skip_demo_period).uppercase(),
+                style = MaterialTheme.typography.displaySmall.copy(fontSize = 24.sp),
+                color = White,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                modifier = Modifier.padding(vertical = 16.dp),
+                text = localizedRes.string(R.string.vibes_skip_demo_period_message),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = Normal),
+                color = White,
+                textAlign = TextAlign.Center
+            )
+
+            Button(
+                onClick = { onClick() },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = White,
+                    contentColor = Black
+                ),
+            ) {
+                Text(
+                    text = localizedRes.string(R.string.vibes_skip_demo_period_button),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        brush = MaxGradientReversed
+                    ),
                 )
             }
         }
@@ -161,7 +240,7 @@ private fun SharedTransitionScope.AccompanimentPagerPage(
             AccompanimentButton(
                 modifier = Modifier.fillMaxHeight().weight(1f)
                     .sharedElement(shared1, animatedVisibilityScope),
-                accompaniment = day.accompaniment,
+                accompaniment = day.accompaniment ?: return,
                 item = first,
                 timeOfDayConfig = timeOfDayConfig,
                 buttonDimensions = AccompanimentButtonDimensions.PRIMARY,
@@ -194,7 +273,7 @@ private fun SharedTransitionScope.AccompanimentPagerPage(
 }
 
 @Composable
-private fun AccompanimentButton(
+fun AccompanimentButton(
     modifier: Modifier,
     accompaniment: Accompaniment,
     item: DayTimeItemUi,
@@ -204,7 +283,11 @@ private fun AccompanimentButton(
     buttonDimensions: AccompanimentButtonDimensions = AccompanimentButtonDimensions.SECONDARY,
     onClick: (DayTimeItemUi) -> Unit
 ) {
-    Box(modifier = modifier.noRippleClickable(onClick = { onClick(item) })) {
+    Box(modifier = modifier.noRippleClickable(onClick = {
+        if (item.state == DayTimeItemUi.State.AVAILABLE || item.state == DayTimeItemUi.State.COMPLETED) {
+            onClick(item)
+        }
+    })) {
         DayTimeBackground(item, buttonDimensions)
 
         when (item.state) {
@@ -334,23 +417,25 @@ private fun BoxScope.TimeOfDayTitleView(
     dayTimeItem: DayTimeItemUi,
     buttonDimensions: AccompanimentButtonDimensions,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val title = accompaniment.getTitleByTimeOfDay(item)
 
     Column(
         modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
-        verticalArrangement = spacedBy(12.dp),
+        verticalArrangement = spacedBy(8.dp),
         horizontalAlignment = Alignment.Start
     ) {
         Row(
             verticalAlignment = CenterVertically
         ) {
-            val completedCount = if (dayTimeItem.item.timeOfDay != TimeOfDay.DAYTIME/* || dayTimeItem.state*/) {
-                ""
-            } else {
-                val completed = accompaniment.getCompletedPhrases(item.item).size + 1
-                val total = accompaniment.phrases.size
-                if (completed > total) "" else " $completed/$total"
-            }
+            val completedCount =
+                if (dayTimeItem.item.timeOfDay != TimeOfDay.DAYTIME/* || dayTimeItem.state*/) {
+                    ""
+                } else {
+                    val completed = accompaniment.getCompletedPhrases(item.item).size + 1
+                    val total = accompaniment.phrases.size
+                    if (completed > total) "" else " $completed/$total"
+                }
 
             if (dayTimeItem.state == DayTimeItemUi.State.COMPLETED) {
                 Icon(
@@ -361,7 +446,9 @@ private fun BoxScope.TimeOfDayTitleView(
                 )
             }
             Text(
-                text = "${stringResource(id = dayTimeItem.item.timeOfDay.getTitleRes()).uppercase()}$completedCount",
+                text = "${
+                    localizedRes.string(dayTimeItem.item.timeOfDay.getTitleRes()).uppercase()
+                }$completedCount",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = White.copy(alpha = 0.2f)
             )
@@ -370,7 +457,8 @@ private fun BoxScope.TimeOfDayTitleView(
             text = title,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontSize = buttonDimensions.titleFontSize,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                lineHeight = buttonDimensions.titleLineHeight
             ),
             color = White
         )
@@ -383,6 +471,7 @@ fun HeaderView(
     day: DayUi,
     dayIndex: Int,
     completedDays: Int,
+    todayOffset: TodayOffset,
     isDemo: Boolean,
     isPremium: Boolean,
     isNextEnabled: Boolean,
@@ -405,7 +494,9 @@ fun HeaderView(
                 isDemo = isDemo,
                 isPremium = isPremium,
                 isToday = day.isToday,
-                daysOffset = dayIndex - completedDays
+                daysOffset = dayIndex - completedDays,
+                todayOffset = todayOffset
+//                daysOffset = dayIndex - completedDays
             )
 
             Box(
@@ -427,7 +518,9 @@ fun HeaderView(
         }
         LockText(
             index = dayIndex,
-            day = day
+            day = day,
+            isDemo = isDemo,
+            isPremium = isPremium
         )
     }
 }
@@ -438,16 +531,27 @@ private fun TitleText(
     isDemo: Boolean,
     isPremium: Boolean,
     isToday: Boolean,
-    daysOffset: Int
+    daysOffset: Int,
+    todayOffset: TodayOffset
 ) {
+    val localizedRes = LocalLocalizedRes.current
 
     val todayText =
         if (isDemo) {
-            stringResource(R.string.vibes_title_demo_date, dayIndex + 1)
+            localizedRes.string(R.string.vibes_title_demo_date, dayIndex + 1)
         } else if (isToday) {
-            stringResource(R.string.today_title)
+            localizedRes.string(R.string.today_title)
         } else {
-            formatDateFromMillis(System.currentTimeMillis() + (daysOffset * 86400000L))
+            if (dayIndex < todayOffset.daysBefore) {
+                val offset = todayOffset.daysBefore - dayIndex
+                formatDateFromMillis(System.currentTimeMillis() - (offset * 86400000L))
+            } else {
+                val offset = dayIndex - todayOffset.daysBefore
+                formatDateFromMillis(System.currentTimeMillis() + (offset * 86400000L))
+
+            }
+//            todayOffset.daysBefore
+//            formatDateFromMillis(System.currentTimeMillis() + (daysOffset * 86400000L))
         }
 
     Text(
@@ -458,11 +562,22 @@ private fun TitleText(
 }
 
 @Composable
-private fun LockText(index: Int, day: DayUi) {
+private fun LockText(
+    index: Int, day: DayUi, isDemo: Boolean,
+    isPremium: Boolean
+) {
+    val localizedRes = LocalLocalizedRes.current
     val text = if (day.isLockedByPrevDay()) {
-        stringResource(R.string.vibes_unavailable_text, index)
+        if (isDemo) {
+            localizedRes.string(R.string.vibes_unavailable_text, index)
+        } else {
+//            if (isPremium) {
+            null
+//            }
+//            stringResource(R.string.vibes_unavailable_text_2)
+        }
     } else if (day.isLockedByPremium()) {
-        stringResource(R.string.vibes_unavailable_get_max_text)
+        localizedRes.string(R.string.vibes_unavailable_get_max_text)
     } else {
         null
     }
@@ -522,11 +637,12 @@ fun subscribeToPagerUpdates(
 private fun Accompaniment.getTitleByTimeOfDay(
     item: DayTimeItemUi
 ): String {
+    val localizedRes = LocalLocalizedRes.current
     return when (item.item.timeOfDay) {
         TimeOfDay.MORNING -> morningTitle
         TimeOfDay.DAYTIME -> {
             getCurrentPhrase(item.item)?.daytimeTitle
-                ?: stringResource(R.string.vibes_daytime_completed)
+                ?: localizedRes.string(R.string.vibes_daytime_completed)
 //
 ////            val phrasesList = phrases
 //            val phrasesIds = phrases.map { it.id }

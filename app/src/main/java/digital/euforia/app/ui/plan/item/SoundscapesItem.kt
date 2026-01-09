@@ -45,7 +45,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
@@ -63,6 +62,7 @@ import digital.euforia.app.ui.theme.MaxGradientReversed
 import digital.euforia.app.ui.theme.SecondaryText
 import digital.euforia.app.ui.theme.SoundscapesButtonBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.AnimatedSizeBox
 import digital.euforia.app.ui.util.widget.clickableSingle
 
@@ -107,6 +107,7 @@ fun LazyListScope.soundscapesItem(
 
 @Composable
 private fun SoundscapesContent(onSoundscapesClick: () -> Unit) {
+    val localizedRes = LocalLocalizedRes.current
     Box(modifier = Modifier.fillMaxWidth().heightIn(min = 220.dp)) {
         soundscapes.forEachIndexed { index, soundscapeUi ->
             FloatingSoundscape(
@@ -123,14 +124,14 @@ private fun SoundscapesContent(onSoundscapesClick: () -> Unit) {
         ) {
             Text(
                 modifier = Modifier.padding(top = 4.dp),
-                text = stringResource(R.string.today_info_step_scenes_title),
+                text = localizedRes.string(R.string.today_info_step_scenes_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
                 color = White,
                 textAlign = TextAlign.Start,
             )
 
             Text(
-                text = stringResource(R.string.today_info_step_scenes_text),
+                text = localizedRes.string(R.string.today_info_step_scenes_text),
                 style = MaterialTheme.typography.bodyMedium,
                 color = SecondaryText,
                 textAlign = TextAlign.Start,
@@ -146,9 +147,10 @@ fun ColumnScope.FooterButtons(
     onSupportClick: () -> Unit,
     onSOSClick: () -> Unit
 ) {
+    val localizedRes = LocalLocalizedRes.current
     Text(
         modifier = Modifier.padding(top = 48.dp, bottom = 24.dp).fillMaxWidth(),
-        text = stringResource(R.string.today_footer),
+        text = localizedRes.string(R.string.today_footer),
         style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
         color = White,
         textAlign = TextAlign.Center,
@@ -176,6 +178,7 @@ fun ColumnScope.FooterButton(
     textColor: Color = White,
     onClick: () -> Unit
 ) {
+    val localizedRes = LocalLocalizedRes.current
     AnimatedSizeBox(
         modifier = Modifier.padding(horizontal = 64.dp, vertical = 8.dp),
         pressedScale = 1.02f,
@@ -183,12 +186,12 @@ fun ColumnScope.FooterButton(
     ) {
         Box(
             modifier = Modifier.fillMaxWidth()
-                .background(color = containerColor, shape = RoundedCornerShape(16.dp))
+                .background(color = containerColor, shape = CircleShape)
                 .height(48.dp),
         ) {
             Text(
                 modifier = Modifier.align(Alignment.Center),
-                text = stringResource(textRes),
+                text = localizedRes.string(textRes),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
                 maxLines = 3,
                 overflow = Ellipsis,
@@ -201,6 +204,7 @@ fun ColumnScope.FooterButton(
 @Composable
 fun PremiumBannerContent(isPremium: Boolean, bannerConfig: BannerConfig?, onClick: () -> Unit) {
     if (!isPremium && bannerConfig != null) {
+        val localizedRes = LocalLocalizedRes.current
         val fontSize = bannerConfig.style.subtitleSize.sp
         Box(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 164.dp, end = 16.dp)
@@ -228,7 +232,7 @@ fun PremiumBannerContent(isPremium: Boolean, bannerConfig: BannerConfig?, onClic
                 )
 
                 Text(
-                    text = stringResource(R.string.plan_banner_max),
+                    text = localizedRes.string(R.string.plan_banner_max),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Medium,
                         fontSize = fontSize,
@@ -349,6 +353,7 @@ fun Modifier.triRadialGradient(
 
 @Composable
 fun SoundscapesButton(onClick: () -> Unit) {
+    val localizedRes = LocalLocalizedRes.current
     FilledTonalButton(
         shape = RoundedCornerShape(12.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -359,7 +364,7 @@ fun SoundscapesButton(onClick: () -> Unit) {
     ) {
         Text(
             modifier = Modifier,
-            text = stringResource(R.string.today_info_step_scenes_button),
+            text = localizedRes.string(R.string.today_info_step_scenes_button),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
             maxLines = 3,
             overflow = Ellipsis,

@@ -1,8 +1,10 @@
 package digital.euforia.app.di
 
+import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import digital.euforia.app.data.api.EuforiaApi
 import digital.euforia.app.data.db.AppDatabase
@@ -11,6 +13,11 @@ import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.repository.AppSettingsRepository
 import digital.euforia.app.data.repository.PackageRepository
 import digital.euforia.app.data.repository.ResourceRepository
+import digital.euforia.app.data.repository.FaqCategoryRepository
+import digital.euforia.app.data.repository.FeedbackFormRepository
+import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.service.notifications.NotificationScheduler
+import digital.euforia.app.service.notifications.WorkManagerNotificationScheduler
 import javax.inject.Singleton
 
 @Module
@@ -56,14 +63,16 @@ class RepositoryModule {
     @Provides
     fun providePackageRepository(
         api: EuforiaApi,
-        database: AppDatabase
+        database: AppDatabase,
+        appPreferences: AppPreferences
     ): PackageRepository {
         return PackageRepository(
             api = api,
             packageDao = database.packageDao(),
             meditationDao = database.meditationDao(),
             exerciseDao = database.exerciseDao(),
-            articleDao = database.articleDao()
+            articleDao = database.articleDao(),
+            appPreferences = appPreferences
         )
     }
 
@@ -78,4 +87,33 @@ class RepositoryModule {
             resourceDao = database.resourceDao()
         )
     }
+
+    @Singleton
+    @Provides
+    fun provideFaqCategoryRepository(
+        api: EuforiaApi,
+        database: AppDatabase
+    ): FaqCategoryRepository {
+        return FaqCategoryRepository(
+            api = api,
+            faqCategoryDao = database.faqCategoryDao(),
+            faqItemDao = database.faqItemDao()
+        )
+    }
+
+    @Singleton
+    @Provides
+    fun provideFeedbackFormRepository(
+        database: AppDatabase
+    ): FeedbackFormRepository {
+        return FeedbackFormRepository(
+            feedbackFormDao = database.feedbackFormDao()
+        )
+    }
+
+    @Provides
+    fun provideScheduler(
+        @ApplicationContext context: Context
+    ): NotificationScheduler =
+        WorkManagerNotificationScheduler(context)
 }

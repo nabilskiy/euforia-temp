@@ -42,7 +42,7 @@ fun premiumDailyTasks() = listOf(
     DailyTask(
         titleRes = R.string.today_progress_premium_2_title,
         descriptionRes = R.string.today_progress_premium_2_text,
-        iconRes = R.drawable.ic_voice
+        iconRes = R.drawable.ic_voice_task
     ),
     DailyTask(
         titleRes = R.string.today_progress_premium_3_title,

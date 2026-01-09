@@ -6,6 +6,7 @@ import com.google.firebase.remoteconfig.remoteConfig
 import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import digital.euforia.app.R
 import digital.euforia.app.domain.util.ResultWrapper
 import digital.euforia.app.domain.util.runCatchingWrapper
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -21,6 +21,7 @@ class AppPreferences(
     private val store: DataStore<Preferences>
 ) {
     private val keyDeviceToken = stringPreferencesKey("deviceToken")
+
     private val keyLanguage = stringPreferencesKey("language")
     private val keyNotificationPermissionGranted =
         booleanPreferencesKey("notification_permission_granted")
@@ -31,6 +32,15 @@ class AppPreferences(
     private val keyFirstLaunchDate = longPreferencesKey("first_launch_date")
     private val keyLastLaunchDate = longPreferencesKey("last_launch_date")
     private val keyTranslationsJson = stringPreferencesKey("translations_json")
+    private val keyMorningNotificationEnabled =
+        booleanPreferencesKey("morning_notification_enabled")
+    private val keyDayNotificationEnabled = booleanPreferencesKey("day_notification_enabled")
+    private val keyEveningNotificationEnabled =
+        booleanPreferencesKey("evening_notification_enabled")
+    private val keyMorningNotificationTime = intPreferencesKey("morning_notification_time")
+    private val keyDayNotificationTime = intPreferencesKey("day_notification_time")
+    private val keyEveningNotificationTime = intPreferencesKey("evening_notification_time")
+    private val shouldSyncPackagesKey = booleanPreferencesKey("should_sync_packages")
 
     suspend fun getDeviceToken(): String {
         val existing = store.data.firstOrNull()?.get(keyDeviceToken)
@@ -54,6 +64,17 @@ class AppPreferences(
                 deviceToken
             }
         }
+    }
+
+    suspend fun initDeviceToken(): String {
+        val existing = store.data.firstOrNull()?.get(keyDeviceToken)
+        if (existing != null) return existing
+
+        val deviceToken = UUID.randomUUID().toString()
+        store.edit { preferences ->
+            preferences[keyDeviceToken] = deviceToken
+        }
+        return deviceToken
     }
 
     suspend fun setDeviceToken(token: String) {
@@ -195,5 +216,84 @@ class AppPreferences(
             val json = preferences[keyTranslationsJson] ?: return@map emptyMap()
             parseJsonToFlatMap(json)
         }
+    }
+
+    suspend fun setMorningNotificationEnabled(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[keyMorningNotificationEnabled] = enabled
+        }
+    }
+
+    suspend fun isMorningNotificationEnabled(): Boolean {
+        return store.data.firstOrNull()?.get(keyMorningNotificationEnabled) ?: false
+    }
+
+    suspend fun setDayNotificationEnabled(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[keyDayNotificationEnabled] = enabled
+        }
+    }
+
+    suspend fun isDayNotificationEnabled(): Boolean {
+        return store.data.firstOrNull()?.get(keyDayNotificationEnabled) ?: false
+    }
+
+    suspend fun setEveningNotificationEnabled(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[keyEveningNotificationEnabled] = enabled
+        }
+    }
+
+    suspend fun isEveningNotificationEnabled(): Boolean {
+        return store.data.firstOrNull()?.get(keyEveningNotificationEnabled) ?: false
+    }
+
+    suspend fun setMorningNotificationTime(hours: Int, minutes: Int) {
+        store.edit { preferences ->
+            preferences[keyMorningNotificationTime] = hours * 60 + minutes
+        }
+    }
+
+    suspend fun getMorningNotificationTime(): Pair<Int, Int> {
+        val total = store.data.firstOrNull()?.get(keyMorningNotificationTime) ?: (7*60)
+        return total / 60 to total % 60
+    }
+
+    suspend fun setDayNotificationTime(hours: Int, minutes: Int) {
+        store.edit { preferences ->
+            preferences[keyDayNotificationTime] = hours * 60 + minutes
+        }
+    }
+
+    suspend fun getDayNotificationTime(): Pair<Int, Int> {
+        val total = store.data.firstOrNull()?.get(keyDayNotificationTime) ?: (12 * 60)
+        return total / 60 to total % 60
+    }
+
+    suspend fun setEveningNotificationTime(hours: Int, minutes: Int) {
+        store.edit { preferences ->
+            preferences[keyEveningNotificationTime] = hours * 60 + minutes
+        }
+    }
+
+    suspend fun getEveningNotificationTime(): Pair<Int, Int> {
+        val total = store.data.firstOrNull()?.get(keyEveningNotificationTime) ?: (20 * 60)
+        return total / 60 to total % 60
+    }
+
+    suspend fun clearAll() {
+        store.edit { preferences ->
+            preferences.clear()
+        }
+    }
+
+    suspend fun setShouldSyncPackages(shouldSync: Boolean) {
+        store.edit { preferences ->
+            preferences[shouldSyncPackagesKey] = shouldSync
+        }
+    }
+
+    suspend fun getShouldSyncPackages(): Boolean {
+        return store.data.firstOrNull()?.get(shouldSyncPackagesKey) ?: true
     }
 }

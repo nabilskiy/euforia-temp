@@ -2,6 +2,7 @@ package digital.euforia.app.ui.plan
 
 import digital.euforia.app.data.db.entity.AccompanimentWithItems
 import digital.euforia.app.domain.model.TimeOfDay
+import timber.log.Timber
 
 /**
  * Pure mapping helpers to transform domain data to UI models for the Plan screen.
@@ -12,19 +13,30 @@ internal fun AccompanimentWithItems.toDayUi(
     isToday: Boolean,
     lockState: DayUi.LockState,
     timeOfDay: TimeOfDay,
+    isPremium: Boolean,
+    todayOffsetBefore: Int = 2,
+    dayIndex: Int = 0,
+    forceUnlock: Boolean = false,
 ): DayUi {
     val mapped = items.map { item ->
-        val state = if (lockState != DayUi.LockState.UNLOCKED) {
-            DayTimeItemUi.State.LOCKED
-        } else if (isToday) {
-            when {
-                item.isCompleted -> DayTimeItemUi.State.COMPLETED
-                item.timeOfDay <= timeOfDay -> DayTimeItemUi.State.AVAILABLE
-                else -> DayTimeItemUi.State.SCHEDULED
+        val state =
+            if (forceUnlock) {
+                DayTimeItemUi.State.AVAILABLE
+            } else if (lockState != DayUi.LockState.UNLOCKED) {
+                DayTimeItemUi.State.LOCKED
+            } else if (isToday) {
+                when {
+                    item.isCompleted -> DayTimeItemUi.State.COMPLETED
+                    item.timeOfDay <= timeOfDay -> DayTimeItemUi.State.AVAILABLE
+                    else -> DayTimeItemUi.State.SCHEDULED
+                }
+            } else {
+                if (item.isCompleted) {
+                    DayTimeItemUi.State.COMPLETED
+                } else if (isPremium && dayIndex < todayOffsetBefore) {
+                    DayTimeItemUi.State.AVAILABLE
+                } else DayTimeItemUi.State.LOCKED
             }
-        } else {
-            if (item.isCompleted) DayTimeItemUi.State.COMPLETED else DayTimeItemUi.State.LOCKED
-        }
         DayTimeItemUi(item = item, state = state)
     }
 
@@ -45,7 +57,7 @@ internal fun AccompanimentWithItems.toDayUi(
         isToday = isToday,
         lockState = lockState,
 
-    )
+        )
 }
 
 internal fun computeIsToday(
@@ -74,8 +86,18 @@ internal fun computeLockState(
             }
         }
     } else {
+        Timber.tag("PLAN_UI")
+            .d("computeLockState: index=$index, isPremium=$isPremium, todayOffsetBefore=$todayOffsetBefore")
         if (isPremium) {
-            if (index > todayOffsetBefore) DayUi.LockState.LOCKED_BY_PREV_DAY else DayUi.LockState.UNLOCKED
+            if (index > todayOffsetBefore) {
+//                Timber.tag("PLAN_UI")
+//                    .d("computeLockState: LOCKED_BY_PREV_DAY")
+                DayUi.LockState.LOCKED_BY_PREV_DAY
+            } else {
+//                Timber.tag("PLAN_UI")
+//                    .d("computeLockState: UNLOCKED")
+                DayUi.LockState.UNLOCKED
+            }
         } else {
             DayUi.LockState.LOCKED_BY_PREMIUM
         }

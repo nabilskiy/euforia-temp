@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.R
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.AccompanimentWithItems
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_VOICE_AVATAR
@@ -20,18 +21,26 @@ import javax.inject.Inject
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.DemoUnlockDayConfig
 import digital.euforia.app.domain.model.onboarding.Gender
+import digital.euforia.app.domain.model.toEventParam
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentUseCase
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentWithItemsUseCase
 import digital.euforia.app.domain.usecase.accompaniment.SaveAccompanimentProgressUseCase
+import digital.euforia.app.domain.usecase.accompaniment.SyncAccompanimentsUseCase
 import digital.euforia.app.domain.usecase.accompaniment.UpdateAccompanimentItemUseCase
+import digital.euforia.app.domain.usecase.network.CheckInternetConnectionUseCase
 import digital.euforia.app.domain.usecase.resources.GetResourcesUseCase
+import digital.euforia.app.domain.usecase.resources.SyncResourcesUseCase
+import digital.euforia.app.ui.util.logTag
 import digital.euforia.app.ui.util.reduceState
+import digital.euforia.app.ui.util.widget.ErrorViewState
+import digital.euforia.app.ui.util.widget.mapToErrorViewState
 import digital.euforia.app.ui.util.widget.vibe.PlayState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
+import timber.log.Timber
 
 @HiltViewModel
 class AudioPlayerViewModel @Inject constructor(
@@ -43,9 +52,12 @@ class AudioPlayerViewModel @Inject constructor(
     private val updateAccompanimentItemUseCase: UpdateAccompanimentItemUseCase,
     private val saveAccompanimentProgressUseCase: SaveAccompanimentProgressUseCase,
     private val appPreferences: AppPreferences,
-    private val profilePreferences: ProfilePreferences
+    private val profilePreferences: ProfilePreferences,
+    private val checkInternetConnectionUseCase: CheckInternetConnectionUseCase,
+    private val syncAccompanimentsUseCase: SyncAccompanimentsUseCase,
+    private val syncResourcesUseCase: SyncResourcesUseCase,
+    private val analyticSender: AnalyticSender
 ) : ViewModel(), ContainerHost<AudioPlayerState, AudioPlayerSideEffect> {
-
     private val accompanimentId: Int = requireNotNull(savedStateHandle.get<Int>("accompanimentId"))
     private val timeOfDay: TimeOfDay = requireNotNull(savedStateHandle.get<TimeOfDay>("timeOfDay"))
     private val entryPoint: AudioPlayerEntryPoint =
@@ -54,18 +66,58 @@ class AudioPlayerViewModel @Inject constructor(
     override val container = container<AudioPlayerState, AudioPlayerSideEffect>(
         initialState = AudioPlayerState(entryPoint = entryPoint, timeOfDay = timeOfDay),
         onCreate = {
-            getAccompaniment()
             if (entryPoint == AudioPlayerEntryPoint.ONBOARDING) {
+                analyticSender.introFinalShow()
+                syncAccompaniments()
+            } else {
                 intent {
-                    //animate onboarding player states
-                    delay(5000)
-                    reduceState { copy(playState = PlayState.LOADED) }
-                    delay(2000)
-                    reduceState { copy(playState = PlayState.READY) }
+                    val day = appPreferences.getCompletedDays()
+                    val isDemo = profilePreferences.getIsDemo()
+                    if (isDemo) {
+                        analyticSender.audioSessionDemoShow(
+                            timeOfDay.toEventParam(),
+                            day,
+                            accompanimentId,
+                            state.selectedAvatar?.id ?: 0
+                        )
+                    } else {
+                        analyticSender.audioSessionShow(
+                            timeOfDay.toEventParam(),
+                            day,
+                            accompanimentId,
+                            state.selectedAvatar?.id ?: 0
+                        )
+                    }
                 }
+                getAccompaniment()
             }
         }
     )
+
+    private var isPlayClickedOnce = false
+
+    fun syncAccompaniments() {
+        viewModelScope.launch {
+            reduceState { copy(playState = PlayState.LOADING, errorState = null) }
+            syncResourcesUseCase.invoke()
+            syncAccompanimentsUseCase.invoke(true).onSuccess {
+                analyticSender.introPreparingComplete()
+                reduceState { copy(playState = PlayState.LOADED) }
+                delay(2000)
+                reduceState { copy(playState = PlayState.READY) }
+                getAccompaniment()
+            }.onFailure {
+                analyticSender.introPreparingFailed()
+                Timber.tag(logTag()).d("Error syncing accompaniments: ${it.message}")
+                reduceState {
+                    copy(
+                        playState = PlayState.LOADING,
+                        errorState = it.mapToErrorViewState()
+                    )
+                }
+            }
+        }
+    }
 
     fun getMusicUrlForTimeOfDay(): Uri? {
         val state = container.stateFlow.value
@@ -118,6 +170,8 @@ class AudioPlayerViewModel @Inject constructor(
 
     private fun getAccompaniment() {
         viewModelScope.launch {
+            val isDemo = profilePreferences.getIsDemo()
+            val day = appPreferences.getCompletedDays()
             val accompanimentWithItems =
                 getAccompanimentWithItemsUseCase(accompanimentId) ?: return@launch
             val accompaniment = accompanimentWithItems.accompaniment
@@ -146,7 +200,9 @@ class AudioPlayerViewModel @Inject constructor(
                     avatarPreviewIds = avatarPreviewIds,
                     soundEffectsList = soundEffects,
                     gender = gender,
-                    unlockDayConfig = dayUnlockConfig
+                    unlockDayConfig = dayUnlockConfig,
+                    isDemo = isDemo,
+                    day = day
                 )
             }
         }
@@ -160,6 +216,7 @@ class AudioPlayerViewModel @Inject constructor(
     }
 
     fun onNavigateToAvatars() {
+        analyticSender.audioSessionAvatarsClick()
         reduceState { copy(currentPageIndex = 1) }
     }
 
@@ -171,6 +228,7 @@ class AudioPlayerViewModel @Inject constructor(
         intent {
             if (state.selectedSoundEffectIndex == index) return@intent
             val soundEffect = state.soundEffectsList.getOrNull(index) ?: return@intent
+            analyticSender.voiceMusicsSelect(soundEffect.id)
             reduce { state.copy(selectedSoundEffectIndex = index) }
         }
     }
@@ -197,7 +255,6 @@ class AudioPlayerViewModel @Inject constructor(
 
     fun savePlaybackProgress(progress: Float) {
         intent {
-
             viewModelScope.async {
                 val state = container.stateFlow.value
                 val accompanimentWithItems = state.accompanimentWithItems ?: return@async
@@ -207,13 +264,106 @@ class AudioPlayerViewModel @Inject constructor(
                     timeOfDay = timeOfDay
                 )
             }.await()
-
+            if (progress == 1f) {
+                if (state.isDemo) {
+                    analyticSender.audioSessionCompleted(
+                        timeOfDay.toEventParam(),
+                        state.day,
+                        accompanimentId,
+                        state.selectedAvatar?.id ?: 0
+                    )
+                } else {
+                    analyticSender.audioSessionDemoCompleted(
+                        timeOfDay.toEventParam(),
+                        state.day,
+                        accompanimentId,
+                        state.selectedAvatar?.id ?: 0
+                    )
+                }
+            }
             val sideEffect = when (entryPoint) {
-                AudioPlayerEntryPoint.DAY -> AudioPlayerSideEffect.NavigateBack
-                AudioPlayerEntryPoint.ONBOARDING -> AudioPlayerSideEffect.NavigateHome
+                AudioPlayerEntryPoint.DAY -> {
+                    if (state.isDemo) {
+                        analyticSender.audioSessionDemoClose(timeOfDay.toEventParam(), state.day)
+                    } else {
+                        analyticSender.audioSessionClose(timeOfDay.toEventParam(), state.day)
+                    }
+                    AudioPlayerSideEffect.NavigateBack
+                }
+//                AudioPlayerEntryPoint.ONBOARDING -> AudioPlayerSideEffect.NavigateHome
+                AudioPlayerEntryPoint.ONBOARDING -> AudioPlayerSideEffect.NavigatePaywall
             }
             postSideEffect(sideEffect)
         }
+    }
+
+    fun onNavigateHome() {
+        intent {
+            postSideEffect(AudioPlayerSideEffect.NavigateHome)
+        }
+    }
+
+    fun checkNetwork(onNetworkAvailable: () -> Unit = {}) {
+        intent {
+            val isNetworkAvailable = checkInternetConnectionUseCase.invoke()
+            if (isNetworkAvailable) {
+                onNetworkAvailable()
+            }
+            reduce {
+                state.copy(
+                    isNetworkAvailable = isNetworkAvailable
+                )
+            }
+        }
+    }
+
+    fun onRetryClicked() {
+        viewModelScope.launch {
+//            checkNetwork() {
+            if (entryPoint == AudioPlayerEntryPoint.ONBOARDING) {
+                syncAccompaniments()
+            } else {
+                getAccompaniment()
+            }
+        }
+    }
+
+    fun onDownloadsClicked() {
+        intent {
+            postSideEffect(AudioPlayerSideEffect.NavigateDownloads)
+        }
+    }
+
+    fun onListenLaterClicked() {}
+
+    fun logPlayClicked() {
+        if (entryPoint != AudioPlayerEntryPoint.ONBOARDING) {
+            if (isPlayClickedOnce) return
+            isPlayClickedOnce = true
+            analyticSender.introFirstPlayClick()
+        } else {
+            intent {
+                if (state.isDemo) {
+                    analyticSender.audioSessionDemoPlayClick(timeOfDay.toEventParam(), state.day)
+                } else {
+                    analyticSender.audioSessionPlayClick(timeOfDay.toEventParam(), state.day)
+                }
+            }
+        }
+    }
+
+    fun logOnSeek() {
+        if (entryPoint != AudioPlayerEntryPoint.ONBOARDING) {
+            intent {
+                if (state.isDemo) {
+                    analyticSender.audioSessionDemoSeek(timeOfDay.toEventParam(), state.day)
+                } else {
+                    analyticSender.audioSessionSeek(timeOfDay.toEventParam(), state.day)
+                }
+            }
+        }
+
+
     }
 }
 
@@ -223,6 +373,7 @@ sealed class PlayerPage() {
 }
 
 data class AudioPlayerState(
+    val isNetworkAvailable: Boolean = true,
     val playState: PlayState = PlayState.LOADING,
     val accompanimentWithItems: AccompanimentWithItems? = null,
     val title: String? = null,
@@ -238,7 +389,10 @@ data class AudioPlayerState(
     val entryPoint: AudioPlayerEntryPoint,
     val timeOfDay: TimeOfDay = TimeOfDay.DAYTIME,
     val gender: Gender = Gender.UNSPECIFIED,
-    val unlockDayConfig: DemoUnlockDayConfig? = null
+    val unlockDayConfig: DemoUnlockDayConfig? = null,
+    val errorState: ErrorViewState? = null,
+    val isDemo: Boolean = false,
+    val day: Int = 0
 )
 
 @Immutable
@@ -264,4 +418,6 @@ enum class AudioPlayerEntryPoint { ONBOARDING, DAY }
 sealed class AudioPlayerSideEffect {
     object NavigateBack : AudioPlayerSideEffect()
     object NavigateHome : AudioPlayerSideEffect()
+    object NavigatePaywall : AudioPlayerSideEffect()
+    object NavigateDownloads : AudioPlayerSideEffect()
 }

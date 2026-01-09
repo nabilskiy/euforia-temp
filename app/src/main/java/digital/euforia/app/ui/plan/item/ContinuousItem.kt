@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,12 +47,14 @@ import digital.euforia.app.ui.theme.CircleButtonBackground
 import digital.euforia.app.ui.theme.CircleButtonIcon
 import digital.euforia.app.ui.theme.Vibe2Color
 import digital.euforia.app.ui.theme.Vibe3Color
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import kotlin.math.max
 import kotlin.math.min
 
 fun LazyListScope.continuousItem(
     days: Int
 ) = item(key = PlanViewItems.STREAK, contentType = PlanViewItems.STREAK) {
+    val localizedRes = LocalLocalizedRes.current
 
     Box(
         modifier = Modifier
@@ -68,7 +69,7 @@ fun LazyListScope.continuousItem(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = stringResource(R.string.continuous_days_title).uppercase(),
+                text = localizedRes.string(R.string.continuous_days_title).uppercase(),
                 color = DescriptionDisabled,
                 fontSize = 12.sp,
                 style = MaterialTheme.typography.labelMedium
@@ -80,7 +81,7 @@ fun LazyListScope.continuousItem(
                 style = MaterialTheme.typography.displayMedium
             )
             Text(
-                text = stringResource(R.string.continuous_days_text),
+                text = localizedRes.string(R.string.continuous_days_text),
                 color = SecondaryText,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -130,6 +131,7 @@ private fun ContinuousDaysProgressBar(
     currentValue: Int,
     modifier: Modifier = Modifier
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val steps = remember {
         listOf(
             ProgressStep(value = 30, portion = 0.15f, textRes = R.string.continuous_days_30),
@@ -194,7 +196,7 @@ private fun ContinuousDaysProgressBar(
 
                     Text(
                         maxLines = 1,
-                        text = stringResource(step.textRes),
+                        text = localizedRes.string(step.textRes),
                         style = MaterialTheme.typography.labelSmall,
                         color = markerColor,
                         modifier = Modifier

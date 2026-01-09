@@ -1,6 +1,7 @@
 package digital.euforia.app.ui.util.widget.vibe
 
 import android.os.Build
+import androidx.annotation.Keep
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -24,6 +25,7 @@ import kotlin.math.*
 /**
  * Represents the playback state of the animation
  */
+@Keep
 enum class PlayState {
     /**
      * Animation is playing with full movement and effects
@@ -40,6 +42,7 @@ enum class PlayState {
     COMPLETED
 }
 
+@Keep
 enum class AnimationType {
     SPHERES, CIRCLE
 }

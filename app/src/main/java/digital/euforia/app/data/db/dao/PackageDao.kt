@@ -26,6 +26,14 @@ interface PackageDao {
     fun getWithChildrenFlow(id: Int): Flow<PackageWithChildren?>
 
     @Transaction
+    @Query("SELECT * FROM packages WHERE id = :id")
+    fun getWithChildrenById(id: Int): PackageWithChildren?
+
+    @Transaction
+    @Query("SELECT * FROM packages")
+    fun getAllWithChildren(): List<PackageWithChildren>
+
+    @Transaction
     @Query("SELECT * FROM packages WHERE id IN (:ids)")
     fun getWithMeditationsByIdFlow(ids: List<String>): Flow<List<PackageWithMeditations>>
 

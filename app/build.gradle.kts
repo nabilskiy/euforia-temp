@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -14,6 +16,9 @@ plugins {
 }
 
 android {
+    buildFeatures {
+        viewBinding = true
+    }
     namespace = "digital.euforia.app"
     compileSdk = 36
 
@@ -21,7 +26,7 @@ android {
         applicationId = "digital.euforia.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
+        versionCode = 5
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -73,9 +78,36 @@ android {
 //        }
 //    }
 
+    val keystoreProps = Properties().apply {
+        val propsFile = rootProject.file("euforia.properties")
+        if (propsFile.exists()) {
+            load(propsFile.inputStream())
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            // Якщо файла нема (наприклад на CI без секретів) — не падаємо
+            val hasProps = keystoreProps.isNotEmpty()
+            if (hasProps) {
+                val keystorePath = keystoreProps["releaseKeystore"] as String
+                storeFile = rootProject.file(keystorePath)
+                storePassword = keystoreProps["releaseKeystorePassword"] as String
+                keyAlias = keystoreProps["releaseKeyAlias"] as String
+                keyPassword = keystoreProps["releaseKeyPassword"] as String
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -124,6 +156,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.transition)
+    implementation(libs.androidx.work.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -161,6 +195,8 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
     implementation(libs.media3.session)
+    // Use direct coordinate to ensure availability even if version catalog accessor isn't generated yet
+    implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     ksp(libs.hilt.android.compiler)
@@ -192,4 +228,19 @@ dependencies {
     implementation(libs.play.app.update.ktx)
     implementation(libs.haze)
     implementation(libs.haze.materials)
+
+    // Billing
+    implementation(libs.billing.client)
+    implementation(libs.billing.ktx)
+    implementation(libs.gson)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.material.icons.extended)
+    implementation("com.google.android.material:material:1.12.0")
+    // Fresco for image pipeline used in BaseActivity and UserActivity
+    implementation("com.facebook.fresco:fresco:3.3.0")
+    // ExpandableTextView for album/playlist descriptions (JitPack)
+    implementation("com.github.giangpham96:expandable-text:2.0.1")
+    implementation("com.github.anhaki:PickTime-Compose:1.1.5")
+
 }

@@ -25,3 +25,7 @@ fun TimeOfDay.getColors(): List<Color> {
         TimeOfDay.EVENING -> eveningColors
     }
 }
+
+fun TimeOfDay.toEventParam(): String {
+    return this.name.lowercase()
+}

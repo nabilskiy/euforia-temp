@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="AspectRatioPlayerView">
+        <attr name="ratio" format="float" />
+        <attr name="aspectEnabled" format="boolean" />
+    </declare-styleable>
+</resources>

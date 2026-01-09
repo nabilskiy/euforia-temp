@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="16dp">
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:contentDescription="@string/subscription_title"
+        android:src="@drawable/ic_added_mini" />
+
+    <TextView
+        android:id="@+id/itemTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:layout_toEndOf="@id/icon"
+        android:elevation="0dp"
+        android:fontFamily="@font/inter_regular"
+        android:gravity="start"
+        android:includeFontPadding="false"
+        android:maxLines="3"
+        android:textColor="@color/colorWhite"
+        android:textSize="17sp"
+        tools:text="Discover a premium music experience" />
+
+    <TextView
+        android:id="@+id/itemSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/itemTitle"
+        android:layout_marginBottom="4dp"
+        android:layout_toEndOf="@id/icon"
+        android:alpha="0.6"
+        android:elevation="0dp"
+        android:fontFamily="@font/inter_regular"
+        android:gravity="start"
+        android:includeFontPadding="false"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        tools:text="Discover a premium music experience" />
+</RelativeLayout>

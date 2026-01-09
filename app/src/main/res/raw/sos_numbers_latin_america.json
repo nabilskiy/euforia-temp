@@ -1,0 +1,275 @@
+[
+    {
+        "country": "Brazil",
+        "country_native": "Brasil",
+        "code": "BR",
+        "contacts": [
+            {
+                "name": "Centro de Valorização da Vida",
+                "phone": "188"
+            },
+            {
+                "name": "Linha de Ajuda Narcóticos Anônimos 132",
+                "phone": "132"
+            }
+        ]
+    },
+    {
+        "country": "Argentina",
+        "country_native": "Argentina",
+        "code": "AR",
+        "contacts": [
+            {
+                "name": "Línea de Prevención Del Suicidio",
+                "phone": "8003451435"
+            },
+            {
+                "name": "Centro de Valorizacion de la Vida Samaritanos",
+                "phone": "5402234930430"
+            }
+        ]
+    },
+    {
+        "country": "Peru",
+        "country_native": "Perú",
+        "code": "PE",
+        "contacts": [
+            {
+                "name": "Habla Franco",
+                "phone": "1815"
+            },
+            {
+                "name": "Infosalud Perú",
+                "phone": "113"
+            }
+        ]
+    },
+    {
+        "country": "Colombia",
+        "country_native": "Colombia",
+        "code": "CO",
+        "contacts": [
+            {
+                "name": "141 Línea de Protección a Niños, Niñas y Adolescentes",
+                "phone": "141"
+            },
+            {
+                "name": "Línea Salvavidas",
+                "phone": "3117668666"
+            }
+        ]
+    },
+    {
+        "country": "Chile",
+        "country_native": "Chile",
+        "code": "CL",
+        "contacts": [
+            {
+                "name": "Psicólogos X Chile",
+                "phone": "67613603"
+            },
+            {
+                "name": "Fundacion Vinculos",
+                "phone": "56222442533"
+            }
+        ]
+    },
+    {
+        "country": "Mexico",
+        "country_native": "México",
+        "code": "MX",
+        "contacts": [
+            {
+                "name": "Consejo Ciudadano Para La Seguridad Y Justicia de Ciudad de México",
+                "phone": "55 5533-5533"
+            },
+            {
+                "name": "Atención Psicológica A Distancia UNAM",
+                "phone": "525550250855"
+            }
+        ]
+    },
+    {
+        "country": "Costa Rica",
+        "country_native": "Costa Rica",
+        "code": "CR",
+        "contacts": [
+            {
+                "name": "Línea Aquí Estoy del Colegio De Profesionales en Psicología",
+                "phone": "+506 2272-3774"
+            }
+        ]
+    },
+    {
+        "country": "Uruguay",
+        "country_native": "Uruguay",
+        "code": "UY",
+        "contacts": [
+            {
+                "name": "Línea Nacional de Prevención del Suicidio",
+                "phone": "0800-0767"
+            }
+        ]
+    },
+    {
+        "country": "Ecuador",
+        "country_native": "Ecuador",
+        "code": "EC",
+        "contacts": [
+            {
+                "name": "Anima EC",
+                "phone": "(593) 99 719 6911"
+            }
+        ]
+    },
+    {
+        "country": "Panama",
+        "country_native": "Panamá",
+        "code": "PA",
+        "contacts": [
+            {
+                "name": "Te Escucho Panama",
+                "phone": "831-7600"
+            }
+        ]
+    },
+    {
+        "country": "Guatemala",
+        "country_native": "Guatemala",
+        "code": "GT",
+        "contacts": [
+            {
+                "name": "Línea 1572",
+                "phone": "1572"
+            },
+            {
+                "name": "REDCAHT + Colectivo Hombres Trans - Guatemala",
+                "phone": "22519216"
+            }
+        ]
+    },
+    
+    {
+        "country": "Dominican Republic",
+        "country_native": "República Dominicana",
+        "code": "DO",
+        "contacts": [
+            {
+                "name": "Línea Vivir",
+                "phone": "8097792124"
+            },
+            {
+                "name": "Línea Familiar Contigo",
+                "phone": "8096363507"
+            }
+        ]
+    },
+    {
+        "country": "Venezuela",
+        "country_native": "Venezuela",
+        "code": "VE",
+        "contacts": [
+            {
+                "name": "Línea de Ayuda Psicológica (LAPSI) / Federación de Psicólogos de Venezuela",
+                "phone": "021-241-63-116"
+            }
+        ]
+    },
+    {
+        "country": "Bolivia",
+        "country_native": "Bolivia",
+        "code": "BO",
+        "contacts": [
+            {
+                "name": "MENTAL HEALTH SUPPORT",
+                "phone": "75288084"
+            },
+            {
+                "name": "MENTAL HEALTH SUPPORT",
+                "phone": "(00 591 4) 4 25 42 42"
+            }
+        ]
+    },
+    {
+        "country": "Honduras",
+        "country_native": "Honduras",
+        "code": "HN",
+        "contacts": [
+            {
+                "name": "Teléfono De La Esperanza de San Pedro Sula",
+                "phone": "150"
+            }
+        ]
+    },
+    {
+        "country": "Cuba",
+        "country_native": "Cuba",
+        "code": "CU",
+        "contacts": [
+            {
+                "name": "SAMHSA",
+                "phone": "988"
+            },
+            {
+                "name": "Lifeline",
+                "phone": "211"
+            }
+        ]
+    },
+    {
+        "country": "Haiti",
+        "country_native": "Ayiti",
+        "code": "HT",
+        "contacts": [
+            {
+                "name": "Asistans Sikolojik an IJANS",
+                "phone": "2919-9000"
+            }
+        ]
+    },
+    {
+        "country": "Bahamas",
+        "country_native": "Bahamas",
+        "code": "BS",
+        "contacts": [
+            {
+                "name": "Bahamas Crisis Centre",
+                "phone": "(242) 328 0922"
+            },
+            {
+                "name": "Bahamas Psychological association",
+                "phone": "1-242-821-8123"
+            }
+        ]
+    },
+    {
+        "country": "Jamaica",
+        "country_native": "Jumieka",
+        "code": "JM",
+        "contacts": [
+            {
+                "name": "Mental Health and Suicide Prevention Helpline",
+                "phone": "(888) 639-5433"
+            },
+            {
+                "name": "SafeSpot",
+                "phone": "888-723-3776"
+            }
+        ]
+    },
+    {
+        "country": "Puerto Rico",
+        "country_native": "Puerto Rico",
+        "code": "PR",
+        "contacts": [
+            {
+                "name": "Línea de Ayuda 24/7 Del CAVV",
+                "phone": "7877652285"
+            },
+            {
+                "name": "Proyecto MATRIA",
+                "phone": "7874890022"
+            }
+        ]
+    }
+]

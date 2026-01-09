@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinator"
+    style="@style/CoordinatorDefaultStyle"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@null">
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/video"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="100dp"
+        app:use_controller="false" />
+
+    <ImageView
+        android:id="@+id/imageFallback"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="100dp"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        tools:src="@drawable/img_premium_bg"
+        tools:visibility="visible" />
+
+    <LinearLayout
+        android:id="@+id/layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_subscription_101"
+            android:orientation="vertical"
+            android:paddingTop="150dp"
+            tools:ignore="UselessParent">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:layout_marginBottom="11dp"
+                android:fontFamily="@font/inter_regular"
+                android:gravity="center_horizontal"
+                android:includeFontPadding="false"
+                android:maxLines="3"
+                android:text="@string/subscription_title"
+                android:textColor="#E6FFFFFF"
+                android:textSize="19sp"
+                android:textStyle="bold"
+                app:autoSizeMaxTextSize="24sp"
+                app:autoSizeMinTextSize="16sp"
+                app:autoSizeTextType="uniform" />
+
+            <LinearLayout
+                android:id="@+id/items"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="24dp"
+                android:elevation="0dp"
+                android:gravity="center_horizontal"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:textColor="@color/colorAccent"
+                android:textSize="15sp"
+                android:visibility="gone"
+                app:autoSizeMaxTextSize="14sp"
+                app:autoSizeMinTextSize="11sp"
+                app:autoSizeTextType="uniform"
+                tools:text="Invest in your well-being and\nupgrade today"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/getPremium"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginStart="36dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="36dp"
+                android:background="@drawable/background_button_accent"
+                android:elevation="8dp"
+                android:fontFamily="@font/inter_regular"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="@string/get_started"
+                android:textColor="@color/colorWhite"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/offer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="24dp"
+                android:alpha="0.7"
+                android:elevation="0dp"
+                android:gravity="center_horizontal"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textAllCaps="true"
+                android:textColor="@color/colorWhite"
+                android:textSize="13sp"
+                android:visibility="gone"
+                app:autoSizeMaxTextSize="14sp"
+                app:autoSizeMinTextSize="9sp"
+                app:autoSizeTextType="uniform"
+                tools:text="Try 7 days for free"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/terms"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="32dp"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="@font/inter_regular"
+                android:gravity="center_horizontal"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:text="@string/premium_terms_text_small"
+                android:textColor="@color/colorIntroTerms"
+                android:textSize="12sp"
+                app:autoSizeMaxTextSize="12sp"
+                app:autoSizeMinTextSize="8sp"
+                app:autoSizeTextType="uniform" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/toolbar_height"
+        android:background="@drawable/gradient_viewer_top" />
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:theme="@style/AppBarOverlay"
+        app:elevation="0dp">
+
+        <View
+            android:id="@+id/statusBarOffsetView"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/status_bar_height"
+            app:layout_scrollFlags="noScroll" />
+
+        <FrameLayout
+            android:id="@+id/topBarLayout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            app:layout_scrollFlags="noScroll">
+
+            <ImageButton
+                android:id="@+id/back"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="start|top"
+                android:layout_margin="12dp"
+                android:alpha="0.85"
+                android:background="?selectableItemBackgroundBorderless"
+                android:contentDescription="@string/back"
+                android:scaleX="0.9"
+                android:scaleY="0.9"
+                android:src="@drawable/ic_close"
+                app:tint="@color/colorWhite" />
+        </FrameLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+
+    <include layout="@layout/view_progress" />
+
+    <include layout="@layout/view_subscription_processing" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

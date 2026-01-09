@@ -1,7 +1,9 @@
 package digital.euforia.app.domain.model.onboarding
 
+import androidx.annotation.Keep
 import digital.euforia.app.R
 
+@Keep
 enum class Language(
     val tag: String,
     val titleRes: Int,

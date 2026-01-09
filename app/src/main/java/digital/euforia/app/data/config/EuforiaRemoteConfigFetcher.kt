@@ -1,13 +1,12 @@
 package digital.euforia.app.data.config
 
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
-import digital.euforia.app.data.model.config.NetworkAppSettingsConfig
-import digital.euforia.app.domain.model.config.AppSettingsConfig
 import digital.euforia.app.domain.model.config.BannerConfig
 import digital.euforia.app.domain.model.config.DemoUnlockDayConfig
+import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
+import digital.euforia.app.domain.model.config.toDomain
 import digital.euforia.app.domain.model.plan.TodayPresentType
 import digital.euforia.app.domain.model.plan.toTodayPresentType
 import timber.log.Timber
@@ -100,7 +99,7 @@ class EuforiaRemoteConfigFetcher(
             ?: emptyList()
     }
 
-    fun getDemoUnlockDayConfig() : DemoUnlockDayConfig {
+    fun getDemoUnlockDayConfig(): DemoUnlockDayConfig {
         return getConfig(
             key = KEY_VIBES_DEMO_UNLOCK_DAY_CONFIG,
             moshiClazz = NetworkDemoUnlockDayConfig::class.java,
@@ -108,14 +107,71 @@ class EuforiaRemoteConfigFetcher(
         ).dataOrNull ?: DemoUnlockDayConfig()
     }
 
+    fun getTodayIntroVideoUrl(): String? {
+        val url = remoteConfig.getString(KEY_TODAY_INTRO_VIDEO)
+        return url.ifBlank { null }
+    }
+
+    fun getTodayIntroVideoCoverUrl(): String? {
+        val url = remoteConfig.getString(KEY_TODAY_INTRO_VIDEO_COVER)
+        return url.ifBlank { null }
+    }
+
+    fun getFeedbackFormId(): String? {
+        val formId = remoteConfig.getString(KEY_FEEDBACK_FORM_ID)
+        return formId.ifBlank { null }
+    }
+
+    fun getSosOption1VideoUrl(): String? {
+        val url = remoteConfig.getString(KEY_SOS_OPTION_1_VIDEO)
+        return url.ifBlank { null }
+    }
+
+    fun getSosOption2VideoUrl(): String? {
+        val url = remoteConfig.getString(KEY_SOS_OPTION_2_VIDEO)
+        return url.ifBlank { null }
+    }
+
+    fun getProgramsTitle(): String {
+        val title = remoteConfig.getString(KEY_LIBRARY_TITLE)
+        return title.ifBlank { "Programs" }
+    }
+
+    fun getProgramsConfig(): List<ProgramsConfig> {
+        // The library config is an ARRAY of blocks. We should pick only the "package_list" block
+        // from the active template selected by key "library_list_template_key".
+        return try {
+            val templateKey = remoteConfig.getString(KEY_LIBRARY_LIST_TEMPLATE_KEY)
+                .ifBlank { DEFAULT_LIBRARY_TEMPLATE_KEY }
+
+            val json = remoteConfig.getString(templateKey)
+                .ifBlank { remoteConfig.getString(KEY_LIBRARY_LIST_TEMPLATE) }
+
+            if (json.isBlank()) return emptyList()
+
+            val listType = com.squareup.moshi.Types.newParameterizedType(
+                MutableList::class.java,
+                NetworkPackageConfig::class.java
+            )
+            val blocks: List<NetworkPackageConfig> =
+                moshi.adapter<List<NetworkPackageConfig>>(listType).fromJson(json) ?: emptyList()
+
+            blocks.map { block ->
+                block.toDomain()
+            }
+        } catch (e: Throwable) {
+            logError(TAG, e)
+           emptyList()
+        }
+    }
+
     companion object {
-        private const val KEY_APP_SETTINGS = "app_settings"
         private const val KEY_ALLOWED_LANGUAGES = "allow_languages"
-        private const val KEY_INTRO_EMAIL_STEP_SHOW = "intro_email_step_show" // Deprecated 1.2.3
+        private const val KEY_INTRO_EMAIL_STEP_SHOW = "intro_email_step_show"
         private const val KEY_INTRO_GOALS_STEP_SHOW = "intro_goals_step_show"
         private const val KEY_INTRO_INTERESTS_STEP_SHOW = "intro_interests_step_show"
         private const val KEY_INTRO_LANG_STEP_SHOW = "intro_lang_step_show"
-        private const val KEY_INTRO_NAME_STEP_SHOW = "intro_name_step_show" // Deprecated 1.2.3
+        private const val KEY_INTRO_NAME_STEP_SHOW = "intro_name_step_show"
         private const val KEY_INTRO_NOTIFICATIONS_STEP_SHOW = "intro_notifications_step_show"
         private const val KEY_INTRO_PREMIUM_SCREEN_ENABLED = "intro_premium_screen_enabled"
         private const val KEY_INTRO_PREMIUM_SCREEN_VARIANT = "intro_premium_screen_variant"
@@ -128,5 +184,14 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_EXTRA_PACKAGE_ID = "extra_package_id"
         private const val KEY_VOICE_AVATAR_PREVIEWS_ID = "voice_avatar_previews_ids"
         private const val KEY_VIBES_DEMO_UNLOCK_DAY_CONFIG = "vibes_demo_unlock_day_config"
+        private const val KEY_FEEDBACK_FORM_ID = "feedback_form_id"
+        private const val KEY_TODAY_INTRO_VIDEO = "today_intro_video"
+        private const val KEY_TODAY_INTRO_VIDEO_COVER = "today_intro_video_cover"
+        private const val KEY_SOS_OPTION_1_VIDEO = "sos_option_1_video"
+        private const val KEY_SOS_OPTION_2_VIDEO = "sos_option_2_video"
+        private const val KEY_LIBRARY_TITLE = "library_title"
+        private const val KEY_LIBRARY_LIST_TEMPLATE_KEY = "library_list_template_key"
+        private const val KEY_LIBRARY_LIST_TEMPLATE = "library_list_template"
+        private const val DEFAULT_LIBRARY_TEMPLATE_KEY = "library_2_list_template"
     }
 }

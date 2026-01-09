@@ -11,17 +11,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 
 
 @Composable
 fun OptionsMenu(
     expanded: Boolean, onExpandedChange: (Boolean) -> Unit, menuItems: List<MenuItem>
 ) {
+    val localizedRes = LocalLocalizedRes.current
     DropdownMenu(
         containerColor = NavBarBackground,
         shape = RoundedCornerShape(20.dp),
@@ -32,7 +33,7 @@ fun OptionsMenu(
             DropdownMenuItem(
                 text = {
                     Text(
-                        text = stringResource(item.titleRes),
+                        text = localizedRes.string(item.titleRes),
                         color = White,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal)
                     )

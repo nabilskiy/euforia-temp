@@ -1,0 +1,63 @@
+{
+    "title": "Funciones máximas",
+    "details": "Gracias por suscribirte a Euforia MAX. Veamos lo que se ha desbloqueado para ti:",
+    "items": [
+        {
+            "title": "Voz de Euforia",
+            "text": "Escucha nuevas sesiones de audio con la Voz de Euforia todos los días.",
+            "description": null,
+            "imageUrl": "img://ic_about_premium_1",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/6/6a28928b6315dc9612f1957888b73690.mp4"
+        },
+        {
+            "title": "Avatares de Fotos",
+            "text": "Personaliza la experiencia de la sesión de audio agregando tus fotos favoritas.",
+            "imageUrl": "img://ic_about_premium_2",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/c/cbf9f8ee34be8a13074626496c0b4274.mp4"
+        },
+        {
+            "title": "Paisajes Sonoros",
+            "text": "Accede a la escucha ilimitada de paisajes sonoros, sonidos y personaliza escenas.",
+            "imageUrl": "img://ic_about_premium_3",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/3/3f0fcf0a8ed82f467e72623b467fdb99.mp4"
+        },
+        {
+            "title": "Meditaciones",
+            "text": "Desbloquea todas las meditaciones y programas de Euforia.",
+            "imageUrl": "img://ic_about_premium_4",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/9/9a819ede8bab9172d66f9889bec5b2e2.mp4"
+        },
+        {
+            "title": "Artículos",
+            "text": "Posibilidad de leer todos los artículos y contenido de texto de Euforia.",
+            "imageUrl": "img://ic_about_premium_5",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/1/19f8f8341ee7ff8ec97c635d08864a14.mp4"
+        },
+        {
+            "title": "Ejercicios",
+            "text": "Elige cualquier ejercicio de yoga y comienza tu práctica.",
+            "imageUrl": "img://ic_about_premium_6",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/9/9fb6138c3a928defede9cf180a3c6720.mp4"
+        },
+        {
+            "title": "Acceso sin conexión",
+            "text": "Descarga meditaciones, artículos, escenas y ejercicios para escuchar sin conexión.",
+            "imageUrl": "img://ic_about_premium_7",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/0/01796582f0675b27cf1b323a26356b8f.mp4"
+        },
+        {
+            "title": "Sin anuncios y restricciones",
+            "text": "No más anuncios, banners y funciones bloqueadas. Disfruta de Euforia sin interrupciones.",
+            "imageUrl": "img://ic_about_premium_8",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/8/84467a7d90a839f51290be22f242a563.mp4"
+        },
+        {
+            "title": "Actualizaciones y Prioridad",
+            "text": "Disfruta de actualizaciones tempranas y soporte prioritario.",
+            "imageUrl": "img://ic_about_premium_9",
+            "videoUrl": "https://videos.euforia.digital/storage/manual/mp4/d/db5c3c7b50b82c022998fe8d811683fe.mp4"
+        }
+    ],
+    "bottomCardTitle": "Acerca de Euforia MAX",
+    "bottomCardText": "Euforia MAX es una opción de pago que te otorga acceso a todas las características de Euforia y garantiza actualizaciones continuas de contenido. Para los suscriptores, utilizamos centros de datos avanzados, brindamos soporte mejorado y ofrecemos soluciones únicas. Tu suscripción nos permite crear nuevas sesiones de audio y otro contenido, ofrecer soporte técnico y llevar nuestros servicios al siguiente nivel. Valoramos tu contribución."
+}

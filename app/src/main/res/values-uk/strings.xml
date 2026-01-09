@@ -114,7 +114,7 @@
 
     <!-- Personal data -->
     <string name="personal_data_privacy">Privacy Policy</string>
-    <string name="personal_data_usage">App Privacy Information (App Store)</string>
+    <string name="personal_data_usage">App Privacy Information (Play Market)</string>
     <string name="personal_data_clear">Clear app data</string>
     <string name="personal_data_title">Clear app data</string>
     <string name="personal_data_clear_details">This process will permanently delete all data created during your use of the app, including:\n– Name.\n– Your preferences and the survey results.\n– Browsing history and favorites.\n– Uploaded files, meditations, articles, exercises and soundscapes, including created soundscapes.\n– Recommendations and suggestions.\n– Other data and cache.\nThis process cannot be undone.</string>

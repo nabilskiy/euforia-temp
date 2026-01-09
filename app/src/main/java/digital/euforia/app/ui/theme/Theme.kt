@@ -65,9 +65,10 @@ fun EuforiaTheme(
         colorScheme = DarkColorScheme,
         typography = Typography,
     ) {
-        CompositionLocalProvider(
-            LocalOverscrollFactory provides null,
-            content = content
-        )
+        content()
+//        CompositionLocalProvider(
+//            LocalOverscrollFactory provides null,
+//            content = content
+//        )
     }
 }

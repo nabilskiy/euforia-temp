@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.getColors
 import digital.euforia.app.ui.player.audio.page.AvatarsPage
+import digital.euforia.app.ui.util.widget.ErrorView
+import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.player.audio.page.PlayerPage as PlayerPageComposable
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.delay
@@ -52,6 +54,8 @@ fun SharedTransitionScope.AudioPlayerScaffold(
     durationMs: Float,
     shared: SharedTransitionScope.SharedContentState,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    isNetworkAvailable: Boolean,
+    errorState: ErrorViewState?,
     onBack: () -> Unit,
     onPageSelected: (Int) -> Unit,
     onPlay: () -> Unit,
@@ -62,7 +66,10 @@ fun SharedTransitionScope.AudioPlayerScaffold(
     onAvatarClick: (AvatarUi?) -> Unit,
     navigateAvatars: () -> Unit,
     navigatePlayer: () -> Unit,
-    saveProgress: () -> Unit
+    saveProgress: () -> Unit,
+    logListenLaterEvent: () -> Unit,
+    onRetryClick: () -> Unit,
+    onDownloadsClick: () -> Unit
 ) {
     BackHandler {
         if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) {
@@ -100,40 +107,57 @@ fun SharedTransitionScope.AudioPlayerScaffold(
             enter = fadeIn(animationSpec = tween(durationMillis = 2000)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300))
         ) {
-            HorizontalPager(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 260.dp),
-                state = pagerState,
-                userScrollEnabled = false
-            ) { page ->
-                when (page) {
-                    0 -> PlayerPageComposable(
-                        entryPoint = ui.entryPoint,
-                        timeOfDay = ui.timeOfDay,
-                        title = ui.title,
-                        playState = ui.playState,
-                        selectedSoundIndex = ui.selectedSoundIndex,
-                        avatarPreviewUrl = ui.avatarPreviewUrl,
-                        avatarPreviewIds = ui.avatarPreviewIds,
-                        avatarUi = ui.avatarUi,
-                        avatarsList = ui.avatarsList,
-                        soundsEffects = ui.soundsEffects,
-                        currentTimeMs = currentTimeMs,
-                        durationMs = durationMs,
-                        onAvatarClick = navigateAvatars,
-                        onMuteClick = onMuteClick,
-                        onSoundEffectClick = onSoundEffectClick,
-                        onPause = onPause,
-                        onPlay = onPlay,
-                        onSeekTo = onSeekTo,
-                        onListenLaterClick = saveProgress
-                    )
+            if (errorState == null) {
+                HorizontalPager(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 260.dp),
+                    state = pagerState,
+                    userScrollEnabled = false
+                ) { page ->
+                    when (page) {
+                        0 -> PlayerPageComposable(
+                            entryPoint = ui.entryPoint,
+                            timeOfDay = ui.timeOfDay,
+                            title = ui.title,
+                            playState = ui.playState,
+                            selectedSoundIndex = ui.selectedSoundIndex,
+                            avatarPreviewUrl = ui.avatarPreviewUrl,
+                            avatarPreviewIds = ui.avatarPreviewIds,
+                            avatarUi = ui.avatarUi,
+                            avatarsList = ui.avatarsList,
+                            soundsEffects = ui.soundsEffects,
+                            currentTimeMs = currentTimeMs,
+                            durationMs = durationMs,
+                            onAvatarClick = navigateAvatars,
+                            onMuteClick = onMuteClick,
+                            onSoundEffectClick = onSoundEffectClick,
+                            onPause = onPause,
+                            onPlay = onPlay,
+                            onSeekTo = onSeekTo,
+                            onListenLaterClick = {
+                                logListenLaterEvent()
+                                saveProgress()
+                            }
+                        )
 
-                    else -> AvatarsPage(
-                        avatarsList = ui.avatarsList,
-                        selectedAvatar = ui.avatarUi,
-                        onAvatarClick = onAvatarClick
-                    )
+                        else -> AvatarsPage(
+                            avatarsList = ui.avatarsList,
+                            selectedAvatar = ui.avatarUi,
+                            onAvatarClick = onAvatarClick
+                        )
+                    }
                 }
+            } else {
+                ErrorView(
+                    modifier = Modifier.align(Alignment.Center).fillMaxSize(),
+                    state = errorState,
+                    onRetryClick = onRetryClick,
+                    onDownloadsClick = onDownloadsClick
+                )
+//                NoConnectionView(
+//                    modifier = Modifier.align(Alignment.Center).fillMaxSize(),
+//                    onRetryClick = onRetryClick,
+//                    onDownloadClick = onDownloadsClick
+//                )
             }
             AudioPlayerAppBar(
                 currentPageIndex = ui.currentPageIndex,

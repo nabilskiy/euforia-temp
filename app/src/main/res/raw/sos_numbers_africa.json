@@ -1,0 +1,151 @@
+[
+    {
+        "country": "Nigeria",
+        "country_native": "Nigeria",
+        "code": "NG",
+        "contacts": [
+            {
+                "name": "SURPIN Helpline Nigeria",
+                "phone": "(908) 021-7555"
+            },
+            {
+                "name": "Mentally Aware Nigeria Initiative (MANI)",
+                "phone": "(809) 111-6264"
+            }
+        ]
+    },
+    {
+        "country": "Egypt",
+        "country_native": "Egypt",
+        "code": "EG",
+        "contacts": [
+            {
+                "name": "Egypt’s Ministry of Health",
+                "phone": "080-8880700"
+            },
+            {
+                "name": "Egypt’s Ministry of Health",
+                "phone": "220-816-831"
+            }
+        ]
+    },
+    {
+        "country": "South Africa",
+        "country_native": "South",
+        "code": "ZA",
+        "contacts": [
+            {
+                "name": "South African Federation For Mental Health Helpline",
+                "phone": "117811852"
+            },
+            {
+                "name": "Lifeline South Africa",
+                "phone": "0861-322-322"
+            }
+        ]
+    },
+    {
+        "country": "Kenya",
+        "country_native": "Kenya",
+        "code": "KE",
+        "contacts": [
+            {
+                "name": "Befriender's Kenya",
+                "phone": "(072) 217-8177"
+            },
+            {
+                "name": "befriender",
+                "phone": "254722178177"
+            }
+        ]
+    },
+    {
+        "country": "Uganda",
+        "country_native": "Uganda",
+        "code": "UG",
+        "contacts": [
+            {
+                "name": "Mental Health Uganda",
+                "phone": "(0800) 21-21-21"
+            },
+            {
+                "name": "FARUG",
+                "phone": "800100093"
+            }
+        ]
+    },
+    {
+        "country": "Seychelles",
+        "country_native": "Seychelles",
+        "code": "SC",
+        "contacts": [
+            {
+                "name": "Elderly and Disabled Helpline - Ministry of Family, Youth and Sport",
+                "phone": "260-30-30"
+            },
+            {
+                "name": "Quality of Life Division Helpline - Ministry of Family, Youth and Sport",
+                "phone": "272-22-93"
+            }
+        ]
+    },
+    {
+        "country": "Ghana",
+        "country_native": "Ghana",
+        "code": "GH",
+        "contacts": [
+            {
+                "name": "MindIT",
+                "phone": "*713*66#"
+            }
+        ]
+    },
+    {
+        "country": "Cameroon",
+        "country_native": "Cameroon",
+        "code": "CM",
+        "contacts": [
+            {
+                "name": "SAFMH",
+                "phone": "+27 (0) 11 718 1852"
+            },
+            {
+                "name": "Lifeline crisis line",
+                "phones": [
+                    "+27 (0) 86 132 2322",
+                    "+27 (0) 11 728 1347"
+                ]
+            }
+        ]
+    },
+    {
+        "country": "Zimbabwe",
+        "country_native": "Zimbabwe",
+        "code": "ZW",
+        "contacts": [
+            {
+                "name": "Samaritans",
+                "phone": "2630965000"
+            },
+            {
+                "name": "Harare Samaritans",
+                "phone": "8012333333"
+            }
+        ]
+    },
+    {
+        "country": "Namibia",
+        "country_native": "Namibia",
+        "code": "NA",
+        "contacts": [
+            {
+                "name": "Namibia Red Cross Society",
+                "phone": "26461413750"
+            },
+            {
+                "name": "LifeLine",
+                "phone": "106"
+            }
+        ]
+    }
+]

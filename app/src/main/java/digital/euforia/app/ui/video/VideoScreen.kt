@@ -14,12 +14,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
+import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.Onboarding
 import digital.euforia.app.ui.navigation.Video
 import digital.euforia.app.ui.onboarding.IntroPlayerView
 import digital.euforia.app.ui.theme.Black
+import digital.euforia.app.ui.util.BackgroundPlayerHelper
 import kotlinx.coroutines.delay
+import org.orbitmvi.orbit.compose.collectAsState
 
 private const val VIDEO_ANIMATION_DURATION = 2500
 
@@ -28,8 +32,16 @@ fun VideoScreen(
     navController: NavHostController,
     viewModel: VideoViewModel
 ) {
-    var isVisible by remember { mutableStateOf(true) }
+    val state by viewModel.collectAsState()
 
+    var isVisible by remember { mutableStateOf(true) }
+//    val context = LocalContext.current
+//    LaunchedEffect(Unit) {
+//        BackgroundPlayerHelper.playLooping(
+//            context = context,
+//            soundRes = R.raw.bgm_intro
+//        )
+//    }
     AnimatedVisibility(
         visible = isVisible,
 //        enter = fadeIn(animationSpec = tween(durationMillis = VIDEO_ANIMATION_DURATION)),

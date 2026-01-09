@@ -1,0 +1,298 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<defaultsMap>
+    <entry>
+        <key>premium_3_offer</key>
+        <value>Cancela en cualquier momento en Google Play</value>
+    </entry>
+    <entry>
+        <key>premium_1_video_from_intro</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>remote_config_expiration_duration</key>
+        <value>60</value>
+    </entry>
+    <entry>
+        <key>premium_1_subs_display</key>
+        <value>all</value>
+    </entry>
+    <entry>
+        <key>premium_1_name_month</key>
+        <value>Mensual</value>
+    </entry>
+    <entry>
+        <key>intro_premium_screen_variant</key>
+        <value>3</value>
+    </entry>
+    <entry>
+        <key>premium_3_badge</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>premium_3_related_product_id</key>
+        <value>digital.euforia.app.premium_monthly</value>
+    </entry>
+    <entry>
+        <key>premium_1_button_month</key>
+        <value>Suscríbete ahora &#128564;</value>
+    </entry>
+    <entry>
+        <key>premium_2_configuration</key>
+        <value>{"title":"Actualízate a &lt;p&gt;Luluby Premium&lt;/p&gt;\npara disfrutar todo el
+            contenido\nsin anuncios y con tu pantalla
+            apagada","video":"vid_subs_1","music":null,"primaryButtonTitle":"Suscríbete ahora
+            &#128564;","primaryBottomButtonTitle":"Actualízate","primaryButtonSubtitle":"Cancela en
+            cualquier momento •
+            %price%/año","primaryProduct":"com.luluby.premium_year","footerText":"Obtén lo mejor de
+            Luluby con\n&lt;p&gt;Premium&lt;/p&gt; – actualiza ahora","plansTitle":"Planes
+            tarifarios","benefitsTitle":"Beneficios de la suscripción","benefits":["Descubre una
+            experiencia musical premium sin interrupciones por anuncios","Disfruta de tu música sin
+            parar mientras bloqueas la pantalla o usas otras aplicaciones","Acceso anticipado a
+            nuevo contenido y
+            características"],"plans":[{"productIdentifier":"com.luluby.premium_year","badge":"MEJOR
+            OFERT","title":"%price%/año","details":"El año de los dulces
+            sueños","buttonTitle":"Comprar","buttonSubtitle":"%price_per_month%/month"},{"productIdentifier":"com.luluby.premium_month","badge":null,"title":"%price%/mes","details":"El
+            mes de los dulces sueños","buttonTitle":"Comprar"}],"extraBenefitsTitle":"Lo que
+            obtienes de
+            Luluby","extraBenefits":[{"imageUrl":"https://euforia.digital/storage/manual/jpg/1/1941007760b347f6fa9c37d524976cbe.jpg","title":"Diversidad
+            Musical","text":"Sumérgete en una rica biblioteca de arreglos relajantes desde
+            renombrados compositores clásicos hasta las nanas y rimas infantiles más
+            populares"},{"imageUrl":"https://euforia.digital/storage/manual/jpg/3/3574edeb87c72c74d4343c64197c8327.jpg","title":"Magníficos
+            Arreglos","text":"Experimenta las reinterpretaciones magistrales de piezas clásicas,
+            hábilmente adaptadas en música relajante para
+            dormir"},{"imageUrl":"https://euforia.digital/storage/manual/jpg/f/fd729ba68a7fd61073012b4cf4c782fd.jpg","title":"Serenidad
+            Visual","text":"Disfruta de relajantes animaciones y escenas que acompañan cada pieza
+            musical, estimulando tu
+            imaginación"},{"imageUrl":"https://euforia.digital/storage/manual/jpg/6/65b9e7a62c3afb2a0e9e28f8fe20a3c5.jpg","title":"Desarrollo
+            Cerebral","text":"Fomenta el crecimiento intelectual de tu hijo con música para el
+            desarrollo cerebral de Mozart (Efecto Mozart), la cual ha demostrado mejorar el
+            razonamiento espaciotemporal, la memoria y el aprendizaje"}]}
+        </value>
+    </entry>
+    <entry>
+        <key>updates_banner</key>
+        <value>
+            {"img_url":"https://euforia.digital/storage/manual/jpg/e/e722394145c7cfaed32a20894442d28e.jpg","action_url":"luluby://subscription","visibility":"free"}
+        </value>
+    </entry>
+    <entry>
+        <key>premium_1_title_from_primary</key>
+        <value>Disfruta de acceso ilimitado a todo el contenido de Luluby</value>
+    </entry>
+    <entry>
+        <key>premium_1_offer_month</key>
+        <value>Cancela en cualquier momento</value>
+    </entry>
+    <entry>
+        <key>premium_3_product_id</key>
+        <value>digital.euforia.app.premium_yearly</value>
+    </entry>
+    <entry>
+        <key>intro_notifications_screen_enabled</key>
+        <value>true</value>
+    </entry>
+    <entry>
+        <key>premium_screen_variant_android</key>
+        <value>2</value>
+    </entry>
+    <entry>
+        <key>premium_3_bg</key>
+        <value>vid_subs_2</value>
+    </entry>
+    <entry>
+        <key>premium_3_button</key>
+        <value>Suscríbete por %price%/año</value>
+    </entry>
+    <entry>
+        <key>premium_screen_variant</key>
+        <value>2</value>
+    </entry>
+    <entry>
+        <key>premium_1_button_year</key>
+        <value>Suscríbete ahora &#128564;</value>
+    </entry>
+    <entry>
+        <key>premium_1_name_year</key>
+        <value>Anual</value>
+    </entry>
+    <entry>
+        <key>player_cover_transition_delay</key>
+        <value>0</value>
+    </entry>
+    <entry>
+        <key>updates_days_period</key>
+        <value>90</value>
+    </entry>
+    <entry>
+        <key>critical_update_config</key>
+        <value>{"needUpdate":false,"cancelable":false,"minVersionCode":1}</value>
+    </entry>
+    <entry>
+        <key>premium_1_line2nd_year</key>
+        <value>Mejor elección %price_per_month%/mes</value>
+    </entry>
+    <entry>
+        <key>search_list_template_key</key>
+        <value>search_list_template</value>
+    </entry>
+    <entry>
+        <key>settings_list_template_key</key>
+        <value>settings_list_template</value>
+    </entry>
+    <entry>
+        <key>settings_list_template</key>
+        <value>
+            [{"type":"banner_list","entity":[{"img_url":"https://euforia.digital/storage/manual/jpg/1/189795fedd3c5fc986107ea478ebf929.jpg","action_url":"luluby://subscription","visibility":"free"}]}]
+        </value>
+    </entry>
+    <entry>
+        <key>premium_1_show_terms</key>
+        <value>true</value>
+    </entry>
+    <entry>
+        <key>premium_1_title_caps</key>
+        <value>false</value>
+    </entry>
+    <entry>
+        <key>premium_1_title_from_second</key>
+        <value>Disfruta de acceso ilimitado a todo el contenido de Luluby</value>
+    </entry>
+    <entry>
+        <key>intro_premium_screen_enabled</key>
+        <value>false</value>
+    </entry>
+    <entry>
+        <key>library_list_template</key>
+        <value>
+            [{"type":"composition_playlist","entityId":49,"data":{"title":"Popular","maxItems":5,"footerMode":"expand"}},{"type":"banner","entity":{"img_url":"https://euforia.digital/storage/manual/jpg/0/02d374e4a3e9a1b898c28fc4d55e6869.jpg","action_url":"luluby://subscription"},"visibility":"free"},{"type":"last_album","data":{"title":"Recientemente
+            añadido"}},{"type":"album_category","entityId":1,"data":{"title":"Canciones
+            infantiles","random":true}},{"type":"album_category","entityId":2,"data":{"title":"Mozart
+            para
+            bebes","random":true}},{"type":"album","entityId":60,"data":{"title":"Recomendado"}},{"type":"album_category","entityId":10,"data":{"title":"Clásicos
+            para niños","random":true}},{"type":"album_category","entityId":3,"data":{"title":"Mixta
+            para ti"}},{"type":"album","entityId":15,"data":{"title":"Álbum en tendencia para
+            ti"}},{"type":"album_category","entityId":9,"data":{"title":"Caja de música con
+            nanas"}},{"type":"album_category","entityId":4,"data":{"title":"Melodías
+            navideñas","random":true}},{"type":"album","entityId":8,"data":{"title":"Más de caja de
+            música"}},{"type":"album_category","entityId":5,"data":{"title":"Clásicos
+            relajantes","random":true}},{"type":"album_category","entityId":6,"data":{"title":"Hermoso
+            piano","random":true}},{"type":"album","entityId":92,"data":{"title":"Descubrir más"}}]
+        </value>
+    </entry>
+    <entry>
+        <key>new_playlist_albums_ids</key>
+        <value>[8,60,55,30,57,52,62,13,49,29]</value>
+    </entry>
+    <entry>
+        <key>premium_1_year_label</key>
+        <value>Ahorra el %discount%%</value>
+    </entry>
+    <entry>
+        <key>premium_1_offer_year</key>
+        <value>Cancela en cualquier momento</value>
+    </entry>
+    <entry>
+        <key>premium_3_bottom_text</key>
+        <value>Invierte en tu bienestar y\nactualízate hoy</value>
+    </entry>
+    <entry>
+        <key>library_list_template_key</key>
+        <value>library_list_template</value>
+    </entry>
+    <entry>
+        <key>premium_3_title</key>
+        <value>ACTUALÍZATE A &lt;p&gt;LULUBY PREMIUM&lt;/p&gt;\nPARA DISFRUTAR TODO EL
+            CONTENIDO\nSIN ANUNCIOS Y ¡CON TU PANTALLA APAGADA!
+        </value>
+    </entry>
+    <entry>
+        <key>premium_1_video_from_second</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>rate_app_config</key>
+        <value>{"isEnabled":true,"launchCount":3,"timeInterval":90}</value>
+    </entry>
+    <entry>
+        <key>home_header_config</key>
+        <value>{"title":null,"subtitle":"La canción de cuna del día","mode":"all"}</value>
+    </entry>
+    <entry>
+        <key>premium_1_music_from_intro</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>search_list_template</key>
+        <value>[{"type":"playlist_category","entityId":2,"data":{"title":"Lo más
+            popular","description":"","layoutSize":"compact"}},{"type":"playlist_category","entityId":1,"data":{"title":"Humores
+            y
+            géneros","description":"","layoutSize":"compact"}},{"type":"playlist_category","entityId":3,"data":{"title":"Compositores
+            clásicos","description":"","layoutSize":"compact","maxItems":30}}]
+        </value>
+    </entry>
+    <entry>
+        <key>premium_1_music_from_second</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>feedback_form_url</key>
+        <value>
+            https://docs.google.com/forms/d/e/1FAIpQLSf0ZrSMegeqZUeAbpZP31N7BcI44YTKGo_Ieh8BFrmFiWpm3w/viewform?usp=sf_link
+        </value>
+    </entry>
+    <entry>
+        <key>premium_1_music_from_primary</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>premium_1_video_from_primary</key>
+        <value>vid_subs_3</value>
+    </entry>
+    <entry>
+        <key>premium_1_subs_month</key>
+        <value>default</value>
+    </entry>
+    <entry>
+        <key>premium_1_subs_year</key>
+        <value>default</value>
+    </entry>
+    <entry>
+        <key>premium_1_title_from_intro</key>
+        <value>Disfruta de acceso ilimitado a todo el contenido de Luluby</value>
+    </entry>
+    <entry>
+        <key>premium_3_music</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>premium_1_title_max_lines</key>
+        <value>3</value>
+    </entry>
+    <entry>
+        <key>premium_3_items</key>
+        <value>["Descubre una experiencia musical premium sin interrupciones por
+            anuncios.","Disfruta de tu música sin parar mientras bloqueas la pantalla o usas otras
+            aplicaciones.","Acceso anticipado a nuevos contenidos y funciones."]
+        </value>
+    </entry>
+    <entry>
+        <key>premium_1_line2nd_month</key>
+        <value></value>
+    </entry>
+    <entry>
+        <key>feedback_form_config</key>
+        <value>{"isEnabled":true,"launchCount":7,"timeInterval":60}</value>
+    </entry>
+    <entry>
+        <key>player_cover_transition_setting</key>
+        <value>video_only</value>
+    </entry>
+    <entry>
+        <key>share_message</key>
+        <value>Disfruta de esta gran melodía: %s</value>
+    </entry>
+    <entry>
+        <key>updates_max_albums</key>
+        <value>10</value>
+    </entry>
+</defaultsMap>

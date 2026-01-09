@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
@@ -33,6 +34,17 @@ fun formatDateFromMillis(timeMillis: Long): String {
     val date = Date(timeMillis)
     val format = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
     return format.format(date)
+}
+
+
+/**
+ * Formats epoch millis to 24-hour time string in HH:mm (zero-padded) using the system default timezone.
+ */
+fun formatTime24h(timeMillis: Long): String {
+    val zoned = Instant.ofEpochMilli(timeMillis).atZone(ZoneId.systemDefault())
+    val hour = zoned.hour
+    val minute = zoned.minute
+    return String.format(Locale.getDefault(), TIME_FORMAT, hour, minute)
 }
 
 
@@ -64,4 +76,11 @@ fun getCurrentTimeOfDay(timeOfDayConfig: TimeOfDayConfig) : TimeOfDay{
 //return TimeOfDay.EVENING
     val currentHour = ZonedDateTime.now().hour
     return timeOfDayConfig.partOfDay(currentHour)
+}
+
+fun Long.toDateString(pattern: String = "dd.MM.yyyy"): String {
+    val formatter = DateTimeFormatter.ofPattern(pattern)
+    return Instant.ofEpochSecond(this)
+        .atZone(ZoneId.systemDefault())
+        .format(formatter)
 }

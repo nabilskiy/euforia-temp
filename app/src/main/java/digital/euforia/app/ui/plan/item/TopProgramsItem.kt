@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
@@ -42,18 +41,20 @@ import digital.euforia.app.ui.theme.ProgramButtonContainer
 import digital.euforia.app.ui.theme.SecondRank
 import digital.euforia.app.ui.theme.ThirdRank
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 
 fun LazyListScope.topProgramsItem(
     isDemo: Boolean,
     topPrograms: List<RankedPackage>
 ) = item(key = PlanViewItems.TOP, contentType = PlanViewItems.TOP) {
+    val localizedRes = LocalLocalizedRes.current
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Text(
-            text = stringResource(R.string.today_info_step_programs_title),
+            text = localizedRes.string(R.string.today_info_step_programs_title),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
             color = White,
             textAlign = TextAlign.Start,
@@ -121,6 +122,7 @@ private fun ProgramItem(pkg: RankedPackage) {
 
 @Composable
 fun ProgramButton(onClick: () -> Unit) {
+    val localizedRes = LocalLocalizedRes.current
     FilledTonalButton(
         modifier = Modifier.padding(top = 24.dp),
         shape = RoundedCornerShape(12.dp),
@@ -132,7 +134,7 @@ fun ProgramButton(onClick: () -> Unit) {
     ) {
         Text(
             modifier = Modifier,
-            text = stringResource(R.string.today_info_step_programs_button),
+            text = localizedRes.string(R.string.today_info_step_programs_button),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
             maxLines = 3,
             overflow = Ellipsis,

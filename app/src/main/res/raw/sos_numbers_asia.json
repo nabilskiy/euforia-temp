@@ -1,0 +1,190 @@
+[
+    {
+        "country": "Azerbaijan",
+        "country_native": "Azərbaycan",
+        "code": "AZ",
+        "contacts": [
+            {
+                "name": "Helpline Azerbaijan",
+                "phone": "116111"
+            },
+            {
+                "name": "Телефон доверия",
+                "phone": "510-66-36"
+            }
+        ]
+    },
+    {
+        "country": "Indonesia",
+        "country_native": "Indonesia",
+        "code": "ID",
+        "contacts": [
+            {
+                "name": "SAPA Service 129",
+                "phone": "129"
+            },
+            {
+                "name": "JAWA BARAT",
+                "phone": "+62 822 46033788"
+            }
+        ]
+    },
+    {
+        "country": "Uzbekistan",
+        "country_native": "Oʻzbekiston",
+        "code": "UZ",
+        "contacts": [
+            {
+                "name": "Телефон доверия",
+                "phone": "71 2947486"
+            },
+            {
+                "name": "Телефон доверия",
+                "phone": "1197"
+            }
+        ]
+    },
+    {
+        "country": "Tajikistan",
+        "country_native": "Тоҷикистон",
+        "code": "TJ",
+        "contacts": [
+            {
+                "name": "Центр психологической помощи",
+                "phone": "927-21-24-10"
+            },
+            {
+                "name": "Центр психологической помощи",
+                "phone": "918-26-35-35"
+            }
+        ]
+    },
+    {
+        "country": "India",
+        "country_native": "Bhārat Gaṇarājya",
+        "code": "IN",
+        "contacts": [
+            {
+                "name": "Lifeline Foundation",
+                "phone": "90-880-30-303"
+            },
+            {
+                "name": "Samaritans Mumbai",
+                "phone": "+91-842-229-845-28"
+            }
+        ]
+    },
+    {
+        "country": "Israel",
+        "country_native": "מְדִינַת יִשְׂרָאֵל",
+        "code": "IL",
+        "contacts": [
+            {
+                "name": "ERAN",
+                "phone": "1201"
+            },
+            {
+                "name": "Имха",
+                "phone": "08-86119671"
+            }
+        ]
+    },
+    {
+        "country": "Turkmenistan",
+        "country_native": "Türkmenistan",
+        "code": "TM",
+        "contacts": [
+            {
+                "name": "Центр психологической помощи",
+                "phone": "+99312229389"
+            },
+            {
+                "name": "Ынам",
+                "phone": "(993-12) 463942"
+            }
+        ]
+    },
+    {
+        "country": "Georgia",
+        "country_native": "საქართველო",
+        "code": "GE",
+        "contacts": [
+            {
+                "name": "Georgia Crisis and Access Line",
+                "phone": "800-715-4225"
+            },
+            {
+                "name": "Behavioral Health Link",
+                "phone": "1-800-715-4225"
+            }
+        ]
+    },
+    {
+        "country": "Cyprus",
+        "country_native": "Κυπριακή Δημοκρατία",
+        "code": "CY",
+        "contacts": [
+            {
+                "name": "Cyprus Samaritans",
+                "phone": "800-7773"
+            },
+            {
+                "name": "116000",
+                "phone": "11-60-00"
+            }
+        ]
+    },
+    {
+        "country": "Kazakhstan",
+        "country_native": "Қазақстан Республикасы",
+        "code": "KZ",
+        "contacts": [
+            {
+                "name": "Телефон Доверия 150",
+                "phone": "150"
+            },
+            {
+                "name": "Городской центр психического здоровья",
+                "phone": "1303"
+            }
+        ]
+    },
+    {
+        "country": "Saudi Arabia",
+        "country_native": "المملكة العربية السعودية",
+        "code": "SA",
+        "contacts": [
+            {
+                "name": "National Center for Mental Health Promotion",
+                "phone": "920033360"
+            }
+        ]
+    },
+    {
+        "country": "Jordan",
+        "country_native": "المملكة الأردنية الهاشمية",
+        "code": "JO",
+        "contacts": [
+            {
+                "name": "JCPA Hotline",
+                "phone": "962795440416"
+            }
+        ]
+    },
+    {
+        "country": "United Arab Emirates",
+        "country_native": "الْإِمَارَات الْعَرَبِيَة الْمُتَحِدَة",
+        "code": "AE",
+        "contacts": [
+            {
+                "name": "800Hope",
+                "phone": "800-46-73"
+            },
+            {
+                "name": "Promotion of Mental Health",
+                "phone": "920033360"
+            }
+        ]
+    }
+]
+

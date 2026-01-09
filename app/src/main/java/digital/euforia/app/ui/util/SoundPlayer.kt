@@ -53,3 +53,22 @@ object MediaPlayerHelper {
         mediaPlayer = null
     }
 }
+
+object BackgroundPlayerHelper {
+    private var mediaPlayer: MediaPlayer? = null
+
+    fun playLooping(context: Context, soundRes: Int) {
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer.create(context, soundRes).apply {
+            setVolume(0.3f, 0.3f)
+            isLooping = true
+            start()
+        }
+    }
+
+    fun stop() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
+}

@@ -113,7 +113,7 @@
 
     <!-- Personal data -->
     <string name="personal_data_privacy">Política de Privacidad</string>
-    <string name="personal_data_usage">Privacidad de la Aplicación (App Store)</string>
+    <string name="personal_data_usage">Privacidad de la Aplicación (Play Market)</string>
     <string name="personal_data_clear">Borrar todos los datos</string>
     <string name="personal_data_title">Depuración de datos</string>
     <string name="personal_data_clear_details">El procedimiento de depuración eliminará irrevocablemente todos los datos creados durante tu uso de la aplicación. Contenidos de los datos: \n- Nombre.\n- Tus preferencias y resultados de encuestas.\n- Historia de navegación y materiales favoritos. \n- Archivos, meditaciones, artículos, ejercicios y escenas descargadas, incluso las escenas creadas de nuevo. \n- Recomendaciones y sugerencias. \n- Otros datos y la caché. \n- La cancelación de este procedimiento es imposible después de su realización.</string>
@@ -162,6 +162,10 @@
     <string name="intro_email_info">Tu e-mail no se mostrará a otros usuarios, pero se requiere para enviar y recibir comentarios, soporte y anuncios importantes de proyectos.</string>
     <string name="intro_next">Siguiente</string>
     <string name="intro_terms">Al hacer clic en "Siguiente" confirmas que has leído y aceptado la &lt;privacy_link&gt;Política de Privacidad&lt;/privacy_link&gt; y el &lt;terms_link&gt;Acuerdo de Usuario&lt;/terms_link&gt;</string>
+    <string name="intro_terms_1">Al hacer clic en "Siguiente" confirmas que has leído y aceptado la </string>
+    <string name="intro_terms_privacy">Política de Privacidad</string>
+    <string name="intro_terms_2">y el</string>
+    <string name="intro_terms_terms">Acuerdo de Usuario</string>
     <string name="intro_final_listen_welcome">Usa audífonos</string>
     <string name="intro_final_title">Estamos preparando tu Euforia…</string>
     <string name="intro_final_subtitle">Esto podría tomar unos momentos</string>
@@ -252,6 +256,8 @@
     <string name="vibes_demo_period_skip_warning_title">Primera semana de terapia</string>
     <string name="vibes_demo_period_skip_warning_message">Recomendamos completar la introducción de 7 días antes de pasar a las sesiones principales.</string>
     <string name="vibes_skip_demo_period">Saltar la primera semana</string>
+    <string name="vibes_skip_demo_period_message">Desbloquea todo el contenido y obtén audio único todos los días 🤩</string>
+    <string name="vibes_skip_demo_period_button">Desbloquear acceso completo</string>
     <string name="vibes_rate">Сalificar</string>
     <string name="vibes_title_demo_date">Día %d</string>
     <string name="vibes_avatars_title">Elige Avatar</string>
@@ -523,6 +529,15 @@
     <string name="notification_accompaniment_remind_later">Recuérdame en una hora</string>
 
     <!-- SOS -->
+    <!-- First paragraph -->
+    <string name="mental_text_part_1">Si te sientes en</string>
+    <string name="mental_text_highlight_1">estado psicoemocional crítico,</string>
+    <string name="mental_text_part_2">no intentes superarlo por tu cuenta. Así como no nos automedicamos, la mente es parte del organismo y puede enfermarse como cualquier otra parte. La mejor solución sería contactar a un psicólogo o psicoterapeuta.</string>
+
+    <!-- Second paragraph -->
+    <string name="mental_text_part_3">Si no es viable en este momento,</string>
+    <string name="mental_text_highlight_2">alivia tu estado emocional.</string>
+    <string name="mental_text_part_4">Es difícil conservar la energía, la autoestima y la capacidad de pensar con claridad en un cuerpo atormentado. Prueba las técnicas que activan el mecanismo natural de relajación.</string>
     <string name="sos_title">SOS</string>
     <string name="sos_details">Si te sientes en &lt;p&gt;estado psicoemocional crítico&lt;/p&gt;, no intentes superarlo por tu cuenta. Así como no nos automedicamos, la mente es parte del organismo y puede enfermarse como cualquier otra parte. La mejor solución sería contactar a un psicólogo o psicoterapeuta.\n\nSi no es viable en este momento, &lt;p&gt;alivia tu estado emocional&lt;/p&gt;. Es difícil conservar la energía, la autoestima y la capacidad de pensar con claridad en un cuerpo atormentado. Prueba las técnicas que activan el mecanismo natural de relajación.</string>
     <string name="sos_option_1">2 minutos</string>

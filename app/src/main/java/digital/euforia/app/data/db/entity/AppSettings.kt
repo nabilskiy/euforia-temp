@@ -14,7 +14,7 @@ data class AppSettings(
     @ColumnInfo(name = "phrases_limit") val phrasesLimit: Int,
     @ColumnInfo(name = "accompaniments_offset_before") val accompanimentsOffsetBefore: Int,
     @ColumnInfo(name = "accompaniments_offset_after") val accompanimentsOffsetAfter: Int,
-    @ColumnInfo(name = "registration_bonus") val registrationBonus: Int,
+    @ColumnInfo(name = "registration_bonus") val registrationBonus: Int?,
 ) {
     companion object Companion {
         const val SINGLETON_ID = 1

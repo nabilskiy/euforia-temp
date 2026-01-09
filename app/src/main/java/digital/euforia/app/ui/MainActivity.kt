@@ -15,21 +15,34 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.android.billingclient.api.Purchase
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import dagger.hilt.android.AndroidEntryPoint
+import digital.euforia.app.billing.BillingViewModel
+import digital.euforia.app.billing.BillingViewModel.Companion.repository
+import digital.euforia.app.billing.localdb.Premium
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.di.ApplicationCoroutineScope
 import digital.euforia.app.ui.navigation.AppNavigation
 import digital.euforia.app.ui.theme.EuforiaTheme
 import digital.euforia.app.ui.util.LocalizedScope
+import digital.euforia.app.ui.util.logTag
 import digital.euforia.app.ui.util.setupEdgeToEdge
 import digital.euforia.app.ui.util.widget.FloatingOrbitingBalls
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.compose.collectAsState
+import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -46,6 +59,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var appPreferences: AppPreferences
 
+    @Inject
+    lateinit var profilePreferences: ProfilePreferences
+
+    @Inject
+    lateinit var analyticSender: AnalyticSender
+
+    private lateinit var billingViewModel: BillingViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        updateRemoteConfig()
@@ -59,6 +80,7 @@ class MainActivity : ComponentActivity() {
 //
 //            }
 //        }
+        initBillingViewModel()
         setupEdgeToEdge()
         setContent {
             val state by viewModel.collectAsState()
@@ -144,13 +166,40 @@ class MainActivity : ComponentActivity() {
         return createConfigurationContext(config)
     }
 
-//    private suspend fun getLanguage(): String {
-//        return scope.async(Dispatchers.IO) {
-//            appPreferences.getLanguage() ?: Locale.getDefault().language
-//        }.await()
-//    }
+    private val premiumObserver: Observer<Premium?> = Observer { premium: Premium? ->
+        scope.launch {
+            try {
+                if (premium != null && premium.entitled) {
+                    analyticSender.premiumActive()
+                    profilePreferences.setIsPremium(true)
+                    var purchaseJson: String? = null
+                    val purchases: List<Purchase>? = repository?.currentPurchases
+                    purchases?.let {
+                        for (p in purchases) {
+                            purchaseJson = p.originalJson
+                            break
+                        }
+                        purchaseJson?.let {
+                            viewModel.syncPurchase(it)
+                        }
+                    }
+//                PreferencesManager.setIsPro(this, true)
+                } else {
+                    analyticSender.premiumNotActive()
+                    profilePreferences.setIsPremium(false)
+//                    PreferencesManager.setIsPro(this, false)
+                }
+            } catch (ignored: Exception) {
+                Timber.tag(logTag()).d("Error observing premium status: ${ignored.localizedMessage}")
+            }
+        }
+    }
 
-//    private fun getLanguageFlow(): Flow<String> = appPreferences.getLanguageFlow().map { language ->
-//        language ?: Locale.getDefault().language
-//    }
+    private fun initBillingViewModel() {
+        val mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
+        mFirebaseRemoteConfig.fetchAndActivate()
+
+        billingViewModel = ViewModelProvider(this).get(BillingViewModel::class.java)
+        billingViewModel.premiumLiveData.observe(this, premiumObserver)
+    }
 }

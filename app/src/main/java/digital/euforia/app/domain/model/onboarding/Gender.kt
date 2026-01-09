@@ -1,7 +1,9 @@
 package digital.euforia.app.domain.model.onboarding
 
+import androidx.annotation.Keep
 import digital.euforia.app.R
 
+@Keep
 enum class Gender(val value: String, val textRes: Int, val iconRes: Int? = null) {
     FEMALE("female", R.string.voice_for_female, R.drawable.ic_female),
     MALE("male", R.string.voice_for_male, R.drawable.ic_male),

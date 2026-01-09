@@ -1,22 +1,24 @@
 package digital.euforia.app.ui.splash
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.billing.BillingViewModel
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.domain.usecase.UpdateRemoteConfigUseCase
+import digital.euforia.app.domain.usecase.network.CheckInternetConnectionUseCase
 import digital.euforia.app.ui.util.postEffect
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     private val updateRemoteConfigUseCase: UpdateRemoteConfigUseCase,
-    private val appPreferences: AppPreferences
+    private val appPreferences: AppPreferences,
+    private val checkInternetConnectionUseCase: CheckInternetConnectionUseCase
 ) : ViewModel(),
     ContainerHost<SplashState, SplashSideEffect> {
     override val container = container<SplashState, SplashSideEffect>(
@@ -31,7 +33,17 @@ class SplashViewModel @Inject constructor(
             if (firstLaunchDate == null) {
                 appPreferences.setFirstLaunchDate()
             }
-            updateRemoteConfigUseCase {
+            val networkAvailable = checkInternetConnectionUseCase.invoke()
+
+            if (networkAvailable) {
+                updateRemoteConfigUseCase {
+                    if (isOnboardingCompleted) {
+                        postEffect(SplashSideEffect.NavigateHome)
+                    } else {
+                        postEffect(SplashSideEffect.NavigateOnboarding)
+                    }
+                }
+            } else {
                 if (isOnboardingCompleted) {
                     postEffect(SplashSideEffect.NavigateHome)
                 } else {

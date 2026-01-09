@@ -14,14 +14,22 @@ class GetNavBarItemsFlowUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(): Flow<List<NavBarItem>> {
         return withContext(Dispatchers.IO) {
-            profilePreferences.getSubscriptionLevelFlow().map { subscriptionLevel ->
+            profilePreferences.getIsPremiumFlow().map { isPremium ->
                 listOfNotNull(
                     NavBarItem.PLAN,
                     NavBarItem.PROGRAMS,
                     NavBarItem.SOUNDSCAPES,
-                    if (subscriptionLevel == SubscriptionLevel.PREMIUM) NavBarItem.SETTINGS_MAX else NavBarItem.SETTINGS
+                    if (isPremium) NavBarItem.SETTINGS_MAX else NavBarItem.SETTINGS
                 )
             }
+//            profilePreferences.getSubscriptionLevelFlow().map { subscriptionLevel ->
+//                listOfNotNull(
+//                    NavBarItem.PLAN,
+//                    NavBarItem.PROGRAMS,
+//                    NavBarItem.SOUNDSCAPES,
+//                    if (subscriptionLevel == SubscriptionLevel.PREMIUM) NavBarItem.SETTINGS_MAX else NavBarItem.SETTINGS
+//                )
+//            }
         }
     }
 }

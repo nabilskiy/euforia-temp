@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Required to load images from network (Coil) -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -26,6 +28,83 @@
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.subscription_c.SubscriptionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Euforia" />
+
+        <activity
+            android:name=".ui.subscription.UserActivity"
+            android:configChanges="screenSize|orientation|screenLayout|navigation|colorMode"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:theme="@style/AppTheme"
+            tools:ignore="LockedOrientationActivity">
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="euforia.com"
+                    android:pathPattern="/.*"
+                    android:scheme="https" />
+
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="subscription"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="notification"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="home"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="search"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="my_playlists"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="settings"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="updates"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="search_result"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="albums"
+                    android:scheme="euforia" />
+
+                <data
+                    android:host="playlists"
+                    android:scheme="euforia" />
+
             </intent-filter>
         </activity>
 

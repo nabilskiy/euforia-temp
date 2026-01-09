@@ -3,6 +3,7 @@ package digital.euforia.app.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.home.NavBarItem
 import digital.euforia.app.domain.model.home.defaultNavBarItems
@@ -22,11 +23,13 @@ class HomeViewModel @Inject constructor(
     private val getNavBarItemsFlowUseCase: GetNavBarItemsFlowUseCase,
     private val syncAccompanimentsUseCase: SyncAccompanimentsUseCase,
     private val syncTopProgramsUseCase: SyncPackagesUseCase,
-    private val profilePreferences: ProfilePreferences
+    private val profilePreferences: ProfilePreferences,
+    val analyticSender: AnalyticSender
 ) : ViewModel(), ContainerHost<HomeState, HomeSideEffect> {
     override val container = container<HomeState, HomeSideEffect>(
         initialState = HomeState(),
         onCreate = {
+            analyticSender.mainScreenShow()
             syncAccompaniments()
             observeNavBarItems()
         }
@@ -35,7 +38,7 @@ class HomeViewModel @Inject constructor(
     private fun observeNavBarItems() {
         viewModelScope.launch {
             getNavBarItemsFlowUseCase().collectLatest {
-                reduceState { copy(navBarItems = navBarItems) }
+                reduceState { copy(navBarItems = it) }
             }
         }
     }

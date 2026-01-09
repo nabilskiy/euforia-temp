@@ -39,6 +39,7 @@ import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.AnimatedSizeButton
+import digital.euforia.app.ui.util.LocalLocalizedRes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +72,7 @@ fun VolumeBottomSheet(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.Start
         ) {
+            val localizedRes = LocalLocalizedRes.current
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
@@ -88,7 +90,7 @@ fun VolumeBottomSheet(
             )
             Text(
                 color = White.copy(alpha = 0.7f),
-                text = stringResource(R.string.sound_volume),
+                text = localizedRes.string(R.string.sound_volume),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -137,7 +139,7 @@ fun VolumeBottomSheet(
 
             AnimatedSizeButton(
                 modifier = Modifier.fillMaxWidth(),
-                text = stringResource(R.string.done),
+                text = localizedRes.string(R.string.done),
                 onClick = onDone
             )
             Spacer(Modifier.height(18.dp))

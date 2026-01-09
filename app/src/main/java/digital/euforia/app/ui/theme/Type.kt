@@ -26,15 +26,13 @@ val Typography = Typography(
         fontFamily = Inter,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
+        lineHeight = 20.sp,
     ),
     bodyMedium = TextStyle(
         fontFamily = Inter,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.25.sp
+        lineHeight = 18.sp,
     ),
     bodySmall = TextStyle(
         fontFamily = Inter,
@@ -48,21 +46,24 @@ val Typography = Typography(
         fontWeight = FontWeight.Normal,
         fontSize = 20.sp,
         lineHeight = 26.sp,
-        letterSpacing = 0.sp
+        letterSpacing = 0.sp,
+        color = White
     ),
     titleMedium = TextStyle(
         fontFamily = Inter,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.15.sp
+        lineHeight = 22.sp,
+        letterSpacing = 0.15.sp,
+        color = White
     ),
     titleSmall = TextStyle(
         fontFamily = Inter,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
+        letterSpacing = 0.1.sp,
+        color = White
     ),
     labelLarge = TextStyle(
         fontFamily = Inter,
@@ -129,7 +130,13 @@ val Typography = Typography(
     )
 )
 
-
+val appbarLarge = TextStyle(
+    fontFamily = Inter,
+    fontSize = 20.sp,
+    fontWeight = FontWeight.Bold,
+    lineHeight = 22.sp,
+    letterSpacing = (-0.4).sp
+)
 val appbarMedium = TextStyle(
     fontFamily = Inter,
     fontSize = 16.sp,
@@ -142,4 +149,35 @@ val appbarSmall = TextStyle(
     fontSize = 14.sp,
     fontWeight = FontWeight.Light,
     lineHeight = 14.sp
+)
+val subtitleSmall = TextStyle(
+    fontFamily = Inter,
+    fontSize = 14.sp,
+    fontWeight = FontWeight.Light,
+    lineHeight = 18.sp
+)
+
+val dialogTitle = TextStyle(
+    fontFamily = Inter,
+    fontSize = 16.sp,
+    fontWeight = FontWeight.SemiBold,
+    lineHeight = 20.sp,
+    color = White
+)
+
+val dialogMessage = TextStyle(
+    fontFamily = Inter,
+    fontWeight = FontWeight.Normal,
+    fontSize = 14.sp,
+    lineHeight = 18.sp,
+    letterSpacing = 0.25.sp,
+    color = White
+)
+
+val dialogButton = TextStyle(
+    fontFamily = Inter,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 16.sp,
+    lineHeight = 24.sp,
+    color = DialogButton
 )

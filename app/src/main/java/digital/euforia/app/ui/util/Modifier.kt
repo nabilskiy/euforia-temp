@@ -5,6 +5,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
@@ -47,3 +50,29 @@ fun Modifier.shadow(
             )
         }
     })
+
+fun Modifier.dashedCircleBorder(
+    color: Color,
+    strokeWidth: Dp = 2.dp,
+    dashLength: Dp = 8.dp,
+    gapLength: Dp = 6.dp,
+    cap: StrokeCap = StrokeCap.Round, // Round виглядає як “dots”
+) = drawBehind {
+    val strokePx = strokeWidth.toPx()
+    val dashPx = dashLength.toPx()
+    val gapPx = gapLength.toPx()
+
+    // щоб штрих не "обрізався" по краях
+    val radius = (size.minDimension - strokePx) / 2f
+
+    drawCircle(
+        color = color,
+        radius = radius,
+        center = center,
+        style = Stroke(
+            width = strokePx,
+            cap = cap,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashPx, gapPx), 0f)
+        )
+    )
+}

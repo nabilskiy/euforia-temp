@@ -36,7 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
@@ -59,6 +58,7 @@ import digital.euforia.app.ui.theme.Orange
 import digital.euforia.app.ui.theme.SecondaryText
 import digital.euforia.app.ui.theme.SoundscapesButtonBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 
 fun LazyListScope.extraItem(
     extraPackage: ExtraPackage?,
@@ -88,6 +88,7 @@ fun LazyListScope.extraItem(
 
 @Composable
 fun BoxScope.DescriptionView(onClick: () -> Unit, hazeState: HazeState) {
+    val localizedRes = LocalLocalizedRes.current
 
     Column(
         modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 48.dp),
@@ -95,13 +96,13 @@ fun BoxScope.DescriptionView(onClick: () -> Unit, hazeState: HazeState) {
     ) {
         Text(
             modifier = Modifier.padding(top = 4.dp),
-            text = stringResource(R.string.today_info_step_extra_title),
+            text = localizedRes.string(R.string.today_info_step_extra_title),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
             color = White,
             textAlign = TextAlign.Start,
         )
         Text(
-            text = stringResource(R.string.today_info_step_extra_text),
+            text = localizedRes.string(R.string.today_info_step_extra_text),
             style = MaterialTheme.typography.bodyMedium,
             color = SecondaryText,
             textAlign = TextAlign.Start,
@@ -113,6 +114,7 @@ fun BoxScope.DescriptionView(onClick: () -> Unit, hazeState: HazeState) {
 
 @Composable
 fun StartButton(onClick: () -> Unit, modifier: Modifier = Modifier, hazeState: HazeState) {
+    val localizedRes = LocalLocalizedRes.current
     Box(
         modifier = modifier.zIndex(1f).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
             .hazeEffect(
@@ -123,7 +125,7 @@ fun StartButton(onClick: () -> Unit, modifier: Modifier = Modifier, hazeState: H
     ) {
         Text(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            text = stringResource(R.string.today_info_step_extra_button),
+            text = localizedRes.string(R.string.today_info_step_extra_button),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
             color = White
         )
