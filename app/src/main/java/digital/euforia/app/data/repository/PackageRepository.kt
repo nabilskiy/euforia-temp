@@ -5,7 +5,6 @@ import digital.euforia.app.data.db.dao.ArticleDao
 import digital.euforia.app.data.db.dao.ExerciseDao
 import digital.euforia.app.data.db.dao.MeditationDao
 import digital.euforia.app.data.db.dao.PackageDao
-import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.db.entity.Package.Companion.TOP_PACKAGES_IDS
 import digital.euforia.app.data.db.entity.PackageWithChildren
 import digital.euforia.app.data.db.entity.PackageWithMeditations
@@ -13,8 +12,9 @@ import digital.euforia.app.data.model.NetworkPackage
 import digital.euforia.app.data.model.*
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.domain.model.PublicationInfo
+import digital.euforia.app.domain.mapper.program.PublicationInfoMapper
 import digital.euforia.app.domain.util.ResultWrapper
-import digital.euforia.app.ui.programs.material.PublicationType
+import digital.euforia.app.ui.programs.publication.PublicationType
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +31,7 @@ class PackageRepository @Inject constructor(
     private val exerciseDao: ExerciseDao,
     private val articleDao: ArticleDao,
     private val appPreferences: AppPreferences,
+    private val publicationInfoMapper: PublicationInfoMapper,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
@@ -118,58 +119,27 @@ class PackageRepository @Inject constructor(
         val publicationInfo = when (publicationType) {
             PublicationType.MEDITATION -> {
                 val meditation = meditationDao.getById(id)
+                    ?: api.getMeditations(ids = "$id").dataOrNull?.firstOrNull()?.toEntity()
+
                 if (meditation != null) {
-                    PublicationInfo(
-                        id = meditation.id,
-                        isPremium = meditation.pro,
-                        publicationType = PublicationType.MEDITATION,
-                        title = meditation.name,
-                        subtitle = meditation.subtitle,
-                        imageUrl = meditation.imageUrl,
-                        color1 = meditation.color1,
-                        color2 = meditation.color2,
-                        color3 = meditation.color3,
-                        publishedAt = meditation.publishedAt,
-                        durationMinutes = meditation.computeDurationMinutes(),
-                    )
+                    publicationInfoMapper.fromMeditation(meditation)
                 } else null
             }
 
             PublicationType.EXERCISE -> {
                 val exercise = exerciseDao.getById(id)
+                    ?: api.getExercises(ids = "$id").dataOrNull?.firstOrNull()?.toEntity()
                 if (exercise != null) {
-                    PublicationInfo(
-                        id = exercise.id,
-                        isPremium = exercise.pro,
-                        publicationType = PublicationType.EXERCISE,
-                        title = exercise.name,
-                        subtitle = exercise.subtitle,
-                        imageUrl = exercise.imageUrl,
-                        color1 = exercise.color1,
-                        color2 = exercise.color2,
-                        color3 = exercise.color3,
-                        publishedAt = exercise.publishedAt,
-                        durationMinutes = exercise.computeDurationMinutes(),
-                    )
+                    publicationInfoMapper.fromExercise(exercise)
                 } else null
             }
 
             PublicationType.ARTICLE -> {
-                val article = articleDao.getById(id)
+                val article =
+                    articleDao.getById(id) ?: api.getArticles(ids = "$id").dataOrNull?.firstOrNull()
+                        ?.toEntity()
                 if (article != null) {
-                    PublicationInfo(
-                        id = article.id,
-                        isPremium = article.pro,
-                        publicationType = PublicationType.ARTICLE,
-                        title = article.name,
-                        subtitle = article.subtitle,
-                        imageUrl = article.imageUrl,
-                        color1 = article.color1,
-                        color2 = article.color2,
-                        color3 = article.color3,
-                        publishedAt = article.publishedAt,
-                        durationMinutes = article.computeDurationMinutes(),
-                    )
+                    publicationInfoMapper.fromArticle(article)
                 } else null
             }
         }
@@ -178,6 +148,80 @@ class PackageRepository @Inject constructor(
             ResultWrapper.Success(publicationInfo)
         } else {
             ResultWrapper.Failure(Exception("Publication not found"))
+        }
+    }
+
+    suspend fun getSimilarPublications(
+        publicationType: PublicationType,
+        categoryId: Int?
+    ): ResultWrapper<List<PublicationInfo>> {
+        val publicationInfos = when (publicationType) {
+            PublicationType.ARTICLE -> {
+                articleDao.getAllByMainCategoryId(categoryId).map { article ->
+                    publicationInfoMapper.fromArticle(article)
+                }.ifEmpty {
+                    val networkArticles = api.getArticles(categoryId = categoryId).dataOrNull
+                    networkArticles?.let {
+                        articleDao.upsertAll(it.map { networkArticle -> networkArticle.toEntity() })
+                        networkArticles.map { publicationInfoMapper.fromNetworkArticle(it) }
+                    }
+                }
+            }
+
+            PublicationType.EXERCISE -> {
+                exerciseDao.getAllByMainCategoryId(categoryId).map { exercise ->
+                    publicationInfoMapper.fromExercise(exercise)
+                }.ifEmpty {
+                    val networkExercises = api.getExercises(categoryId = categoryId).dataOrNull
+                    networkExercises?.let {
+                        exerciseDao.upsertAll(it.map { networkExercise -> networkExercise.toEntity() })
+                        networkExercises.map { publicationInfoMapper.fromNetworkExercise(it) }
+                    }
+                }
+            }
+
+            PublicationType.MEDITATION -> {
+                meditationDao.getAllByMainCategoryId(categoryId).map { meditation ->
+                    publicationInfoMapper.fromMeditation(meditation)
+                }.ifEmpty {
+                    val networkMeditations = api.getMeditations(categoryId = categoryId).dataOrNull
+                    networkMeditations?.let {
+                        meditationDao.upsertAll(it.map { networkMeditation -> networkMeditation.toEntity() })
+                        networkMeditations.map { publicationInfoMapper.fromNetworkMeditation(it) }
+                    }
+                }
+            }
+        }
+
+        return if (publicationInfos != null) {
+            ResultWrapper.Success(publicationInfos)
+        } else {
+            ResultWrapper.Failure(Exception("Failed to load similar publications"))
+        }
+    }
+
+    suspend fun getByIds(type: PublicationType, ids: List<Int>): ResultWrapper<List<PublicationInfo>> {
+        val items = when (type) {
+            PublicationType.MEDITATION -> {
+                val meditations = meditationDao.getByIds(ids)
+                meditations.map { publicationInfoMapper.fromMeditation(it) }
+            }
+
+            PublicationType.EXERCISE -> {
+                val exercises = exerciseDao.getByIds(ids)
+                exercises.map { publicationInfoMapper.fromExercise(it) }
+            }
+
+            PublicationType.ARTICLE -> {
+                val articles = articleDao.getByIds(ids)
+                articles.map { publicationInfoMapper.fromArticle(it) }
+            }
+        }
+
+        return if (items.isNotEmpty()) {
+            ResultWrapper.Success(items)
+        } else {
+            ResultWrapper.Failure(Exception("Items not found"))
         }
     }
 }

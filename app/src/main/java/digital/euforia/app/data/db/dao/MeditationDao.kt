@@ -25,6 +25,12 @@ interface MeditationDao {
     @Query("SELECT * FROM meditations WHERE id = :id")
     fun getById(id: Int): Meditation?
 
+    @Query("SELECT * FROM meditations WHERE id IN (:ids)")
+    fun getByIds(ids: List<Int>): List<Meditation>
+
+    @Query("SELECT * FROM meditations WHERE main_category_id = :categoryId")
+    fun getAllByMainCategoryId(categoryId: Int?): List<Meditation>
+
     @Query("SELECT * FROM meditations WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Meditation>>
 

@@ -25,6 +25,12 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE id = :id")
     fun getById(id: Int): Article?
 
+    @Query("SELECT * FROM articles WHERE id IN (:ids)")
+    fun getByIds(ids: List<Int>): List<Article>
+
+    @Query("SELECT * FROM articles WHERE main_category_id = :categoryId")
+    fun getAllByMainCategoryId(categoryId: Int?): List<Article>
+
     @Query("SELECT * FROM articles WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Article>>
 

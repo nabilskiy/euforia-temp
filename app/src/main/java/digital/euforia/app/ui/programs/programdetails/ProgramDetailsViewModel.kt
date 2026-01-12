@@ -12,7 +12,7 @@ import digital.euforia.app.ui.programs.ArticleUi
 import digital.euforia.app.ui.programs.ExerciseUi
 import digital.euforia.app.ui.programs.MeditationUi
 import digital.euforia.app.ui.programs.ProgramUi
-import digital.euforia.app.ui.programs.material.PublicationType
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.programs.toArticleUi
 import digital.euforia.app.ui.programs.toExerciseUi
 import digital.euforia.app.ui.programs.toMeditationUi

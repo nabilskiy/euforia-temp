@@ -16,6 +16,7 @@ import digital.euforia.app.data.repository.ResourceRepository
 import digital.euforia.app.data.repository.FaqCategoryRepository
 import digital.euforia.app.data.repository.FeedbackFormRepository
 import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.domain.mapper.program.PublicationInfoMapper
 import digital.euforia.app.service.notifications.NotificationScheduler
 import digital.euforia.app.service.notifications.WorkManagerNotificationScheduler
 import javax.inject.Singleton
@@ -64,7 +65,8 @@ class RepositoryModule {
     fun providePackageRepository(
         api: EuforiaApi,
         database: AppDatabase,
-        appPreferences: AppPreferences
+        appPreferences: AppPreferences,
+        publicationInfoMapper: PublicationInfoMapper,
     ): PackageRepository {
         return PackageRepository(
             api = api,
@@ -72,7 +74,8 @@ class RepositoryModule {
             meditationDao = database.meditationDao(),
             exerciseDao = database.exerciseDao(),
             articleDao = database.articleDao(),
-            appPreferences = appPreferences
+            appPreferences = appPreferences,
+            publicationInfoMapper = publicationInfoMapper,
         )
     }
 

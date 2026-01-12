@@ -1,9 +1,10 @@
 package digital.euforia.app.domain.model
 
-import digital.euforia.app.ui.programs.material.PublicationType
+import digital.euforia.app.ui.programs.publication.PublicationType
 
 data class PublicationInfo(
     val id: Int,
+    val categoryId: Int? = null,
     val isPremium: Boolean,
     val publicationType: PublicationType,
     val title: String?,

@@ -101,19 +101,22 @@ interface EuforiaApi {
 
     @GET("meditations")
     suspend fun getMeditations(
-        @Query("ids") ids: String,
+        @Query("ids") ids: String? = null,
+        @Query("category_id") categoryId: Int? = null,
         @Query("q") q: String? = null,
     ): ResultWrapper<List<NetworkMeditation>>
 
     @GET("articles")
     suspend fun getArticles(
-        @Query("ids") ids: String,
+        @Query("ids") ids: String? = null,
+        @Query("category_id") categoryId: Int? = null,
         @Query("q") q: String? = null,
     ): ResultWrapper<List<NetworkArticle>>
 
     @GET("exercises")
     suspend fun getExercises(
-        @Query("ids") ids: String,
+        @Query("ids") ids: String? = null,
+        @Query("category_id") categoryId: Int? = null,
         @Query("q") q: String? = null,
     ): ResultWrapper<List<NetworkExercise>>
 }

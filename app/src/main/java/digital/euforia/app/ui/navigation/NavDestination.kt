@@ -3,7 +3,7 @@ package digital.euforia.app.ui.navigation
 import androidx.annotation.Keep
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
-import digital.euforia.app.ui.programs.material.PublicationType
+import digital.euforia.app.ui.programs.publication.PublicationType
 import kotlinx.serialization.Serializable
 
 @Serializable

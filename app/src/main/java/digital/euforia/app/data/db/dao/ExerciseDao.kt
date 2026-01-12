@@ -25,6 +25,12 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE id = :id")
     fun getById(id: Int): Exercise?
 
+    @Query("SELECT * FROM exercises WHERE id IN (:ids)")
+    fun getByIds(ids: List<Int>): List<Exercise>
+
+    @Query("SELECT * FROM exercises WHERE main_category_id = :categoryId")
+    fun getAllByMainCategoryId(categoryId: Int?): List<Exercise>
+
     @Query("SELECT * FROM exercises WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Exercise>>
 
