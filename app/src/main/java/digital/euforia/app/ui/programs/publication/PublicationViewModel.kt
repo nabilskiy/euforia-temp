@@ -91,6 +91,13 @@ class PublicationViewModel @Inject constructor(
     }
 
     fun onPlayClicked() {
+        viewModelScope.launch {
+            when (publicationType) {
+                PublicationType.ARTICLE -> postEffect(PublicationSideEffect.OpenArticle(id))
+                PublicationType.EXERCISE -> postEffect(PublicationSideEffect.OpenExercise(id))
+                PublicationType.MEDITATION -> postEffect(PublicationSideEffect.OpenMeditation(id))
+            }
+        }
     }
 
     fun onDownloadsClicked() {
@@ -119,6 +126,9 @@ sealed class PublicationSideEffect {
         val type: PublicationType,
         val packageTitle: String
     ) : PublicationSideEffect()
+    data class OpenArticle(val id: Int) : PublicationSideEffect()
+    data class OpenExercise(val id: Int) : PublicationSideEffect()
+    data class OpenMeditation(val id: Int) : PublicationSideEffect()
 }
 
 @Keep

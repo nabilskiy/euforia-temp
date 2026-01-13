@@ -16,10 +16,12 @@ import digital.euforia.app.data.model.NetworkSubscription
 import digital.euforia.app.data.model.SubscriptionRequest
 import digital.euforia.app.domain.util.ResultWrapper
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface EuforiaApi {
@@ -119,4 +121,9 @@ interface EuforiaApi {
         @Query("category_id") categoryId: Int? = null,
         @Query("q") q: String? = null,
     ): ResultWrapper<List<NetworkExercise>>
+
+    @GET("articles-content/{id}")
+    suspend fun getArticleContent(
+        @Path("id") id: Int
+    ): ResultWrapper<ResponseBody>
 }

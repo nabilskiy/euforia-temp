@@ -11,6 +11,7 @@ import digital.euforia.app.data.db.AppDatabase
 import digital.euforia.app.data.repository.AccompanimentItemRepository
 import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.repository.AppSettingsRepository
+import digital.euforia.app.data.repository.ArticleRepository
 import digital.euforia.app.data.repository.PackageRepository
 import digital.euforia.app.data.repository.ResourceRepository
 import digital.euforia.app.data.repository.FaqCategoryRepository
@@ -111,6 +112,18 @@ class RepositoryModule {
     ): FeedbackFormRepository {
         return FeedbackFormRepository(
             feedbackFormDao = database.feedbackFormDao()
+        )
+    }
+
+    @Singleton
+    @Provides
+    fun provideArticleRepository(
+        api: EuforiaApi,
+        database: AppDatabase
+    ): ArticleRepository {
+        return ArticleRepository(
+            api = api,
+            articleDao = database.articleDao()
         )
     }
 
