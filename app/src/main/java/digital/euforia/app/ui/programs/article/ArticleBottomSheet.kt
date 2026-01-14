@@ -1,33 +1,42 @@
 package digital.euforia.app.ui.programs.article
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Text
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.colintheshots.twain.MarkdownText
 import digital.euforia.app.R
-import digital.euforia.app.domain.model.article.ArticleBlock
 import digital.euforia.app.ui.theme.BottomSheetBackground
+import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import org.orbitmvi.orbit.compose.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,71 +66,66 @@ fun ArticleBottomSheet(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Icon(
-                modifier = Modifier.padding(top = 16.dp),
+                modifier = Modifier.padding(16.dp),
                 painter = painterResource(R.drawable.ic_close),
                 contentDescription = null,
                 tint = White
             )
 
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                state.articleBlocks.forEachIndexed { index, block ->
-                    when (block) {
-                        is ArticleBlock.Paragraph -> {
-                            item {
-                                TextItem(textBlock = block)
-                            }
-
-                        }
-                        is ArticleBlock.H1 -> {
-                            item {
-                                Text(
-                                    text = block.text,
-                                    color = White
-                                )
-                            }
-                        }
-                        is ArticleBlock.H2 -> {
-                            item {
-                                Text(
-                                    text = block.text,
-                                    color = White
-                                )
-                            }
-                        }
-                        is ArticleBlock.H3 -> {
-                            item {
-                                Text(
-                                    text = block.text,
-                                    color = White
-                                )
-                            }
-                        }
-                        is ArticleBlock.Bullet -> {
-                            item {
-                                Text(
-                                    text = "• ${block.text}",
-                                    color = White
-                                )
-                            }
-                        }
-                        else -> {
-                        }
-                    }
-                }
+                articleItem(state.articleBody)
+                footerItem(
+                    imageUrl = state.publicationInfo?.imageUrl.orEmpty(),
+                    title = state.publicationInfo?.title.orEmpty()
+                )
             }
         }
     }
 }
 
-@Composable
-fun TextItem(textBlock: ArticleBlock.Paragraph) {
-    Text(
-        text = textBlock.text,
-        color = White
+fun LazyListScope.articleItem(articleBody: String) = item(key = "article") {
+    MarkdownText(
+        markdown = articleBody.trimIndent(),
+        modifier = Modifier
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
+            .fillMaxSize(),
+        color = White.copy(alpha = 0.8f),
+        fontResource = R.font.inter_regular
     )
+}
+
+fun LazyListScope.footerItem(imageUrl: String, title: String) = item(key = "footer") {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .background(color = NavBarBackground)
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        val localizedRes = LocalLocalizedRes.current
+        AsyncImage(
+            modifier = Modifier.size(144.dp).clip(RoundedCornerShape(24.dp)),
+            model = imageUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop
+        )
+
+        Text(
+            modifier = Modifier,
+            text = localizedRes.string(R.string.article_reader_share_label),
+            color = White.copy(alpha = 0.5f),
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Text(
+            modifier = Modifier,
+            text = title,
+            color = White.copy(alpha = 0.5f),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
 }

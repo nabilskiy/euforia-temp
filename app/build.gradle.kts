@@ -242,5 +242,9 @@ dependencies {
     // ExpandableTextView for album/playlist descriptions (JitPack)
     implementation("com.github.giangpham96:expandable-text:2.0.1")
     implementation("com.github.anhaki:PickTime-Compose:1.1.5")
+//    implementation("com.arnyminerz.markdowntext:markdowntext:1.3.1")
+    implementation("com.colintheshots:twain:0.3.2")
+//    implementation("com.mikepenz:multiplatform-markdown-renderer-android:0.39.1")
+//    implementation("com.github.jeziellago:compose-markdown:0.2.6")
 
 }

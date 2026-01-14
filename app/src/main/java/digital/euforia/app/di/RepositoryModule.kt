@@ -119,11 +119,13 @@ class RepositoryModule {
     @Provides
     fun provideArticleRepository(
         api: EuforiaApi,
-        database: AppDatabase
+        database: AppDatabase,
+        publicationInfoMapper: PublicationInfoMapper
     ): ArticleRepository {
         return ArticleRepository(
             api = api,
-            articleDao = database.articleDao()
+            articleDao = database.articleDao(),
+            publicationInfoMapper = publicationInfoMapper
         )
     }
 

@@ -22,7 +22,7 @@ import javax.inject.Inject
 class PublicationViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getPublicationInfoUseCase: GetPublicationInfoUseCase,
-    private val getSimilarPublicationsUseCase: GetSimilarPublicationsUseCase
+    private val getSimilarPublicationsUseCase: GetSimilarPublicationsUseCase,
 ) : ViewModel(), ContainerHost<PublicationState, PublicationSideEffect> {
 
     private val id: Int =
@@ -90,6 +90,18 @@ class PublicationViewModel @Inject constructor(
         )
     }
 
+    fun onShowSimilarClicked() {
+        intent {
+            val ids = state.similarPublications.map { it.id }.joinToString(",")
+            postSideEffect(
+                PublicationSideEffect.NavigateToSimilar(
+                    publicationType = publicationType,
+                    ids = ids
+                )
+            )
+        }
+    }
+
     fun onPlayClicked() {
         viewModelScope.launch {
             when (publicationType) {
@@ -126,6 +138,12 @@ sealed class PublicationSideEffect {
         val type: PublicationType,
         val packageTitle: String
     ) : PublicationSideEffect()
+
+    data class NavigateToSimilar(
+        val publicationType: PublicationType,
+        val ids: String
+    ) : PublicationSideEffect()
+
     data class OpenArticle(val id: Int) : PublicationSideEffect()
     data class OpenExercise(val id: Int) : PublicationSideEffect()
     data class OpenMeditation(val id: Int) : PublicationSideEffect()

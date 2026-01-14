@@ -142,4 +142,11 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val publicationType: PublicationType,
         val packageTitle: String,
     )
+
+    @Serializable
+    @Keep
+    data class Publications(
+        val type: PublicationType,
+        val ids: String
+    )
 }

@@ -21,6 +21,7 @@ import digital.euforia.app.ui.player.audio.AudioPlayerScreen
 import digital.euforia.app.ui.programs.ProgramsScreen
 import digital.euforia.app.ui.programs.publication.PublicationScreen
 import digital.euforia.app.ui.programs.programdetails.ProgramDetailsScreen
+import digital.euforia.app.ui.programs.publications.PublicationsScreen
 import digital.euforia.app.ui.settings.SettingsScreen
 import digital.euforia.app.ui.settings.email.EmailScreen
 import digital.euforia.app.ui.settings.faq.FAQScreen
@@ -205,6 +206,13 @@ fun HomeNavigation(navController: NavHostController, isBottomBarShown: MutableSt
             }
             composable<HomeDestination.PublicationDetails> {
                 PublicationScreen(
+                    navController = navController,
+                    viewModel = hiltViewModel(),
+                    navBarVisibilityState = isBottomBarShown,
+                )
+            }
+            composable<HomeDestination.Publications> {
+                PublicationsScreen(
                     navController = navController,
                     viewModel = hiltViewModel(),
                     navBarVisibilityState = isBottomBarShown,

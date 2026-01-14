@@ -16,6 +16,8 @@ interface ArticleDao {
     @Upsert
     suspend fun upsertAll(items: List<Article>)
 
+    @Upsert fun upsert(item: Article)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: Article)
 

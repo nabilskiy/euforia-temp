@@ -9,6 +9,7 @@ import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.config.BlockType
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.domain.usecase.program.GetProgramsWithChildrenUseCase
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
@@ -92,6 +93,27 @@ class ProgramsViewModel @Inject constructor(
                     programsConfig = programsConfig
                 )
             }
+        }
+    }
+
+    fun onArticleClicked(articleUi: ArticleUi) {
+        onPublicationClicked(articleUi.id, articleUi.mainPackageId, PublicationType.ARTICLE)
+    }
+
+    fun onExerciseClicked(exerciseUi: ExerciseUi) {
+        onPublicationClicked(exerciseUi.id, exerciseUi.mainPackageId, PublicationType.EXERCISE)
+    }
+
+    private fun onPublicationClicked(id: Int, packageId: Int?, publicationType: PublicationType) {
+        intent {
+            val packageTitle = state.programs.firstOrNull { it.id == packageId }?.name
+            postSideEffect(
+                ProgramsSideEffect.NavigateToPublication(
+                    id = id,
+                    type = publicationType,
+                    packageTitle = packageTitle.orEmpty()
+                )
+            )
         }
     }
 
@@ -210,4 +232,9 @@ data class ProgramsState(
 sealed class ProgramsSideEffect {
     data class NavigateToProgramDetail(val programId: Int) : ProgramsSideEffect()
     data object NavigateToDownloads : ProgramsSideEffect()
+    data class NavigateToPublication(
+        val id: Int,
+        val type: PublicationType,
+        val packageTitle: String
+    ) : ProgramsSideEffect()
 }

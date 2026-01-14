@@ -91,7 +91,9 @@ fun ProgramsScreen(
         onRetryClick = viewModel::onRetryClick,
         onDownloadsClick = viewModel::onDownloadsClicked,
         onBackClick = { navController.popBackStack() },
-        onProgramClick = viewModel::onProgramClicked
+        onProgramClick = viewModel::onProgramClicked,
+        onArticleClick = viewModel::onArticleClicked,
+        onExerciseClick = viewModel::onExerciseClicked
     )
 }
 
@@ -110,7 +112,9 @@ private fun ProgramsContent(
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onBackClick: () -> Unit,
-    onProgramClick: (ProgramUi) -> Unit
+    onProgramClick: (ProgramUi) -> Unit,
+    onArticleClick: (ArticleUi) -> Unit,
+    onExerciseClick: (ExerciseUi) -> Unit
 ) {
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
@@ -177,7 +181,8 @@ private fun ProgramsContent(
                     isPremiumContent = { it.isPremium },
                     itemImageUrl = { it.imageUrl },
                     itemDuration = { it.duration ?: 0 },
-                    onMoreClick = {}
+                    onMoreClick = {},
+                    onItemClick = { onExerciseClick(it) }
                 )
                 dividerItem()
                 genericRowItem(
@@ -191,7 +196,8 @@ private fun ProgramsContent(
                     isPremiumContent = { it.isPremium },
                     itemImageUrl = { it.imageUrl },
                     itemDuration = { it.duration ?: 0 },
-                    onMoreClick = {}
+                    onMoreClick = {},
+                    onItemClick = { onArticleClick(it) }
                 )
                 item {
                     Spacer(modifier = Modifier.height(160.dp).navigationBarsPadding())
@@ -219,7 +225,8 @@ private fun <T> LazyListScope.genericRowItem(
     isPremiumContent: (T) -> Boolean,
     itemImageUrl: (T) -> String?,
     itemDuration: (T) -> Int,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
+    onItemClick: (T) -> Unit
 ) = item(key = "${title.lowercase()}_item") {
     val localizedRes = LocalLocalizedRes.current
     Column(
@@ -251,7 +258,8 @@ private fun <T> LazyListScope.genericRowItem(
                         titleText = itemTitle(item),
                         duration = itemDuration(item),
                         isPremium = isPremium,
-                        iconRes = iconRes
+                        iconRes = iconRes,
+                        onClick = { onItemClick(item) }
                     )
                 }
 
@@ -295,9 +303,13 @@ fun HorizontalItemView(
     titleText: String,
     duration: Int,
     isPremium: Boolean,
-    iconRes: Int
+    iconRes: Int,
+    onClick: () -> Unit
 ) {
-    Column(modifier = Modifier.width(196.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        modifier = Modifier.noRippleClickable(onClick).width(196.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Box() {
             AsyncImage(
                 modifier = Modifier.aspectRatio(1f).clip(RoundedCornerShape(24.dp)),
@@ -476,6 +488,14 @@ private fun handleSideEffect(sideEffect: ProgramsSideEffect, navController: NavH
         is ProgramsSideEffect.NavigateToProgramDetail -> navController.navigate(
             HomeDestination.ProgramDetails(
                 sideEffect.programId
+            )
+        )
+
+        is ProgramsSideEffect.NavigateToPublication -> navController.navigate(
+            HomeDestination.PublicationDetails(
+                sideEffect.id,
+                sideEffect.type,
+                sideEffect.packageTitle
             )
         )
 

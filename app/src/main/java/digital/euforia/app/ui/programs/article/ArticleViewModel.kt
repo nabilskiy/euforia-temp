@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.util.copy
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.repository.ArticleRepository
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.article.ArticleBlock
 import digital.euforia.app.domain.usecase.article.GetArticleContentUseCase
 import digital.euforia.app.ui.util.reduceState
@@ -18,7 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ArticleViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val getArticleContentUseCase: GetArticleContentUseCase
+    private val articleRepository: ArticleRepository
 ) : ViewModel(), ContainerHost<ArticleState, ArticleSideEffect> {
     private val id: Int =
         requireNotNull(savedStateHandle.get<Int>("id"))
@@ -33,15 +35,26 @@ class ArticleViewModel @Inject constructor(
     fun loadArticleContent() {
         viewModelScope.launch {
             reduceState { copy(isLoading = true, errorState = null) }
-            getArticleContentUseCase.invoke(id).onSuccess { articleBlocks ->
+            val article = articleRepository.getArticleById(id).onFailure {
+                reduceState { copy(errorState = it.mapToErrorViewState()) }
+            }.dataOrNull
+
+//            article?.let {
+            reduceState { copy(publicationInfo = article) }
+            articleRepository.getArticleContent(id).onSuccess { articleBody ->
                 reduceState {
-                    copy(articleBlocks = articleBlocks)
+                    if (articleBody.isNotEmpty()) {
+                        copy(articleBody = articleBody)
+                    } else {
+                        copy(errorState = ErrorViewState.EmptyState)
+                    }
                 }
             }.onFailure {
                 reduceState { copy(errorState = it.mapToErrorViewState()) }
             }.onFinish {
                 reduceState { copy(isLoading = false) }
             }
+//            }
         }
     }
 }
@@ -50,7 +63,9 @@ data class ArticleState(
     val isLoading: Boolean = true,
     val isPremium: Boolean = false,
     val errorState: ErrorViewState? = null,
-    val articleBlocks: List<ArticleBlock> = emptyList()
+    val articleBlocks: List<ArticleBlock> = emptyList(),
+    val articleBody: String = "",
+    val publicationInfo: PublicationInfo? = null
 )
 
 sealed class ArticleSideEffect {}

@@ -108,6 +108,7 @@ fun PublicationScreen(
             onDownloadsClick = viewModel::onDownloadsClicked,
             similarItems = state.similarPublications,
             onSimilarItemClick = viewModel::onPublicationClicked,
+            onShowSimilarClick = viewModel::onShowSimilarClicked,
             onBackClick = { navController.popBackStack() },
             onPlayClick = viewModel::onPlayClicked
         )
@@ -125,6 +126,7 @@ private fun PublicationContent(
     similarItems: List<PublicationInfo>,
     articleSheetState: MutableState<Boolean>,
     onSimilarItemClick: (PublicationInfo) -> Unit,
+    onShowSimilarClick: () -> Unit,
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onBackClick: () -> Unit,
@@ -293,7 +295,8 @@ private fun PublicationContent(
 
                     similarItem(
                         similarItems = similarItems,
-                        onClick = onSimilarItemClick
+                        onClick = onSimilarItemClick,
+                        onShowSimilarClick = onShowSimilarClick
                     )
 
                     item {
@@ -333,6 +336,7 @@ fun LazyListScope.playItem(modifier: Modifier = Modifier, imageUrl: String, onCl
             )
             Icon(
                 modifier = Modifier.align(Alignment.Center)
+                    .noRippleClickable(onClick)
                     .shadow(
                         color = White,
                         blurRadius = 16.dp,
@@ -463,7 +467,8 @@ fun LazyListScope.infoItem(
 
 private fun LazyListScope.similarItem(
     similarItems: List<PublicationInfo>,
-    onClick: (PublicationInfo) -> Unit
+    onClick: (PublicationInfo) -> Unit,
+    onShowSimilarClick: () -> Unit
 ) = item(key = "similar") {
     val localizedRes = LocalLocalizedRes.current
     Column(
@@ -492,7 +497,7 @@ private fun LazyListScope.similarItem(
             )
 
             Icon(
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.noRippleClickable(onShowSimilarClick).size(24.dp),
                 painter = painterResource(R.drawable.ic_next),
                 contentDescription = null,
                 tint = White.copy(0.7f)
@@ -640,6 +645,15 @@ private fun handleSideEffect(
                     id = sideEffect.id,
                     publicationType = sideEffect.type,
                     packageTitle = sideEffect.packageTitle
+                )
+            )
+        }
+
+        is PublicationSideEffect.NavigateToSimilar -> {
+            navController.navigate(
+                HomeDestination.Publications(
+                    type = sideEffect.publicationType,
+                    ids = sideEffect.ids
                 )
             )
         }
