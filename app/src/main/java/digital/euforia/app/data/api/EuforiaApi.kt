@@ -126,4 +126,9 @@ interface EuforiaApi {
     suspend fun getArticleContent(
         @Path("id") id: Int
     ): ResultWrapper<ResponseBody>
+
+    @GET("exercises/{id}")
+    suspend fun getExercise(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkExercise>
 }

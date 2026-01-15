@@ -117,7 +117,7 @@ fun PublicationScreen(
 
 @Composable
 private fun PublicationContent(
-    publicationInfo: PublicationInfo? = null,
+    publicationInfo: PublicationInfo?,
     navController: NavHostController,
     isPremium: Boolean,
     isLoading: Boolean,
@@ -370,16 +370,18 @@ fun LazyListScope.infoItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            modifier = Modifier
-                .background(
-                    color = color.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(8.dp)
-                )
-                .padding(8.dp),
-            text = programTitle.uppercase(),
-            style = MaterialTheme.typography.titleSmall.copy(color = color)
-        )
+        if (programTitle.isNotEmpty() && publicationInfo.publicationType == PublicationType.MEDITATION) {
+            Text(
+                modifier = Modifier
+                    .background(
+                        color = color.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(8.dp),
+                text = programTitle.uppercase(),
+                style = MaterialTheme.typography.titleSmall.copy(color = color)
+            )
+        }
         Text(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,

@@ -3,12 +3,10 @@ package digital.euforia.app.ui.programs.article
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.util.copy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.repository.ArticleRepository
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.article.ArticleBlock
-import digital.euforia.app.domain.usecase.article.GetArticleContentUseCase
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
@@ -39,7 +37,6 @@ class ArticleViewModel @Inject constructor(
                 reduceState { copy(errorState = it.mapToErrorViewState()) }
             }.dataOrNull
 
-//            article?.let {
             reduceState { copy(publicationInfo = article) }
             articleRepository.getArticleContent(id).onSuccess { articleBody ->
                 reduceState {
@@ -54,7 +51,6 @@ class ArticleViewModel @Inject constructor(
             }.onFinish {
                 reduceState { copy(isLoading = false) }
             }
-//            }
         }
     }
 }

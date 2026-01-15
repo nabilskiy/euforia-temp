@@ -1,10 +1,8 @@
 package digital.euforia.app.ui.programs.article
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -47,6 +46,8 @@ fun ArticleBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val state by viewModel.collectAsState()
+    val bodyTextColor = White.copy(alpha = 0.8f)
+    val secondaryTextColor = White.copy(alpha = 0.5f)
 
     LaunchedEffect(sheetState.isVisible) {
         if (sheetState.isVisible) {
@@ -65,42 +66,54 @@ fun ArticleBottomSheet(
         tonalElevation = 12.dp,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Icon(
-                modifier = Modifier.padding(16.dp),
-                painter = painterResource(R.drawable.ic_close),
-                contentDescription = null,
-                tint = White
-            )
+            IconButton(onClick = onDismiss, modifier = Modifier.padding(16.dp)) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_close),
+                    contentDescription = null,
+                    tint = White
+                )
+            }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                articleItem(state.articleBody)
+                articleItem(
+                    articleBody = state.articleBody,
+                    textColor = bodyTextColor
+                )
                 footerItem(
                     imageUrl = state.publicationInfo?.imageUrl.orEmpty(),
-                    title = state.publicationInfo?.title.orEmpty()
+                    title = state.publicationInfo?.title.orEmpty(),
+                    secondaryTextColor = secondaryTextColor
                 )
             }
         }
     }
 }
 
-fun LazyListScope.articleItem(articleBody: String) = item(key = "article") {
+private fun LazyListScope.articleItem(
+    articleBody: String,
+    textColor: Color
+) = item(key = "article") {
     MarkdownText(
         markdown = articleBody.trimIndent(),
         modifier = Modifier
-            .statusBarsPadding()
             .padding(horizontal = 16.dp)
             .fillMaxSize(),
-        color = White.copy(alpha = 0.8f),
+        color = textColor,
         fontResource = R.font.inter_regular
     )
 }
 
-fun LazyListScope.footerItem(imageUrl: String, title: String) = item(key = "footer") {
+private fun LazyListScope.footerItem(
+    imageUrl: String,
+    title: String,
+    secondaryTextColor: Color
+) = item(key = "footer") {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .background(color = NavBarBackground)
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -108,23 +121,23 @@ fun LazyListScope.footerItem(imageUrl: String, title: String) = item(key = "foot
     ) {
         val localizedRes = LocalLocalizedRes.current
         AsyncImage(
-            modifier = Modifier.size(144.dp).clip(RoundedCornerShape(24.dp)),
+            modifier = Modifier
+                .size(144.dp)
+                .clip(RoundedCornerShape(24.dp)),
             model = imageUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop
         )
 
         Text(
-            modifier = Modifier,
             text = localizedRes.string(R.string.article_reader_share_label),
-            color = White.copy(alpha = 0.5f),
+            color = secondaryTextColor,
             style = MaterialTheme.typography.bodyMedium
         )
 
         Text(
-            modifier = Modifier,
             text = title,
-            color = White.copy(alpha = 0.5f),
+            color = secondaryTextColor,
             style = MaterialTheme.typography.bodyMedium
         )
     }

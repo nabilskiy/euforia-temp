@@ -62,6 +62,7 @@ fun Exercise.toExerciseUi(): ExerciseUi {
         description = description,
         keywords = keywords,
         imageUrl = imageUrl,
+        videoUrl = videoUrl,
         imagePreviewUrl = imagePreviewUrl,
         imageCoverUrl = imageCoverUrl,
         color1 = color1,

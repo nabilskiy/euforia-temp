@@ -44,7 +44,6 @@ class ProgramsViewModel @Inject constructor(
                     val articles = mutableListOf<ArticleUi>()
                     val exercises = mutableListOf<ExerciseUi>()
                     val programs = resultList.map { result ->
-//                        result.articles
                         articles.addAll(result.articles.map { article -> article.toArticleUi() })
                         exercises.addAll(result.exercises.map { exercise -> exercise.toExerciseUi() })
                         result.pkg.toProgramUi(result.articles.size + result.exercises.size + result.meditations.size)
@@ -210,6 +209,7 @@ data class ExerciseUi(
     val imagePreviewUrl: String?,
     val imageCoverUrl: String?,
     val musicFileUrl: String?,
+    val videoUrl: String?,
     val color1: String?,
     val color2: String?,
     val color3: String?,
