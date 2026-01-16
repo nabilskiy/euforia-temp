@@ -12,6 +12,7 @@ import digital.euforia.app.data.repository.AccompanimentItemRepository
 import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.repository.AppSettingsRepository
 import digital.euforia.app.data.repository.ArticleRepository
+import digital.euforia.app.data.repository.ExerciseRepository
 import digital.euforia.app.data.repository.PackageRepository
 import digital.euforia.app.data.repository.ResourceRepository
 import digital.euforia.app.data.repository.FaqCategoryRepository
@@ -125,6 +126,20 @@ class RepositoryModule {
         return ArticleRepository(
             api = api,
             articleDao = database.articleDao(),
+            publicationInfoMapper = publicationInfoMapper
+        )
+    }
+
+    @Singleton
+    @Provides
+    fun provideExerciseRepository(
+        api: EuforiaApi,
+        database: AppDatabase,
+        publicationInfoMapper: PublicationInfoMapper,
+    ): ExerciseRepository {
+        return ExerciseRepository(
+            api = api,
+            exerciseDao = database.exerciseDao(),
             publicationInfoMapper = publicationInfoMapper
         )
     }

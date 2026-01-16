@@ -661,6 +661,13 @@ private fun handleSideEffect(
         }
 
         is PublicationSideEffect.OpenArticle -> openArticle()
+        is PublicationSideEffect.OpenExercise -> {
+            navController.navigate(
+                HomeDestination.Exercise(
+                    id = sideEffect.id
+                )
+            )
+        }
 
         else -> {}
     }

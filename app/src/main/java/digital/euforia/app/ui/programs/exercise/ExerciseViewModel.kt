@@ -1,5 +1,13 @@
 package digital.euforia.app.ui.programs.exercise
 
+import android.content.Context
+import android.content.ComponentName
+import android.net.Uri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,9 +21,13 @@ import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
+import digital.euforia.app.service.ExerciseVideoPlaybackService
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @HiltViewModel
 class ExerciseViewModel @Inject constructor(
@@ -32,6 +44,75 @@ class ExerciseViewModel @Inject constructor(
             loadExercise()
         }
     )
+
+    private var mediaController: MediaController? = null
+    private var currentUri: String? = null
+
+    suspend fun getOrCreateController(context: Context): MediaController {
+        val existing = mediaController
+        if (existing != null) return existing
+        val appCtx = context.applicationContext
+        val token = SessionToken(appCtx, ComponentName(appCtx, ExerciseVideoPlaybackService::class.java))
+        val future = MediaController.Builder(appCtx, token).buildAsync()
+        return suspendCancellableCoroutine { cont ->
+            future.addListener({
+                try {
+                    val controller = future.get()
+                    mediaController = controller
+                    cont.resume(controller)
+                } catch (t: Throwable) {
+                    cont.resumeWithException(t)
+                }
+            }, { runnable -> runnable.run() })
+            cont.invokeOnCancellation { future.cancel(true) }
+        }
+    }
+
+    fun player(): Player? = mediaController
+
+    fun prepareAndPlay(exercise: ExerciseUi) {
+        val ctrl = mediaController ?: return
+        val uri = exercise.videoUrl ?: return
+        if (currentUri == uri) return
+        val metadata = MediaMetadata.Builder()
+            .setTitle(exercise.name)
+            .setArtist(exercise.subtitle)
+            .setArtworkUri(exercise.imageUrl?.let { Uri.parse(it) })
+            .build()
+        val item = MediaItem.Builder()
+            .setUri(uri)
+            .setMediaMetadata(metadata)
+            .build()
+        ctrl.setMediaItem(item)
+        ctrl.prepare()
+        ctrl.playWhenReady = true
+        currentUri = uri
+    }
+
+    fun stopPlaybackAndRelease(stopService: Boolean = true) {
+        val ctrl = mediaController ?: return
+
+        try {
+            ctrl.playWhenReady = false
+            ctrl.stop()
+            ctrl.clearMediaItems()
+        } catch (_: Throwable) {}
+
+        if (stopService) {
+            try {
+                ctrl.sendCustomCommand(ExerciseVideoPlaybackService.Commands.STOP_SERVICE, android.os.Bundle.EMPTY)
+            } catch (_: Throwable) {}
+        }
+
+        try { ctrl.release() } catch (_: Throwable) {}
+        mediaController = null
+        currentUri = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopPlaybackAndRelease(stopService = false)
+    }
 
     private fun loadExercise() {
         viewModelScope.launch {
