@@ -30,7 +30,7 @@ class ResourceRepository @Inject constructor(
         resourceDao.insertAll(entities)
     }
 
-    suspend fun syncAll() : ResultWrapper<Unit> {
+    suspend fun syncAll(): ResultWrapper<Unit> {
         val aliases = "$CLASS_ALIAS_VOICE_AVATAR,$CLASS_ALIAS_VOICE_MUSIC"
         val result = api.getResources(classAlias = aliases)
         return result.map { networkResources ->
@@ -45,7 +45,21 @@ class ResourceRepository @Inject constructor(
 
     fun getByIdFlow(id: Int): Flow<Resource?> = resourceDao.getByIdFlow(id)
 
-    suspend fun getByClassAlias(alias: String): List<Resource> = resourceDao.getByClassAlias(alias)
+    suspend fun getByClassAlias(alias: String): ResultWrapper<List<Resource>> {
+        return withContext(Dispatchers.IO) {
+            val localResources = resourceDao.getByClassAlias(alias = alias)
+            if (localResources.isNotEmpty()) {
+                ResultWrapper.Success(localResources)
+            } else {
+                api.getResources(classAlias = alias).map { networkResources ->
+                    networkResources.map(NetworkResource::toEntity).also { entities ->
+                        resourceDao.deleteAllExcept(entities.map { it.id })
+                        resourceDao.upsertAll(entities)
+                    }
+                }
+            }
+        }
+    }
 
     fun getByCategoryIdFlow(categoryId: Int): Flow<List<Resource>> =
         resourceDao.getByCategoryIdFlow(categoryId)

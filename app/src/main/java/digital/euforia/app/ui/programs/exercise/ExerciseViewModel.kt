@@ -12,9 +12,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_MEDITATION_BACKGROUND
 import digital.euforia.app.data.repository.ExerciseRepository
+import digital.euforia.app.data.repository.ResourceRepository
 import digital.euforia.app.domain.usecase.resources.GetResourcesUseCase
-import digital.euforia.app.ui.player.audio.SoundEffectUi
+import digital.euforia.app.ui.util.widget.SoundEffectUi
 import digital.euforia.app.ui.programs.ExerciseUi
 import digital.euforia.app.ui.programs.toExerciseUi
 import digital.euforia.app.ui.util.reduceState
@@ -26,6 +28,8 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
 import digital.euforia.app.service.ExerciseVideoPlaybackService
+import digital.euforia.app.ui.player.audio.toSoundEffectUi
+import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -34,6 +38,7 @@ class ExerciseViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
     private val getResourcesUseCase: GetResourcesUseCase,
+    private val resourceRepository: ResourceRepository,
 ) : ViewModel(), ContainerHost<ExerciseState, ExerciseSideEffect> {
 
     private val id: Int =
@@ -42,6 +47,7 @@ class ExerciseViewModel @Inject constructor(
         initialState = ExerciseState(),
         onCreate = {
             loadExercise()
+            loadSoundEffects()
         }
     )
 
@@ -52,7 +58,8 @@ class ExerciseViewModel @Inject constructor(
         val existing = mediaController
         if (existing != null) return existing
         val appCtx = context.applicationContext
-        val token = SessionToken(appCtx, ComponentName(appCtx, ExerciseVideoPlaybackService::class.java))
+        val token =
+            SessionToken(appCtx, ComponentName(appCtx, ExerciseVideoPlaybackService::class.java))
         val future = MediaController.Builder(appCtx, token).buildAsync()
         return suspendCancellableCoroutine { cont ->
             future.addListener({
@@ -96,15 +103,23 @@ class ExerciseViewModel @Inject constructor(
             ctrl.playWhenReady = false
             ctrl.stop()
             ctrl.clearMediaItems()
-        } catch (_: Throwable) {}
+        } catch (_: Throwable) {
+        }
 
         if (stopService) {
             try {
-                ctrl.sendCustomCommand(ExerciseVideoPlaybackService.Commands.STOP_SERVICE, android.os.Bundle.EMPTY)
-            } catch (_: Throwable) {}
+                ctrl.sendCustomCommand(
+                    ExerciseVideoPlaybackService.Commands.STOP_SERVICE,
+                    android.os.Bundle.EMPTY
+                )
+            } catch (_: Throwable) {
+            }
         }
 
-        try { ctrl.release() } catch (_: Throwable) {}
+        try {
+            ctrl.release()
+        } catch (_: Throwable) {
+        }
         mediaController = null
         currentUri = null
     }
@@ -130,6 +145,32 @@ class ExerciseViewModel @Inject constructor(
             }
         }
     }
+
+    private fun loadSoundEffects() {
+        viewModelScope.launch {
+            resourceRepository.getByClassAlias(CLASS_ALIAS_MEDITATION_BACKGROUND)
+                .onSuccess { resources ->
+                    val soundEffects = resources.map { it.toSoundEffectUi() }
+                    reduceState { copy(soundEffectsList = soundEffects) }
+                }.onFailure {
+                    Timber.d("Failed to load sound effects. $it")
+                }
+        }
+    }
+
+    fun onSoundEffectSelected(index: Int) {
+        intent {
+            if (state.selectedSoundEffectIndex == index) return@intent
+            val soundEffect = state.soundEffectsList.getOrNull(index) ?: return@intent
+            reduce { state.copy(selectedSoundEffectIndex = index) }
+        }
+    }
+
+    fun onMuteClicked() {
+        intent {
+            reduce { state.copy(selectedSoundEffectIndex = -1) }
+        }
+    }
 }
 
 data class ExerciseState(
@@ -138,6 +179,7 @@ data class ExerciseState(
     val errorState: ErrorViewState? = null,
     val exercise: ExerciseUi? = null,
     val soundEffectsList: List<SoundEffectUi> = emptyList(),
+    val selectedSoundEffectIndex: Int = -1,
 )
 
 sealed class ExerciseSideEffect {}

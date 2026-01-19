@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import digital.euforia.app.data.db.entity.Resource
 import kotlinx.coroutines.flow.Flow
 
@@ -11,6 +12,9 @@ import kotlinx.coroutines.flow.Flow
 interface ResourceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<Resource>)
+
+    @Upsert
+    suspend fun upsertAll(items: List<Resource>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: Resource)

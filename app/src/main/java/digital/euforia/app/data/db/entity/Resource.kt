@@ -33,6 +33,7 @@ data class Resource(
     companion object {
         const val CLASS_ALIAS_VOICE_AVATAR = "voice_avatar"
         const val CLASS_ALIAS_VOICE_MUSIC = "voice_music"
+        const val CLASS_ALIAS_MEDITATION_BACKGROUND = "meditation_background"
     }
 }
 

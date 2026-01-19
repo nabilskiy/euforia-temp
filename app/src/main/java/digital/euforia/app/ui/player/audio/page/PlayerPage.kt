@@ -74,7 +74,7 @@ import digital.euforia.app.ui.player.audio.AppBarHeightLarge
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.player.audio.AvatarUi
 import digital.euforia.app.ui.player.audio.PlaybackProgressView
-import digital.euforia.app.ui.player.audio.SoundEffectUi
+import digital.euforia.app.ui.util.widget.SoundEffectUi
 import digital.euforia.app.ui.theme.PlayButtonBackground
 import digital.euforia.app.ui.theme.PlayButtonDarkBackground
 import digital.euforia.app.ui.theme.White
@@ -85,6 +85,7 @@ import digital.euforia.app.ui.util.widget.HeadphonesInfoView
 import digital.euforia.app.ui.util.widget.MenuItem
 import digital.euforia.app.ui.util.widget.OptionsMenu
 import digital.euforia.app.ui.util.widget.ProgressIndicator
+import digital.euforia.app.ui.util.widget.SoundsEffectsView
 import digital.euforia.app.ui.util.widget.TriangleTooltipBubble
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.vibe.AnimationType
@@ -260,7 +261,7 @@ private fun DefaultPlayerOverlay(
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SoundsRow(
+            SoundsEffectsView(
                 soundsEffects = soundsEffects,
                 selectedIndex = selectedSoundIndex,
                 avatarPreviewUrl = previewUrl,
@@ -404,7 +405,7 @@ fun OnboardingPlayerOverlay(
                         modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        SoundsRow(
+                        SoundsEffectsView(
                             soundsEffects = soundsEffects,
                             selectedIndex = selectedSoundIndex,
                             avatarPreviewUrl = previewUrl,
@@ -517,204 +518,6 @@ fun BoxScope.InfoView(modifier: Modifier = Modifier, isVisible: Boolean) {
                 textAlign = TextAlign.Center,
             )
         }
-    }
-}
-
-@Composable
-fun ColumnScope.SoundsRow(
-    soundsEffects: List<SoundEffectUi>,
-    selectedIndex: Int,
-    avatarPreviewUrl: String?,
-    isHintShown: Boolean = false,
-    onAvatarClick: () -> Unit,
-    onMuteClick: () -> Unit,
-    onClick: (Int) -> Unit
-) {
-    val listState = rememberLazyListState()
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    LaunchedEffect(selectedIndex, soundsEffects.size) {
-        if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
-            val targetIndex = selectedIndex + 2 // account for Avatar + Mute items
-
-            // Wait until LazyRow has a non-zero viewport to compute a proper center offset
-            var viewportWidth =
-                listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
-            var attempts = 0
-            while (viewportWidth <= 0 && attempts < 5) {
-                delay(16)
-                attempts++
-                viewportWidth =
-                    listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
-            }
-
-            if (viewportWidth > 0) {
-                // Center selected item within the viewport
-                val itemWidthPx = with(density) { 86.dp.roundToPx() } // item box size in SoundsRow
-                val desiredStartPx = (viewportWidth / 2) - (itemWidthPx / 2)
-                listState.animateScrollToItem(index = targetIndex, scrollOffset = -desiredStartPx)
-            } else {
-                // Fallback: just scroll to the item without centering
-                listState.animateScrollToItem(index = targetIndex)
-            }
-        }
-    }
-
-    if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
-        Text(
-//            modifier = Modifier.padding(bottom = 4.dp),
-            text = soundsEffects[selectedIndex].title,
-            color = White,
-            style = MaterialTheme.typography.bodySmall.copy(fontWeight = SemiBold),
-            textAlign = TextAlign.Center,
-        )
-
-    }
-    LazyRow(
-        state = listState,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp)
-    ) {
-        item {
-            AvatarPreviewItem(
-                url = avatarPreviewUrl,
-                isHintShown = isHintShown,
-                onClick = onAvatarClick
-            )
-        }
-        item {
-            MuteItem(isSelected = selectedIndex == -1, onClick = onMuteClick)
-        }
-        itemsIndexed(items = soundsEffects, key = { index, item -> item.id }) { index, item ->
-            SoundItem(
-                soundEffectUi = item,
-                isSelected = index == selectedIndex,
-                onClick = {
-                    onClick(index)
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun SoundItem(
-    soundEffectUi: SoundEffectUi,
-    isSelected: Boolean = false,
-    onClick: () -> Unit
-) {
-    val borderWidth = if (isSelected) 3.dp else 1.dp
-    val borderColor = if (isSelected) White else White.copy(alpha = 0.3f)
-    val size by animateDpAsState(
-        targetValue = if (isSelected) 56.dp else 48.dp,
-        animationSpec = tween(durationMillis = 300),
-        label = "size"
-    )
-    Box(
-        modifier = Modifier.size(56.dp)
-            .noRippleClickable(onClick = onClick)
-    ) {
-        AsyncImage(
-            modifier = Modifier.clip(CircleShape)
-                .border(width = borderWidth, color = borderColor, shape = CircleShape)
-                .align(Alignment.Center)
-                .size(size),
-            model = soundEffectUi.imageUrl,
-            contentDescription = null
-        )
-        if (isSelected) {
-            Box(
-                modifier = Modifier.align(Alignment.Center).size(size)
-                    .background(color = White.copy(alpha = 0.2f), shape = CircleShape)
-            ) {
-                Icon(
-                    modifier = Modifier.align(Alignment.Center).size(24.dp),
-                    painter = painterResource(id = R.drawable.ic_slider),
-                    contentDescription = null,
-                    tint = White
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun MuteItem(isSelected: Boolean, onClick: () -> Unit) {
-    val borderWidth = if (isSelected) 3.dp else 1.dp
-    val borderColor = if (isSelected) White else White.copy(alpha = 0.3f)
-
-    Box(
-        modifier = Modifier.size(56.dp)
-            .noRippleClickable(onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier.align(Alignment.Center).size(48.dp)
-                .background(color = White.copy(alpha = 0.2f), shape = CircleShape)
-                .border(width = borderWidth, color = borderColor, shape = CircleShape)
-        ) {
-            Icon(
-                modifier = Modifier.align(Alignment.Center).size(24.dp),
-                painter = painterResource(id = R.drawable.ic_sound_off),
-                contentDescription = null,
-                tint = Color.Unspecified
-            )
-        }
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AvatarPreviewItem(
-    url: String?,
-    isHintShown: Boolean = false,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier.clip(CircleShape).size(56.dp)
-            .background(color = White.copy(alpha = 0.2f), shape = CircleShape)
-            .border(width = 1.dp, color = White.copy(alpha = 0.3f), shape = CircleShape)
-            .noRippleClickable(onClick = onClick)
-    ) {
-        if (url != null) {
-            AsyncImage(
-                modifier = Modifier.clip(CircleShape)
-                    .align(Alignment.Center)
-                    .fillMaxSize(),
-                model = url,
-                contentDescription = null
-            )
-        } else {
-            Icon(
-                modifier = Modifier.align(Alignment.Center).size(24.dp),
-                painter = painterResource(id = R.drawable.ic_custom_photo),
-                contentDescription = null,
-                tint = Color.Unspecified
-            )
-        }
-        val tooltipState = rememberTooltipState(isPersistent = true)
-
-        LaunchedEffect(isHintShown) {
-            if (isHintShown) {
-                tooltipState.show()
-            } else {
-                tooltipState.dismiss()
-            }
-        }
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-            tooltip = {
-                TriangleTooltipBubble(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    text = LocalLocalizedRes.current.string(R.string.vibes_avatar_change_hint),
-                    caretWidth = 12.dp,
-                    caretHeight = 8.dp,
-                    caretOffsetX = 28.dp,
-                )
-            },
-            state = tooltipState,
-        ) {}
     }
 }
 

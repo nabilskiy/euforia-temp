@@ -84,3 +84,16 @@ fun Long.toDateString(pattern: String = "dd.MM.yyyy"): String {
         .atZone(ZoneId.systemDefault())
         .format(formatter)
 }
+
+
+fun formatDuration(ms: Long): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0)
+    val seconds = (totalSeconds % 60).toInt()
+    val minutes = ((totalSeconds / 60) % 60).toInt()
+    val hours = (totalSeconds / 3600).toInt()
+    return if (hours > 0) {
+        String.format("%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format("%02d:%02d", minutes, seconds)
+    }
+}

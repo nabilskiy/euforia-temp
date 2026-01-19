@@ -44,6 +44,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
@@ -64,6 +65,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.programs.ExerciseUi
@@ -72,9 +74,12 @@ import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.formatDuration
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.ProgressIndicator
+import digital.euforia.app.ui.util.widget.SoundEffectUi
+import digital.euforia.app.ui.util.widget.SoundsEffectsView
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import kotlinx.coroutines.delay
@@ -103,10 +108,14 @@ fun ExerciseScreen(
             isPremium = state.isPremium,
             isLoading = state.isLoading,
             errorState = state.errorState,
+            soundEffects = state.soundEffectsList,
+            selectedSoundIndex = state.selectedSoundEffectIndex,
             getController = { ctx -> viewModel.getOrCreateController(ctx) },
             onPrepareAndPlay = { ex -> viewModel.prepareAndPlay(ex) },
             onRetryClick = { },
-            onDownloadsClick = { }
+            onDownloadsClick = { },
+            onSoundEffectClick = viewModel::onSoundEffectSelected,
+            onMuteClick = viewModel::onMuteClicked
         )
     }
 }
@@ -119,10 +128,14 @@ private fun ExerciseContent(
     isPremium: Boolean,
     isLoading: Boolean,
     errorState: ErrorViewState?,
+    soundEffects: List<SoundEffectUi>,
+    selectedSoundIndex: Int,
     getController: suspend (Context) -> Player,
     onPrepareAndPlay: (ExerciseUi) -> Unit,
     onRetryClick: () -> Unit,
-    onDownloadsClick: () -> Unit
+    onDownloadsClick: () -> Unit,
+    onSoundEffectClick: (Int) -> Unit,
+    onMuteClick: () -> Unit,
 ) {
     val videoUrl = exercise?.videoUrl
 
@@ -140,13 +153,17 @@ private fun ExerciseContent(
             )
         } else {
             ExerciseVideoPlayer(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding(),
                 exercise = exercise,
+                soundEffects = soundEffects,
+                selectedSoundIndex = selectedSoundIndex,
                 getController = getController,
                 onPrepareAndPlay = onPrepareAndPlay,
                 onClose = { navController.popBackStack() },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding()
+                onSoundEffectClick = onSoundEffectClick,
+                onMuteClick = onMuteClick,
             )
         }
     }
@@ -155,19 +172,23 @@ private fun ExerciseContent(
 @OptIn(UnstableApi::class)
 @Composable
 private fun ExerciseVideoPlayer(
+    modifier: Modifier = Modifier,
     exercise: ExerciseUi,
+    soundEffects: List<SoundEffectUi>,
+    selectedSoundIndex: Int,
     getController: suspend (Context) -> Player,
     onPrepareAndPlay: (ExerciseUi) -> Unit,
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    onSoundEffectClick: (Int) -> Unit,
+    onMuteClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val activity = remember { context.findActivity() }
     val configuration = LocalConfiguration.current
 
-    var isFullscreen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var isFullscreen by rememberSaveable { mutableStateOf(false) }
 
-    var controlsVisible by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
+    var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var interactionTick by remember { mutableIntStateOf(0) }
 
     var player by remember { mutableStateOf<androidx.media3.common.Player?>(null) }
@@ -219,7 +240,7 @@ private fun ExerciseVideoPlayer(
             }
         }
     }
-    val hazeState = dev.chrisbanes.haze.rememberHazeState()
+    val hazeState = rememberHazeState()
 
     Box(modifier = if (isFullscreen) Modifier.fillMaxSize() else modifier) {
         val p = player
@@ -271,6 +292,8 @@ private fun ExerciseVideoPlayer(
                 isFullscreen = isFullscreen,
                 isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
                 hazeState = hazeState,
+                soundEffects = soundEffects,
+                selectedSoundIndex = selectedSoundIndex,
                 onToggleFullscreen = {
                     controlsVisible = true
                     interactionTick++
@@ -284,7 +307,9 @@ private fun ExerciseVideoPlayer(
                 onUserInteraction = {
                     controlsVisible = true
                     interactionTick++
-                }
+                },
+                onSoundEffectClick = onSoundEffectClick,
+                onMuteClick = onMuteClick,
             )
         }
     }
@@ -309,11 +334,21 @@ private fun BoxScope.PlayerControlsOverlay(
     isFullscreen: Boolean,
     isLandscape: Boolean,
     hazeState: HazeState,
+    soundEffects: List<SoundEffectUi>,
+    selectedSoundIndex: Int,
     onToggleFullscreen: () -> Unit,
     onClose: () -> Unit,
-    onUserInteraction: () -> Unit
+    onUserInteraction: () -> Unit,
+    onSoundEffectClick: (Int) -> Unit,
+    onMuteClick: () -> Unit,
 ) {
-    var durationMs by remember { androidx.compose.runtime.mutableLongStateOf(player.duration.coerceAtLeast(0L)) }
+    var durationMs by remember {
+        androidx.compose.runtime.mutableLongStateOf(
+            player.duration.coerceAtLeast(
+                0L
+            )
+        )
+    }
     var positionMs by remember { androidx.compose.runtime.mutableLongStateOf(player.currentPosition) }
     var bufferedPositionMs by remember { androidx.compose.runtime.mutableLongStateOf(player.bufferedPosition) }
     var playWhenReady by remember { mutableStateOf(player.playWhenReady) }
@@ -358,29 +393,20 @@ private fun BoxScope.PlayerControlsOverlay(
             bufferedPositionMs = bufferedPositionMs,
             isLandscape = isLandscape,
             isFullscreen = isFullscreen,
+            soundEffects = soundEffects,
+            selectedSoundIndex = selectedSoundIndex,
             onToggleFullscreen = {
                 onUserInteraction(); onToggleFullscreen()
             },
             onSeek = { pos ->
                 player.seekTo(pos)
                 onUserInteraction()
-            }
+            },
+            onSoundEffectClick = onSoundEffectClick,
+            onMuteClick = onMuteClick,
         )
     }
 }
-
-private fun formatTime(ms: Long): String {
-    val totalSeconds = (ms / 1000).coerceAtLeast(0)
-    val seconds = (totalSeconds % 60).toInt()
-    val minutes = ((totalSeconds / 60) % 60).toInt()
-    val hours = (totalSeconds / 3600).toInt()
-    return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format("%02d:%02d", minutes, seconds)
-    }
-}
-
 
 @Composable
 private fun ApplyExerciseScreenOrientation(activity: Activity?) {
@@ -388,7 +414,11 @@ private fun ApplyExerciseScreenOrientation(activity: Activity?) {
         val previous = activity?.requestedOrientation
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
         onDispose {
-            val isChanging = try { activity?.isChangingConfigurations == true } catch (_: Throwable) { false }
+            val isChanging = try {
+                activity?.isChangingConfigurations == true
+            } catch (_: Throwable) {
+                false
+            }
             if (!isChanging) {
                 activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             } else {
@@ -405,12 +435,17 @@ private fun ApplyExerciseScreenSystemBars(activity: Activity?) {
             val window = act.window
             val controller = WindowInsetsControllerCompat(window, window.decorView)
             WindowCompat.setDecorFitsSystemWindows(window, false)
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.systemBars())
         }
         onDispose {
             activity?.let { act ->
-                val isChanging = try { act.isChangingConfigurations } catch (_: Throwable) { false }
+                val isChanging = try {
+                    act.isChangingConfigurations
+                } catch (_: Throwable) {
+                    false
+                }
                 if (!isChanging) {
                     val window = act.window
                     val controller = WindowInsetsControllerCompat(window, window.decorView)
@@ -426,7 +461,11 @@ private fun ApplyExerciseScreenSystemBars(activity: Activity?) {
 private fun ReleasePlaybackOnDispose(activity: Activity?, key: Any?, viewModel: ExerciseViewModel) {
     DisposableEffect(activity, key) {
         onDispose {
-            val isChanging = try { activity?.isChangingConfigurations == true } catch (_: Throwable) { false }
+            val isChanging = try {
+                activity?.isChangingConfigurations == true
+            } catch (_: Throwable) {
+                false
+            }
             if (!isChanging) {
                 viewModel.stopPlaybackAndRelease(stopService = true)
             }
@@ -451,7 +490,11 @@ private fun BoxScope.ControlsTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onClose) {
-            Icon(painter = painterResource(R.drawable.ic_close), contentDescription = null, tint = White)
+            Icon(
+                painter = painterResource(R.drawable.ic_close),
+                contentDescription = null,
+                tint = White
+            )
         }
         Text(
             text = title,
@@ -471,7 +514,11 @@ private fun BoxScope.ControlsTopBar(
                 }
             }
             IconButton(onClick = { }) {
-                Icon(painter = painterResource(R.drawable.ic_menu), contentDescription = "Menu", tint = White)
+                Icon(
+                    painter = painterResource(R.drawable.ic_menu),
+                    contentDescription = "Menu",
+                    tint = White
+                )
             }
         }
     }
@@ -508,8 +555,12 @@ private fun BoxScope.BottomControls(
     bufferedPositionMs: Long,
     isLandscape: Boolean,
     isFullscreen: Boolean,
+    selectedSoundIndex: Int,
+    soundEffects: List<SoundEffectUi>,
     onToggleFullscreen: () -> Unit,
     onSeek: (Long) -> Unit,
+    onSoundEffectClick: (Int) -> Unit,
+    onMuteClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -517,6 +568,17 @@ private fun BoxScope.BottomControls(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
+
+        SoundsEffectsView(
+            soundsEffects = soundEffects,
+            selectedIndex = selectedSoundIndex,
+            avatarPreviewUrl = null,
+            isHintShown = false,
+            onAvatarClick = {},
+            onMuteClick = onMuteClick,
+            onClick = onSoundEffectClick
+        )
+
         AndroidView(
             factory = { ctx ->
                 DefaultTimeBar(ctx).apply {
@@ -525,9 +587,13 @@ private fun BoxScope.BottomControls(
                     setUnplayedColor(NavBarBackground.toArgb())
                     setScrubberColor(White.toArgb())
                     addListener(object : TimeBar.OnScrubListener {
-                        override fun onScrubStart(timeBar: TimeBar, position: Long) { }
-                        override fun onScrubMove(timeBar: TimeBar, position: Long) { }
-                        override fun onScrubStop(timeBar: TimeBar, position: Long, canceled: Boolean) {
+                        override fun onScrubStart(timeBar: TimeBar, position: Long) {}
+                        override fun onScrubMove(timeBar: TimeBar, position: Long) {}
+                        override fun onScrubStop(
+                            timeBar: TimeBar,
+                            position: Long,
+                            canceled: Boolean
+                        ) {
                             if (!canceled) onSeek(position)
                         }
                     })
@@ -550,7 +616,7 @@ private fun BoxScope.BottomControls(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = formatTime(positionMs), color = White)
+            Text(text = formatDuration(positionMs), color = White)
             if (!isLandscape) {
                 IconButton(onClick = onToggleFullscreen) {
                     Icon(
@@ -560,7 +626,8 @@ private fun BoxScope.BottomControls(
                     )
                 }
             }
-            Text(text = formatTime(durationMs.coerceAtLeast(0L)), color = White)
+            Text(text = formatDuration(durationMs.coerceAtLeast(0L)), color = White)
         }
     }
 }
+

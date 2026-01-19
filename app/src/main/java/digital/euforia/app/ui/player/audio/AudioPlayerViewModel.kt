@@ -33,6 +33,7 @@ import digital.euforia.app.domain.usecase.resources.SyncResourcesUseCase
 import digital.euforia.app.ui.util.logTag
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
+import digital.euforia.app.ui.util.widget.SoundEffectUi
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
 import digital.euforia.app.ui.util.widget.vibe.PlayState
 import kotlinx.coroutines.async
@@ -401,15 +402,6 @@ data class AvatarUi(
     val title: String,
     val imageUrl: String,
     val isCustom: Boolean = false
-)
-
-@Immutable
-data class SoundEffectUi(
-    val id: Int,
-    val title: String,
-    val imageUrl: String,
-    val audioUrl: String,
-    val maxVolume: Float = 0.5f
 )
 
 @Keep

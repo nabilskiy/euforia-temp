@@ -65,7 +65,7 @@ interface EuforiaApi {
     @GET("resources")
     suspend fun getResources(
         @Query("class_alias") classAlias: String? = null,
-        @Query("per-page") perPage: Int = 0
+        @Query("per-page") perPage: Int? = null
     ): ResultWrapper<List<NetworkResource>>
 
     /**

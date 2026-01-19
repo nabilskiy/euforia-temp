@@ -12,7 +12,7 @@ class GetResourcesUseCase @Inject constructor(
 
     suspend operator fun invoke(alias: String): List<Resource> {
         return withContext(Dispatchers.IO) {
-            resourceRepository.getByClassAlias(alias)
+            resourceRepository.getByClassAlias(alias).dataOrNull ?: emptyList()
         }
     }
 }

@@ -2,6 +2,8 @@ package digital.euforia.app.data.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import digital.euforia.app.data.db.entity.Resource
 
 @JsonClass(generateAdapter = true)
@@ -23,7 +25,7 @@ data class NetworkResource(
     @field:Json(name = "category_id") val categoryId: Int?,
     @field:Json(name = "class_id") val classId: Int?,
     @field:Json(name = "class_alias") val classAlias: String?,
-    @field:Json(name = "entity") val entity: String?,
+    @field:Json(name = "entity") val entity: Any?,
     @field:Json(name = "options") val options: String?,
     @field:Json(name = "min_app_version") val minAppVersion: Int?,
 )
@@ -44,7 +46,7 @@ fun NetworkResource.toEntity(): Resource = Resource(
     categoryId = categoryId,
     classId = classId,
     classAlias = classAlias,
-    entity = entity,
+    entity = entity.toJsonString(),
     options = options,
     minAppVersion = minAppVersion,
     file = file?.toEntity(),
@@ -78,3 +80,38 @@ data class NetworkResourceFile(
     @field:Json(name = "duration") val duration: Int?,
     @field:Json(name = "video_urls") val videoUrls: NetworkVideoUrls?,
 )
+
+@JsonClass(generateAdapter = true)
+data class MeditationBackgroundEntity(
+    @field:Json(name = "videoUrl") val videoUrl: String?,
+    @field:Json(name = "imageUrl") val imageUrl: String?,
+    @field:Json(name = "musicUrl") val musicUrl: String?,
+    @field:Json(name = "maxVolume") val maxVolume: Double?,
+)
+
+private fun Any?.toJsonString(): String? {
+    if (this == null) return null
+    return try {
+        when (this) {
+            is String -> this
+            else -> moshiForEntity.adapter(Any::class.java).toJson(this)
+        }
+    } catch (_: Exception) {
+        this.toString()
+    }
+}
+
+fun String?.asMeditationBackgroundEntityOrNull(): MeditationBackgroundEntity? {
+    if (this.isNullOrBlank()) return null
+    return try {
+        moshiForEntity.adapter(MeditationBackgroundEntity::class.java).fromJson(this)
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private val moshiForEntity: Moshi by lazy {
+    Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+}

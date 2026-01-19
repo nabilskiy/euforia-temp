@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalDensity
 import coil.imageLoader
 import coil.request.ImageRequest
 import androidx.compose.ui.unit.dp
+import digital.euforia.app.ui.util.widget.SoundEffectUi
 
 @Composable
 fun PreloadImages(avatarsList: List<AvatarUi>, soundsList: List<SoundEffectUi>) {

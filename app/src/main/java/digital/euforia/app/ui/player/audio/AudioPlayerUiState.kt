@@ -2,6 +2,7 @@ package digital.euforia.app.ui.player.audio
 
 import androidx.compose.runtime.Immutable
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.ui.util.widget.SoundEffectUi
 import digital.euforia.app.ui.util.widget.vibe.PlayState
 
 @Immutable
