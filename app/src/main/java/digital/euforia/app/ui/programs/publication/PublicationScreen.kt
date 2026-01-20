@@ -35,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +52,6 @@ import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.hazeSource
@@ -663,8 +661,18 @@ private fun handleSideEffect(
         is PublicationSideEffect.OpenArticle -> openArticle()
         is PublicationSideEffect.OpenExercise -> {
             navController.navigate(
-                HomeDestination.Exercise(
-                    id = sideEffect.id
+                HomeDestination.PublicationPlayer(
+                    id = sideEffect.id,
+                    publicationType = PublicationType.EXERCISE
+                )
+            )
+        }
+
+        is PublicationSideEffect.OpenMeditation -> {
+            navController.navigate(
+                HomeDestination.PublicationPlayer(
+                    id = sideEffect.id,
+                    publicationType = PublicationType.MEDITATION
                 )
             )
         }

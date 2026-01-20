@@ -43,7 +43,7 @@ class PublicationViewModel @Inject constructor(
             reduceState { copy(isLoading = true, errorState = null) }
             getPublicationInfoUseCase.invoke(
                 publicationType = publicationType,
-                publicationId = id
+                id = id
             ).onSuccess { publicationInfo ->
                 loadSimilarPublications(publicationInfo)
                 reduceState {

@@ -14,6 +14,9 @@ interface MeditationDao {
     suspend fun insertAll(items: List<Meditation>)
 
     @Upsert
+    suspend fun upsert(item: Meditation)
+
+    @Upsert
     suspend fun upsertAll(items: List<Meditation>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

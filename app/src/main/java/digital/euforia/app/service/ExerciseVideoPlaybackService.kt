@@ -2,6 +2,8 @@ package digital.euforia.app.service
 
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.DefaultMediaNotificationProvider
@@ -9,6 +11,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import androidx.media3.session.SessionError
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.R
 
@@ -18,11 +21,21 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
 
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
+    private var sfxPlayer: ExoPlayer? = null
 
     override fun onCreate() {
         super.onCreate()
 
         val exo = createPlayer()
+        // Sync SFX playback with main player state
+        exo.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                sfxPlayer?.let { sp ->
+                    if (isPlaying) sp.play() else sp.pause()
+                }
+                super.onIsPlayingChanged(isPlaying)
+            }
+        })
         player = exo
         setMediaNotificationProvider(createNotificationProvider())
         mediaSession = createMediaSession(exo)
@@ -37,11 +50,18 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
         mediaSession = null
         player?.release()
         player = null
+        sfxPlayer?.release()
+        sfxPlayer = null
         super.onDestroy()
     }
 
     object Commands {
         val STOP_SERVICE = SessionCommand("exercise_stop_service", android.os.Bundle.EMPTY)
+        val PLAY_SFX = SessionCommand("play_sfx", android.os.Bundle.EMPTY)
+        val STOP_SFX = SessionCommand("stop_sfx", android.os.Bundle.EMPTY)
+        val PAUSE_SFX = SessionCommand("pause_sfx", android.os.Bundle.EMPTY)
+        val RESUME_SFX = SessionCommand("resume_sfx", android.os.Bundle.EMPTY)
+        val VOLUME_SFX = SessionCommand("volume_sfx", android.os.Bundle.EMPTY)
     }
 
     private fun createPlayer(): ExoPlayer =
@@ -64,6 +84,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
 
     private fun createMediaSession(exo: ExoPlayer): MediaSession =
         MediaSession.Builder(this, exo)
+            .setId("exercise_video_session")
             .setCallback(object : MediaSession.Callback {
                 override fun onConnect(
                     session: MediaSession,
@@ -73,6 +94,11 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                     val available = base.availableSessionCommands
                         .buildUpon()
                         .add(Commands.STOP_SERVICE)
+                        .add(Commands.PLAY_SFX)
+                        .add(Commands.STOP_SFX)
+                        .add(Commands.PAUSE_SFX)
+                        .add(Commands.RESUME_SFX)
+                        .add(Commands.VOLUME_SFX)
                         .build()
                     return MediaSession.ConnectionResult.accept(
                         available,
@@ -98,9 +124,77 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                                 SessionResult(SessionResult.RESULT_SUCCESS)
                             )
                         }
+                        Commands.PLAY_SFX.customAction -> {
+                            val url = args.getString("url")
+                            val volume = args.getFloat("volume", 1f).coerceIn(0f, 1f)
+                            if (url.isNullOrBlank()) {
+                                return com.google.common.util.concurrent.Futures.immediateFuture(
+                                    SessionResult(SessionError.ERROR_BAD_VALUE)
+                                )
+                            }
+                            val sp = ensureSfxPlayer()
+                            sp.volume = volume
+                            sp.setMediaItem(MediaItem.fromUri(url))
+                            sp.prepare()
+                            sp.playWhenReady = exo.playWhenReady
+                            sp.addListener(object : Player.Listener {
+                                override fun onPlaybackStateChanged(state: Int) {
+                                    if (state == Player.STATE_ENDED) {
+                                        sp.clearMediaItems()
+                                    }
+                                }
+                            })
+                            com.google.common.util.concurrent.Futures.immediateFuture(
+                                SessionResult(SessionResult.RESULT_SUCCESS)
+                            )
+                        }
+                        Commands.STOP_SFX.customAction -> {
+                            sfxPlayer?.let { sp ->
+                                sp.playWhenReady = false
+                                sp.stop()
+                                sp.clearMediaItems()
+                            }
+                            com.google.common.util.concurrent.Futures.immediateFuture(
+                                SessionResult(SessionResult.RESULT_SUCCESS)
+                            )
+                        }
+                        Commands.PAUSE_SFX.customAction -> {
+                            sfxPlayer?.pause()
+                            com.google.common.util.concurrent.Futures.immediateFuture(
+                                SessionResult(SessionResult.RESULT_SUCCESS)
+                            )
+                        }
+                        Commands.RESUME_SFX.customAction -> {
+                            sfxPlayer?.play()
+                            com.google.common.util.concurrent.Futures.immediateFuture(
+                                SessionResult(SessionResult.RESULT_SUCCESS)
+                            )
+                        }
+                        Commands.VOLUME_SFX.customAction -> {
+                            val volume = args.getFloat("volume", 1f).coerceIn(0f, 1f)
+                            sfxPlayer?.volume = volume
+                            com.google.common.util.concurrent.Futures.immediateFuture(
+                                SessionResult(SessionResult.RESULT_SUCCESS)
+                            )
+                        }
                         else -> super.onCustomCommand(session, controller, customCommand, args)
                     }
                 }
             })
             .build()
+
+    private fun ensureSfxPlayer(): ExoPlayer {
+        val existing = sfxPlayer
+        if (existing != null) return existing
+        val attrs = AudioAttributes.Builder()
+            .setContentType(C.AUDIO_CONTENT_TYPE_SONIFICATION)
+            .setUsage(C.USAGE_ASSISTANCE_SONIFICATION)
+            .build()
+        val p = ExoPlayer.Builder(this)
+            .setAudioAttributes(attrs, /* handleAudioFocus= */ false)
+            .setHandleAudioBecomingNoisy(true)
+            .build()
+        sfxPlayer = p
+        return p
+    }
 }

@@ -48,6 +48,7 @@ fun ColumnScope.SoundsEffectsView(
     selectedIndex: Int,
     avatarPreviewUrl: String?,
     isHintShown: Boolean = false,
+    isAvatarItemShown: Boolean = true,
     onMuteClick: () -> Unit,
     onClick: (Int) -> Unit,
     onAvatarClick: () -> Unit = {},
@@ -56,7 +57,8 @@ fun ColumnScope.SoundsEffectsView(
     val density = androidx.compose.ui.platform.LocalDensity.current
     LaunchedEffect(selectedIndex, soundsEffects.size) {
         if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
-            val targetIndex = selectedIndex + 2 // account for Avatar + Mute items
+            val targetIndex =
+                selectedIndex + if (isAvatarItemShown) 2 else 1 // account for Avatar + Mute items
 
             var viewportWidth =
                 listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset
@@ -94,12 +96,14 @@ fun ColumnScope.SoundsEffectsView(
         verticalAlignment = Alignment.CenterVertically,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp)
     ) {
-        item {
-            AvatarPreviewItem(
-                url = avatarPreviewUrl,
-                isHintShown = isHintShown,
-                onClick = onAvatarClick
-            )
+        if (isAvatarItemShown) {
+            item {
+                AvatarPreviewItem(
+                    url = avatarPreviewUrl,
+                    isHintShown = isHintShown,
+                    onClick = onAvatarClick
+                )
+            }
         }
         item {
             MuteItem(isSelected = selectedIndex == -1, onClick = onMuteClick)

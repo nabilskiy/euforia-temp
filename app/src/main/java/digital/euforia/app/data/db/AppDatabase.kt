@@ -41,7 +41,7 @@ import digital.euforia.app.data.db.entity.FeedbackQuestion
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class])
 @Database(
-    version = 6,
+    version = 7,
     entities = [
         SampleEntity::class,
         Accompaniment::class,

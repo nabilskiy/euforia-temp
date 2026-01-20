@@ -76,6 +76,7 @@ class AudioPlaybackService : MediaSessionService() {
         setMediaNotificationProvider(notificationProvider)
 
         mediaSession = MediaSession.Builder(this, exo)
+            .setId("audio_playback_session")
             .setCallback(object : MediaSession.Callback {
                 override fun onConnect(
                     session: MediaSession,

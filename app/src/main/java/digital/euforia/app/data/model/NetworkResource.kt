@@ -5,6 +5,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import digital.euforia.app.data.db.entity.Resource
+import digital.euforia.app.data.db.entity.ResourceEntity
 
 @JsonClass(generateAdapter = true)
 data class NetworkResource(
@@ -46,7 +47,7 @@ fun NetworkResource.toEntity(): Resource = Resource(
     categoryId = categoryId,
     classId = classId,
     classAlias = classAlias,
-    entity = entity.toJsonString(),
+    entity = entity.toResourceEntityOrNull(),
     options = options,
     minAppVersion = minAppVersion,
     file = file?.toEntity(),
@@ -86,7 +87,7 @@ data class MeditationBackgroundEntity(
     @field:Json(name = "videoUrl") val videoUrl: String?,
     @field:Json(name = "imageUrl") val imageUrl: String?,
     @field:Json(name = "musicUrl") val musicUrl: String?,
-    @field:Json(name = "maxVolume") val maxVolume: Double?,
+    @field:Json(name = "maxVolume") val maxVolume: Float?,
 )
 
 private fun Any?.toJsonString(): String? {
@@ -98,6 +99,16 @@ private fun Any?.toJsonString(): String? {
         }
     } catch (_: Exception) {
         this.toString()
+    }
+}
+
+private fun Any?.toResourceEntityOrNull(): ResourceEntity? {
+    if (this == null) return null
+    val jsonString = this.toJsonString() ?: return null
+    return try {
+        moshiForEntity.adapter(ResourceEntity::class.java).fromJson(jsonString)
+    } catch (_: Exception) {
+        null
     }
 }
 

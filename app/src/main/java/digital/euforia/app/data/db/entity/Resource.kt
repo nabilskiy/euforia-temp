@@ -8,7 +8,6 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "resources")
 data class Resource(
     @PrimaryKey @ColumnInfo(name = "id") val id: Int,
-    // Network "class" field value, e.g. "resource"
     @ColumnInfo(name = "type") val type: String,
     @ColumnInfo(name = "alias") val alias: String,
     @ColumnInfo(name = "author_id") val authorId: Int?,
@@ -23,10 +22,9 @@ data class Resource(
     @ColumnInfo(name = "category_id") val categoryId: Int?,
     @ColumnInfo(name = "class_id") val classId: Int?,
     @ColumnInfo(name = "class_alias") val classAlias: String?,
-    @ColumnInfo(name = "entity") val entity: String?,
+    @Embedded(prefix = "entity_") val entity: ResourceEntity?,
     @ColumnInfo(name = "options") val options: String?,
     @ColumnInfo(name = "min_app_version") val minAppVersion: Int?,
-
     @Embedded(prefix = "file_info_") val file: ResourceFile?,
     @Embedded(prefix = "preview_info_") val preview: ResourceFile?,
 ) {
@@ -36,6 +34,13 @@ data class Resource(
         const val CLASS_ALIAS_MEDITATION_BACKGROUND = "meditation_background"
     }
 }
+
+data class ResourceEntity(
+    @ColumnInfo(name = "videoUrl") val videoUrl: String?,
+    @ColumnInfo(name = "imageUrl") val imageUrl: String?,
+    @ColumnInfo(name = "musicUrl") val musicUrl: String?,
+    @ColumnInfo(name = "maxVolume") val maxVolume: Float?,
+)
 
 data class ResourceFile(
     @ColumnInfo(name = "type") val type: String?,

@@ -131,4 +131,14 @@ interface EuforiaApi {
     suspend fun getExercise(
         @Path("id") id: Int
     ): ResultWrapper<NetworkExercise>
+
+    @GET("meditations/{id}")
+    suspend fun getMeditation(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkMeditation>
+
+    @GET("articles/{id}")
+    suspend fun getArticle(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkArticle>
 }

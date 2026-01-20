@@ -7,6 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.repository.ArticleRepository
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.article.ArticleBlock
+import digital.euforia.app.domain.usecase.program.GetPublicationInfoUseCase
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
@@ -18,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ArticleViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
+    private val getPublicationInfoUseCase: GetPublicationInfoUseCase,
     private val articleRepository: ArticleRepository
 ) : ViewModel(), ContainerHost<ArticleState, ArticleSideEffect> {
     private val id: Int =
@@ -33,17 +36,18 @@ class ArticleViewModel @Inject constructor(
     fun loadArticleContent() {
         viewModelScope.launch {
             reduceState { copy(isLoading = true, errorState = null) }
-            val article = articleRepository.getArticleById(id).onFailure {
-                reduceState { copy(errorState = it.mapToErrorViewState()) }
-            }.dataOrNull
-
-            reduceState { copy(publicationInfo = article) }
-            articleRepository.getArticleContent(id).onSuccess { articleBody ->
-                reduceState {
-                    if (articleBody.isNotEmpty()) {
-                        copy(articleBody = articleBody)
-                    } else {
-                        copy(errorState = ErrorViewState.EmptyState)
+            getPublicationInfoUseCase.invoke(
+                id = id,
+                publicationType = PublicationType.ARTICLE
+            ).map {
+                reduceState { copy(publicationInfo = publicationInfo) }
+                articleRepository.getArticleContent(id).map { articleBody ->
+                    reduceState {
+                        if (articleBody.isNotEmpty()) {
+                            copy(articleBody = articleBody)
+                        } else {
+                            copy(errorState = ErrorViewState.EmptyState)
+                        }
                     }
                 }
             }.onFailure {

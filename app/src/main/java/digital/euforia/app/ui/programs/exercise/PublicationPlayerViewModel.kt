@@ -1,50 +1,54 @@
 package digital.euforia.app.ui.programs.exercise
 
-import android.content.Context
 import android.content.ComponentName
+import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_MEDITATION_BACKGROUND
 import digital.euforia.app.data.repository.ExerciseRepository
 import digital.euforia.app.data.repository.ResourceRepository
+import digital.euforia.app.domain.model.PublicationInfo
+import digital.euforia.app.domain.usecase.program.GetPublicationInfoUseCase
 import digital.euforia.app.domain.usecase.resources.GetResourcesUseCase
-import digital.euforia.app.ui.util.widget.SoundEffectUi
-import digital.euforia.app.ui.programs.ExerciseUi
-import digital.euforia.app.ui.programs.toExerciseUi
+import digital.euforia.app.service.ExerciseVideoPlaybackService
+import digital.euforia.app.ui.player.audio.toSoundEffectUi
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
+import digital.euforia.app.ui.util.widget.SoundEffectUi
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-import javax.inject.Inject
-import digital.euforia.app.service.ExerciseVideoPlaybackService
-import digital.euforia.app.ui.player.audio.toSoundEffectUi
 import timber.log.Timber
+import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 @HiltViewModel
-class ExerciseViewModel @Inject constructor(
+class PublicationPlayerViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
     private val getResourcesUseCase: GetResourcesUseCase,
     private val resourceRepository: ResourceRepository,
-) : ViewModel(), ContainerHost<ExerciseState, ExerciseSideEffect> {
+    private val getPublicationInfoUseCase: GetPublicationInfoUseCase
+) : ViewModel(), ContainerHost<PublicationPlayerState, PublicationPlayerSideEffect> {
 
     private val id: Int =
         requireNotNull(savedStateHandle.get<Int>("id"))
-    override val container = container<ExerciseState, ExerciseSideEffect>(
-        initialState = ExerciseState(),
+    private val publicationType: PublicationType =
+        requireNotNull(savedStateHandle.get<PublicationType>("publicationType"))
+    override val container = container<PublicationPlayerState, PublicationPlayerSideEffect>(
+        initialState = PublicationPlayerState(),
         onCreate = {
             loadExercise()
             loadSoundEffects()
@@ -77,14 +81,14 @@ class ExerciseViewModel @Inject constructor(
 
     fun player(): Player? = mediaController
 
-    fun prepareAndPlay(exercise: ExerciseUi) {
+    fun prepareAndPlay(publicationInfo: PublicationInfo) {
         val ctrl = mediaController ?: return
-        val uri = exercise.videoUrl ?: return
+        val uri = publicationInfo.videoUrl ?: return
         if (currentUri == uri) return
         val metadata = MediaMetadata.Builder()
-            .setTitle(exercise.name)
-            .setArtist(exercise.subtitle)
-            .setArtworkUri(exercise.imageUrl?.let { Uri.parse(it) })
+            .setTitle(publicationInfo.title)
+            .setArtist(publicationInfo.subtitle)
+            .setArtworkUri(publicationInfo.imageUrl?.let { Uri.parse(it) })
             .build()
         val item = MediaItem.Builder()
             .setUri(uri)
@@ -132,16 +136,15 @@ class ExerciseViewModel @Inject constructor(
     private fun loadExercise() {
         viewModelScope.launch {
             reduceState { copy(isLoading = true, errorState = null) }
-            exerciseRepository.getExerciseById(id).onSuccess { exercise ->
-                reduceState { copy(exercise = exercise.toExerciseUi()) }
+            getPublicationInfoUseCase.invoke(
+                id = id,
+                publicationType = publicationType
+            ).onSuccess { publicationInfo ->
+                reduceState { copy(publicationInfo = publicationInfo) }
             }.onFailure { error ->
-                reduceState {
-                    copy(errorState = error.mapToErrorViewState())
-                }
+                reduceState { copy(errorState = error.mapToErrorViewState()) }
             }.onFinish {
-                reduceState {
-                    copy(isLoading = false)
-                }
+                reduceState { copy(isLoading = false) }
             }
         }
     }
@@ -173,13 +176,13 @@ class ExerciseViewModel @Inject constructor(
     }
 }
 
-data class ExerciseState(
+data class PublicationPlayerState(
     val isLoading: Boolean = true,
     val isPremium: Boolean = false,
     val errorState: ErrorViewState? = null,
-    val exercise: ExerciseUi? = null,
+    val publicationInfo: PublicationInfo? = null,
     val soundEffectsList: List<SoundEffectUi> = emptyList(),
     val selectedSoundEffectIndex: Int = -1,
 )
 
-sealed class ExerciseSideEffect {}
+sealed class PublicationPlayerSideEffect {}

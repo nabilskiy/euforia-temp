@@ -10,6 +10,7 @@ data class PublicationInfo(
     val title: String?,
     val subtitle: String?,
     val imageUrl: String?,
+    val videoUrl: String? = null,
     val color1: String? = null,
     val color2: String? = null,
     val color3: String? = null,

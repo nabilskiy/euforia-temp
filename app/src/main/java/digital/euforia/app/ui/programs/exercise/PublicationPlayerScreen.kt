@@ -40,10 +40,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -67,7 +65,12 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.ui.navigation.NavBarlessScreen
+import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
+import digital.euforia.app.ui.player.audio.playSfx
+import digital.euforia.app.ui.player.audio.setSfxVolume
+import digital.euforia.app.ui.player.audio.stopSfx
 import digital.euforia.app.ui.programs.ExerciseUi
 import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.Black
@@ -85,9 +88,9 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import kotlinx.coroutines.delay
 
 @Composable
-fun ExerciseScreen(
+fun PublicationPlayerScreen(
     navController: NavHostController,
-    viewModel: ExerciseViewModel,
+    viewModel: PublicationPlayerViewModel,
     navBarVisibilityState: MutableState<Boolean>,
 ) {
     val state by viewModel.collectAsState()
@@ -99,17 +102,18 @@ fun ExerciseScreen(
 
     ApplyExerciseScreenOrientation(activity)
     ApplyExerciseScreenSystemBars(activity)
-    ReleasePlaybackOnDispose(activity, state.exercise?.id, viewModel)
+    ReleasePlaybackOnDispose(activity, state.publicationInfo?.id, viewModel)
 
     NavBarlessScreen(navBarVisibilityState) {
-        ExerciseContent(
-            exercise = state.exercise,
+        PublicationPlayerContent(
+            publicationInfo = state.publicationInfo,
             navController = navController,
             isPremium = state.isPremium,
             isLoading = state.isLoading,
             errorState = state.errorState,
             soundEffects = state.soundEffectsList,
             selectedSoundIndex = state.selectedSoundEffectIndex,
+            selectedSoundTitle = { state.soundEffectsList.getOrNull(state.selectedSoundEffectIndex)?.title.orEmpty() },
             getController = { ctx -> viewModel.getOrCreateController(ctx) },
             onPrepareAndPlay = { ex -> viewModel.prepareAndPlay(ex) },
             onRetryClick = { },
@@ -122,24 +126,33 @@ fun ExerciseScreen(
 
 @OptIn(UnstableApi::class)
 @Composable
-private fun ExerciseContent(
-    exercise: ExerciseUi?,
+private fun PublicationPlayerContent(
+    publicationInfo: PublicationInfo?,
     navController: NavHostController,
     isPremium: Boolean,
     isLoading: Boolean,
     errorState: ErrorViewState?,
     soundEffects: List<SoundEffectUi>,
     selectedSoundIndex: Int,
+    selectedSoundTitle: () -> String,
     getController: suspend (Context) -> Player,
-    onPrepareAndPlay: (ExerciseUi) -> Unit,
+    onPrepareAndPlay: (PublicationInfo) -> Unit,
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
 ) {
-    val videoUrl = exercise?.videoUrl
+    val videoUrl = publicationInfo?.videoUrl
 
     if (videoUrl.isNullOrBlank()) return
+    var showSheet by remember { mutableStateOf(false) }
+    var volume by remember { mutableFloatStateOf(0.35f) }
+
+    val context = LocalContext.current
+    var controllerPlayer by remember { mutableStateOf<Player?>(null) }
+    LaunchedEffect(publicationInfo.id) {
+        controllerPlayer = getController(context)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (isLoading) {
@@ -156,16 +169,47 @@ private fun ExerciseContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .navigationBarsPadding(),
-                exercise = exercise,
+                publicationInfo = publicationInfo,
                 soundEffects = soundEffects,
                 selectedSoundIndex = selectedSoundIndex,
                 getController = getController,
                 onPrepareAndPlay = onPrepareAndPlay,
                 onClose = { navController.popBackStack() },
-                onSoundEffectClick = onSoundEffectClick,
-                onMuteClick = onMuteClick,
+                onSoundEffectClick = { index ->
+                    if (index != selectedSoundIndex) {
+                        onSoundEffectClick(index)
+                        soundEffects.getOrNull(index)?.let { sfx ->
+                            (controllerPlayer as? androidx.media3.session.MediaController)?.let {
+                                playSfx(it, sfx.audioUrl, volume)
+                            }
+                        }
+                    } else {
+                        showSheet = true
+                    }
+                },
+                onMuteClick = {
+                    onMuteClick()
+                    (controllerPlayer as? androidx.media3.session.MediaController)?.let {
+                        stopSfx(it)
+                    }
+                },
             )
         }
+        VolumeBottomSheet(
+            visible = showSheet,
+            value = volume,
+            title = selectedSoundTitle(),
+            onValueChange = {
+                volume = it
+                (controllerPlayer as? androidx.media3.session.MediaController)?.let { ctrl ->
+                    setSfxVolume(ctrl, volume)
+                }
+            },
+            onDone = {
+                showSheet = false
+            },
+            onDismiss = { showSheet = false }
+        )
     }
 }
 
@@ -173,11 +217,11 @@ private fun ExerciseContent(
 @Composable
 private fun ExerciseVideoPlayer(
     modifier: Modifier = Modifier,
-    exercise: ExerciseUi,
+    publicationInfo: PublicationInfo,
     soundEffects: List<SoundEffectUi>,
     selectedSoundIndex: Int,
     getController: suspend (Context) -> Player,
-    onPrepareAndPlay: (ExerciseUi) -> Unit,
+    onPrepareAndPlay: (PublicationInfo) -> Unit,
     onClose: () -> Unit,
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
@@ -192,9 +236,9 @@ private fun ExerciseVideoPlayer(
     var interactionTick by remember { mutableIntStateOf(0) }
 
     var player by remember { mutableStateOf<androidx.media3.common.Player?>(null) }
-    LaunchedEffect(exercise.id) {
+    LaunchedEffect(publicationInfo.id) {
         val controller = getController(context)
-        onPrepareAndPlay(exercise)
+        onPrepareAndPlay(publicationInfo)
         player = controller
     }
 
@@ -288,7 +332,7 @@ private fun ExerciseVideoPlayer(
         if (controlsVisible && player != null) {
             PlayerControlsOverlay(
                 player = player!!,
-                title = exercise.name,
+                title = publicationInfo.title.orEmpty(),
                 isFullscreen = isFullscreen,
                 isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
                 hazeState = hazeState,
@@ -315,7 +359,7 @@ private fun ExerciseVideoPlayer(
     }
 }
 
-private fun handleSideEffect(sideEffect: ExerciseSideEffect) {
+private fun handleSideEffect(sideEffect: PublicationPlayerSideEffect) {
     when (sideEffect) {
         else -> {}
     }
@@ -458,7 +502,7 @@ private fun ApplyExerciseScreenSystemBars(activity: Activity?) {
 }
 
 @Composable
-private fun ReleasePlaybackOnDispose(activity: Activity?, key: Any?, viewModel: ExerciseViewModel) {
+private fun ReleasePlaybackOnDispose(activity: Activity?, key: Any?, viewModel: PublicationPlayerViewModel) {
     DisposableEffect(activity, key) {
         onDispose {
             val isChanging = try {
@@ -574,6 +618,7 @@ private fun BoxScope.BottomControls(
             selectedIndex = selectedSoundIndex,
             avatarPreviewUrl = null,
             isHintShown = false,
+            isAvatarItemShown = false,
             onAvatarClick = {},
             onMuteClick = onMuteClick,
             onClick = onSoundEffectClick

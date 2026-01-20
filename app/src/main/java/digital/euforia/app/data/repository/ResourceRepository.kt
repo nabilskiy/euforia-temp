@@ -47,15 +47,10 @@ class ResourceRepository @Inject constructor(
 
     suspend fun getByClassAlias(alias: String): ResultWrapper<List<Resource>> {
         return withContext(Dispatchers.IO) {
-            val localResources = resourceDao.getByClassAlias(alias = alias)
-            if (localResources.isNotEmpty()) {
-                ResultWrapper.Success(localResources)
-            } else {
-                api.getResources(classAlias = alias).map { networkResources ->
-                    networkResources.map(NetworkResource::toEntity).also { entities ->
-                        resourceDao.deleteAllExcept(entities.map { it.id })
-                        resourceDao.upsertAll(entities)
-                    }
+            api.getResources(classAlias = alias).map { networkResources ->
+                networkResources.map(NetworkResource::toEntity).also { entities ->
+                    resourceDao.deleteAllExcept(entities.map { it.id })
+                    resourceDao.upsertAll(entities)
                 }
             }
         }

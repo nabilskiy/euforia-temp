@@ -7,8 +7,8 @@ internal fun Resource.toSoundEffectUi(): SoundEffectUi {
     return SoundEffectUi(
         id = id,
         title = name,
-        imageUrl = previewUrl.orEmpty(),
-        audioUrl = file?.url.orEmpty()
+        imageUrl = previewUrl ?: entity?.imageUrl.orEmpty(),
+        audioUrl = file?.url ?: entity?.musicUrl.orEmpty()
     )
 }
 
