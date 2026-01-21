@@ -3,6 +3,7 @@ package digital.euforia.app.domain.mapper.program
 import digital.euforia.app.data.db.entity.Article
 import digital.euforia.app.data.db.entity.Exercise
 import digital.euforia.app.data.db.entity.Meditation
+import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.model.NetworkArticle
 import digital.euforia.app.data.model.NetworkExercise
 import digital.euforia.app.data.model.NetworkMeditation
@@ -12,10 +13,11 @@ import javax.inject.Inject
 
 class PublicationInfoMapper @Inject constructor() {
 
-    fun fromMeditation(meditation: Meditation): PublicationInfo =
+    fun fromMeditation(meditation: Meditation, pkg: Package? = null): PublicationInfo =
         buildPublication(
             id = meditation.id,
             categoryId = meditation.mainCategoryId,
+            categoryVideoCoverUrl = pkg?.videoCoverUrl,
             isPremium = meditation.pro,
             type = PublicationType.MEDITATION,
             title = meditation.name,
@@ -130,10 +132,12 @@ class PublicationInfoMapper @Inject constructor() {
         color3: String?,
         publishedAt: Long?,
         durationMinutes: Int,
-    ): PublicationInfo =
+        categoryVideoCoverUrl: String? = null,
+        ): PublicationInfo =
         PublicationInfo(
             id = id,
             categoryId = categoryId,
+            categoryVideoCoverUrl = categoryVideoCoverUrl,
             isPremium = isPremium,
             publicationType = type,
             title = title,

@@ -16,6 +16,7 @@ class GetPublicationInfoUseCase @Inject constructor(
     private val articleRepository: ArticleRepository,
     private val exerciseRepository: ExerciseRepository,
     private val meditationRepository: MeditationRepository,
+    private val packageRepository: PackageRepository,
     private val publicationInfoMapper: PublicationInfoMapper,
 ) {
     suspend operator fun invoke(
@@ -31,8 +32,11 @@ class GetPublicationInfoUseCase @Inject constructor(
                     publicationInfoMapper.fromExercise(it)
                 }
 
-                PublicationType.MEDITATION -> meditationRepository.getById(id).map {
-                    publicationInfoMapper.fromMeditation(it)
+                PublicationType.MEDITATION -> meditationRepository.getById(id).map { meditation ->
+                    val pkg = meditation.mainPackageId?.let { mainPackageId ->
+                        packageRepository.getById(mainPackageId).dataOrNull
+                    }
+                    publicationInfoMapper.fromMeditation(meditation, pkg)
                 }
             }
         }

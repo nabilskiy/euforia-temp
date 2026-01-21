@@ -1,4 +1,4 @@
-package digital.euforia.app.ui.programs.exercise
+package digital.euforia.app.ui.programs.player
 
 import android.content.ComponentName
 import android.content.Context
@@ -15,8 +15,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_MEDITATION_BACKGROUND
 import digital.euforia.app.data.repository.ExerciseRepository
 import digital.euforia.app.data.repository.ResourceRepository
+import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.program.GetPublicationInfoUseCase
+import digital.euforia.app.domain.usecase.program.GetPublicationInfosUseCase
 import digital.euforia.app.domain.usecase.resources.GetResourcesUseCase
 import digital.euforia.app.service.ExerciseVideoPlaybackService
 import digital.euforia.app.ui.player.audio.toSoundEffectUi
@@ -40,7 +42,9 @@ class PublicationPlayerViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
     private val getResourcesUseCase: GetResourcesUseCase,
     private val resourceRepository: ResourceRepository,
-    private val getPublicationInfoUseCase: GetPublicationInfoUseCase
+    private val getPublicationInfoUseCase: GetPublicationInfoUseCase,
+    private val getPublicationInfosUseCase: GetPublicationInfosUseCase,
+    private val appPreferences: AppPreferences,
 ) : ViewModel(), ContainerHost<PublicationPlayerState, PublicationPlayerSideEffect> {
 
     private val id: Int =
@@ -83,7 +87,13 @@ class PublicationPlayerViewModel @Inject constructor(
 
     fun prepareAndPlay(publicationInfo: PublicationInfo) {
         val ctrl = mediaController ?: return
-        val uri = publicationInfo.videoUrl ?: return
+        val isMeditation = publicationInfo.publicationType == PublicationType.MEDITATION
+        val uri = if (isMeditation) {
+            publicationInfo.videoUrl
+        } else {
+            publicationInfo.videoUrl ?: publicationInfo.categoryVideoCoverUrl
+        } ?: return
+
         if (currentUri == uri) return
         val metadata = MediaMetadata.Builder()
             .setTitle(publicationInfo.title)
@@ -154,7 +164,15 @@ class PublicationPlayerViewModel @Inject constructor(
             resourceRepository.getByClassAlias(CLASS_ALIAS_MEDITATION_BACKGROUND)
                 .onSuccess { resources ->
                     val soundEffects = resources.map { it.toSoundEffectUi() }
-                    reduceState { copy(soundEffectsList = soundEffects) }
+                    val selectedIndex = appPreferences.getMeditationBackgroundIndex().let { index ->
+                        if (index >= soundEffects.size) -1 else index
+                    }
+                    reduceState {
+                        copy(
+                            soundEffectsList = soundEffects,
+                            selectedSoundEffectIndex = selectedIndex
+                        )
+                    }
                 }.onFailure {
                     Timber.d("Failed to load sound effects. $it")
                 }
@@ -165,6 +183,7 @@ class PublicationPlayerViewModel @Inject constructor(
         intent {
             if (state.selectedSoundEffectIndex == index) return@intent
             val soundEffect = state.soundEffectsList.getOrNull(index) ?: return@intent
+            appPreferences.setMeditationBackgroundIndex(index)
             reduce { state.copy(selectedSoundEffectIndex = index) }
         }
     }
@@ -183,6 +202,11 @@ data class PublicationPlayerState(
     val publicationInfo: PublicationInfo? = null,
     val soundEffectsList: List<SoundEffectUi> = emptyList(),
     val selectedSoundEffectIndex: Int = -1,
+    val playlist: PublicationsPlaylist? = null
+)
+
+data class PublicationsPlaylist(
+    val publicationInfosList: List<PublicationInfo>
 )
 
 sealed class PublicationPlayerSideEffect {}

@@ -41,6 +41,7 @@ class AppPreferences(
     private val keyDayNotificationTime = intPreferencesKey("day_notification_time")
     private val keyEveningNotificationTime = intPreferencesKey("evening_notification_time")
     private val shouldSyncPackagesKey = booleanPreferencesKey("should_sync_packages")
+    private val keyMeditationBackgroundIndex = intPreferencesKey("meditation_background_index")
 
     suspend fun getDeviceToken(): String {
         val existing = store.data.firstOrNull()?.get(keyDeviceToken)
@@ -255,7 +256,7 @@ class AppPreferences(
     }
 
     suspend fun getMorningNotificationTime(): Pair<Int, Int> {
-        val total = store.data.firstOrNull()?.get(keyMorningNotificationTime) ?: (7*60)
+        val total = store.data.firstOrNull()?.get(keyMorningNotificationTime) ?: (7 * 60)
         return total / 60 to total % 60
     }
 
@@ -295,5 +296,15 @@ class AppPreferences(
 
     suspend fun getShouldSyncPackages(): Boolean {
         return store.data.firstOrNull()?.get(shouldSyncPackagesKey) ?: true
+    }
+
+    suspend fun setMeditationBackgroundIndex(index: Int) {
+        store.edit { preferences ->
+            preferences[keyMeditationBackgroundIndex] = index
+        }
+    }
+
+    suspend fun getMeditationBackgroundIndex(): Int {
+        return store.data.firstOrNull()?.get(keyMeditationBackgroundIndex) ?: -1
     }
 }

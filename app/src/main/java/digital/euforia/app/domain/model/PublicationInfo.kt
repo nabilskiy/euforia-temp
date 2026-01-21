@@ -5,6 +5,7 @@ import digital.euforia.app.ui.programs.publication.PublicationType
 data class PublicationInfo(
     val id: Int,
     val categoryId: Int? = null,
+    val categoryVideoCoverUrl: String? = null,
     val isPremium: Boolean,
     val publicationType: PublicationType,
     val title: String?,

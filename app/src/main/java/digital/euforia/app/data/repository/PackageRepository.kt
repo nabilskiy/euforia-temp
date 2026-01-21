@@ -5,6 +5,7 @@ import digital.euforia.app.data.db.dao.ArticleDao
 import digital.euforia.app.data.db.dao.ExerciseDao
 import digital.euforia.app.data.db.dao.MeditationDao
 import digital.euforia.app.data.db.dao.PackageDao
+import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.db.entity.Package.Companion.TOP_PACKAGES_IDS
 import digital.euforia.app.data.db.entity.PackageWithChildren
 import digital.euforia.app.data.db.entity.PackageWithMeditations
@@ -200,7 +201,10 @@ class PackageRepository @Inject constructor(
         }
     }
 
-    suspend fun getByIds(type: PublicationType, ids: List<Int>): ResultWrapper<List<PublicationInfo>> {
+    suspend fun getByIds(
+        type: PublicationType,
+        ids: List<Int>
+    ): ResultWrapper<List<PublicationInfo>> {
         val items = when (type) {
             PublicationType.MEDITATION -> {
                 val meditations = meditationDao.getByIds(ids)
@@ -222,6 +226,18 @@ class PackageRepository @Inject constructor(
             ResultWrapper.Success(items)
         } else {
             ResultWrapper.Failure(Exception("Items not found"))
+        }
+    }
+
+    suspend fun getById(id: Int): ResultWrapper<Package> {
+        val localPackage = packageDao.getById(id)
+        if (localPackage != null) {
+            return ResultWrapper.Success(localPackage)
+        }
+        return api.getPackage(id).map { networkPackage ->
+            networkPackage.toEntity().also { pkgEntity ->
+                packageDao.upsert(pkgEntity)
+            }
         }
     }
 }

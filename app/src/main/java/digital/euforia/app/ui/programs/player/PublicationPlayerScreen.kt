@@ -1,4 +1,4 @@
-package digital.euforia.app.ui.programs.exercise
+package digital.euforia.app.ui.programs.player
 
 import android.app.Activity
 import android.content.Context
@@ -58,6 +58,8 @@ import androidx.media3.ui.TimeBar
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavHostController
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -71,7 +73,7 @@ import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
 import digital.euforia.app.ui.player.audio.playSfx
 import digital.euforia.app.ui.player.audio.setSfxVolume
 import digital.euforia.app.ui.player.audio.stopSfx
-import digital.euforia.app.ui.programs.ExerciseUi
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.DarkGray
@@ -146,6 +148,7 @@ private fun PublicationPlayerContent(
 
     if (videoUrl.isNullOrBlank()) return
     var showSheet by remember { mutableStateOf(false) }
+    val playlistSheetState = remember { mutableStateOf(false) }
     var volume by remember { mutableFloatStateOf(0.35f) }
 
     val context = LocalContext.current
@@ -193,7 +196,16 @@ private fun PublicationPlayerContent(
                         stopSfx(it)
                     }
                 },
+                onPlaylistClick = {
+                    playlistSheetState.value = true
+                }
             )
+
+        }
+        if (playlistSheetState.value) {
+            PlaylistBottomSheet() {
+                playlistSheetState.value = false
+            }
         }
         VolumeBottomSheet(
             visible = showSheet,
@@ -225,6 +237,7 @@ private fun ExerciseVideoPlayer(
     onClose: () -> Unit,
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
+    onPlaylistClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val activity = remember { context.findActivity() }
@@ -288,29 +301,69 @@ private fun ExerciseVideoPlayer(
 
     Box(modifier = if (isFullscreen) Modifier.fillMaxSize() else modifier) {
         val p = player
-        if (p != null) AndroidView(
-            factory = { ctx ->
-                LayoutInflater.from(ctx)
-                    .inflate(R.layout.player_view_texture, null, false).also { root ->
-                        root.findViewById<PlayerView>(R.id.player_view).apply {
-                            this.player = p
-                            setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
-                            setKeepContentOnPlayerReset(true)
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                            useController = false
-                            setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-                        }
-                    }
-            },
-            update = { root ->
-                root.findViewById<PlayerView>(R.id.player_view).apply {
-                    player = p
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        if (p != null) {
+            val isMeditation =
+                publicationInfo.publicationType == PublicationType.MEDITATION
+            val selectedSfx = soundEffects.getOrNull(selectedSoundIndex)
+            val coverUrl =
+                if (isMeditation && selectedSfx != null && !selectedSfx.videoUrl.isNullOrBlank()) {
+                    selectedSfx.videoUrl
+                } else {
+                    publicationInfo.categoryVideoCoverUrl
                 }
-            },
-            modifier = Modifier.matchParentSize().hazeSource(hazeState)
-        )
+            if (isMeditation && !coverUrl.isNullOrBlank()) {
+                val coverPlayer = remember(coverUrl) {
+                    ExoPlayer.Builder(context).build().apply {
+                        setMediaItem(MediaItem.fromUri(coverUrl))
+                        repeatMode = Player.REPEAT_MODE_ALL
+                        prepare()
+                    }
+                }
+                DisposableEffect(coverPlayer) {
+                    onDispose { coverPlayer.release() }
+                }
+                LaunchedEffect(coverPlayer, isPlaying) {
+                    if (isPlaying) coverPlayer.play() else coverPlayer.pause()
+                }
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            this.player = coverPlayer
+                            useController = false
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        }
+                    },
+                    update = { view ->
+                        view.player = coverPlayer
+                    },
+                    modifier = Modifier.matchParentSize()
+                )
+            } else {
+                AndroidView(
+                    factory = { ctx ->
+                        LayoutInflater.from(ctx)
+                            .inflate(R.layout.player_view_texture, null, false).also { root ->
+                                root.findViewById<PlayerView>(R.id.player_view).apply {
+                                    this.player = p
+                                    setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                    setKeepContentOnPlayerReset(true)
+                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                    useController = false
+                                    setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                                }
+                            }
+                    },
+                    update = { root ->
+                        root.findViewById<PlayerView>(R.id.player_view).apply {
+                            player = p
+                            useController = false
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        }
+                    },
+                    modifier = Modifier.matchParentSize().hazeSource(hazeState)
+                )
+            }
+        }
 
         Box(
             modifier = Modifier
@@ -331,6 +384,7 @@ private fun ExerciseVideoPlayer(
 
         if (controlsVisible && player != null) {
             PlayerControlsOverlay(
+                type = publicationInfo.publicationType,
                 player = player!!,
                 title = publicationInfo.title.orEmpty(),
                 isFullscreen = isFullscreen,
@@ -354,6 +408,7 @@ private fun ExerciseVideoPlayer(
                 },
                 onSoundEffectClick = onSoundEffectClick,
                 onMuteClick = onMuteClick,
+                onPlaylistClick = onPlaylistClick
             )
         }
     }
@@ -373,6 +428,7 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 
 @Composable
 private fun BoxScope.PlayerControlsOverlay(
+    type: PublicationType,
     player: Player,
     title: String,
     isFullscreen: Boolean,
@@ -385,6 +441,7 @@ private fun BoxScope.PlayerControlsOverlay(
     onUserInteraction: () -> Unit,
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
+    onPlaylistClick: () -> Unit,
 ) {
     var durationMs by remember {
         androidx.compose.runtime.mutableLongStateOf(
@@ -432,6 +489,7 @@ private fun BoxScope.PlayerControlsOverlay(
         )
 
         BottomControls(
+            type = type,
             durationMs = durationMs,
             positionMs = positionMs,
             bufferedPositionMs = bufferedPositionMs,
@@ -448,6 +506,7 @@ private fun BoxScope.PlayerControlsOverlay(
             },
             onSoundEffectClick = onSoundEffectClick,
             onMuteClick = onMuteClick,
+            onPlaylistClick = onPlaylistClick
         )
     }
 }
@@ -502,7 +561,11 @@ private fun ApplyExerciseScreenSystemBars(activity: Activity?) {
 }
 
 @Composable
-private fun ReleasePlaybackOnDispose(activity: Activity?, key: Any?, viewModel: PublicationPlayerViewModel) {
+private fun ReleasePlaybackOnDispose(
+    activity: Activity?,
+    key: Any?,
+    viewModel: PublicationPlayerViewModel
+) {
     DisposableEffect(activity, key) {
         onDispose {
             val isChanging = try {
@@ -594,6 +657,7 @@ private fun BoxScope.PlayPauseButton(
 
 @Composable
 private fun BoxScope.BottomControls(
+    type: PublicationType,
     durationMs: Long,
     positionMs: Long,
     bufferedPositionMs: Long,
@@ -605,6 +669,7 @@ private fun BoxScope.BottomControls(
     onSeek: (Long) -> Unit,
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
+    onPlaylistClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -663,12 +728,23 @@ private fun BoxScope.BottomControls(
         ) {
             Text(text = formatDuration(positionMs), color = White)
             if (!isLandscape) {
-                IconButton(onClick = onToggleFullscreen) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_rotate),
-                        contentDescription = if (isFullscreen) "Exit fullscreen" else "Enter fullscreen",
-                        tint = White
-                    )
+                if (type == PublicationType.MEDITATION) {
+                    IconButton(onClick = onPlaylistClick) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_playlist),
+                            contentDescription = "Playlist",
+                            tint = White
+                        )
+                    }
+                } else {
+                    IconButton(onClick = onToggleFullscreen) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_rotate),
+                            contentDescription = if (isFullscreen) "Exit fullscreen" else "Enter fullscreen",
+                            tint = White
+                        )
+                    }
+
                 }
             }
             Text(text = formatDuration(durationMs.coerceAtLeast(0L)), color = White)

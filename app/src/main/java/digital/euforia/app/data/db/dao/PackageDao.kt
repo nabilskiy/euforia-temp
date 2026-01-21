@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Upsert
 import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.db.entity.PackageWithChildren
 import digital.euforia.app.data.db.entity.PackageWithMeditations
@@ -18,8 +19,14 @@ interface PackageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<Package>)
 
+    @Upsert
+    suspend fun upsert(pkg: Package)
+
     @Query("SELECT * FROM packages WHERE id = :id")
     fun getByIdFlow(id: Int): Flow<Package?>
+
+    @Query("SELECT * FROM packages WHERE id = :id")
+    fun getById(id: Int): Package?
 
     @Transaction
     @Query("SELECT * FROM packages WHERE id = :id")

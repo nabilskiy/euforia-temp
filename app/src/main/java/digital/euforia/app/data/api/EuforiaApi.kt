@@ -141,4 +141,9 @@ interface EuforiaApi {
     suspend fun getArticle(
         @Path("id") id: Int
     ): ResultWrapper<NetworkArticle>
+
+    @GET("packages/{id}")
+    suspend fun getPackage(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkPackage>
 }

@@ -246,5 +246,6 @@ data class SoundEffectUi(
     val title: String,
     val imageUrl: String,
     val audioUrl: String,
+    val videoUrl: String? = null,
     val maxVolume: Float = 0.5f
 )
