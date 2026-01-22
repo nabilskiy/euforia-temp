@@ -17,6 +17,7 @@ import digital.euforia.app.data.repository.ExerciseRepository
 import digital.euforia.app.data.repository.ResourceRepository
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.domain.model.PublicationInfo
+import digital.euforia.app.domain.usecase.program.GetPlaylistUseCase
 import digital.euforia.app.domain.usecase.program.GetPublicationInfoUseCase
 import digital.euforia.app.domain.usecase.program.GetPublicationInfosUseCase
 import digital.euforia.app.domain.usecase.resources.GetResourcesUseCase
@@ -44,6 +45,7 @@ class PublicationPlayerViewModel @Inject constructor(
     private val resourceRepository: ResourceRepository,
     private val getPublicationInfoUseCase: GetPublicationInfoUseCase,
     private val getPublicationInfosUseCase: GetPublicationInfosUseCase,
+    private val getPlaylistUseCase: GetPlaylistUseCase,
     private val appPreferences: AppPreferences,
 ) : ViewModel(), ContainerHost<PublicationPlayerState, PublicationPlayerSideEffect> {
 
@@ -54,7 +56,7 @@ class PublicationPlayerViewModel @Inject constructor(
     override val container = container<PublicationPlayerState, PublicationPlayerSideEffect>(
         initialState = PublicationPlayerState(),
         onCreate = {
-            loadExercise()
+            loadPublication()
             loadSoundEffects()
         }
     )
@@ -143,13 +145,23 @@ class PublicationPlayerViewModel @Inject constructor(
         stopPlaybackAndRelease(stopService = false)
     }
 
-    private fun loadExercise() {
+    private fun loadPublication() {
         viewModelScope.launch {
             reduceState { copy(isLoading = true, errorState = null) }
             getPublicationInfoUseCase.invoke(
                 id = id,
                 publicationType = publicationType
-            ).onSuccess { publicationInfo ->
+            ).map { publicationInfo ->
+                publicationInfo.also {
+                    if (it.publicationType == PublicationType.MEDITATION) {
+                        publicationInfo.categoryId?.let { categoryId ->
+                            getPlaylistUseCase.invoke(categoryId).onSuccess { playlist ->
+                                reduceState { copy(playlist = playlist) }
+                            }
+                        }
+                    }
+                }
+            }.onSuccess { publicationInfo ->
                 reduceState { copy(publicationInfo = publicationInfo) }
             }.onFailure { error ->
                 reduceState { copy(errorState = error.mapToErrorViewState()) }

@@ -19,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PublicationsViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val getPublicationInfosUseCase: GetPublicationInfosUseCase
+    private val getPublicationInfosUseCase: GetPublicationInfosUseCase,
 ) : ViewModel(), ContainerHost<PublicationsState, PublicationsSideEffect> {
 
     private val ids: String = requireNotNull(savedStateHandle.get<String>("ids"))

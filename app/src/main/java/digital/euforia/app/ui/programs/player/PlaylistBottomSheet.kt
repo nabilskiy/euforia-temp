@@ -1,15 +1,19 @@
 package digital.euforia.app.ui.programs.player
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,9 +36,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import coil.compose.AsyncImage
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
 import digital.euforia.app.R
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.ui.theme.AppBarBackground
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
@@ -101,6 +108,10 @@ fun PlaylistBottomSheet(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 titleItem(titleRes = R.string.playlist_title)
+
+                playlist.publicationInfosList.forEach { publicationInfo ->
+                    playlistItem(publicationInfo = publicationInfo)
+                }
                 item {
                     Spacer(modifier = Modifier.fillMaxWidth().height(1500.dp))
                 }
@@ -108,3 +119,48 @@ fun PlaylistBottomSheet(
         }
     }
 }
+
+private fun LazyListScope.playlistItem(publicationInfo: PublicationInfo) =
+    item(key = publicationInfo.id) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = White.copy(alpha = 0.1f))
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AsyncImage(
+                model = publicationInfo.imageUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(96.dp)
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = publicationInfo.title.orEmpty(),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = White
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_type_audio),
+                        contentDescription = null,
+                        tint = White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "${publicationInfo.durationMinutes} minutes",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+    }

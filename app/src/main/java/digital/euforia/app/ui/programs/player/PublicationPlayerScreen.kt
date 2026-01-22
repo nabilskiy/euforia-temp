@@ -102,7 +102,7 @@ fun PublicationPlayerScreen(
 
     val activity = LocalContext.current.findActivity()
 
-    ApplyExerciseScreenOrientation(activity)
+    ApplyExerciseScreenOrientation(activity, state.publicationInfo?.publicationType)
     ApplyExerciseScreenSystemBars(activity)
     ReleasePlaybackOnDispose(activity, state.publicationInfo?.id, viewModel)
 
@@ -115,6 +115,7 @@ fun PublicationPlayerScreen(
             errorState = state.errorState,
             soundEffects = state.soundEffectsList,
             selectedSoundIndex = state.selectedSoundEffectIndex,
+            playlist = state.playlist,
             selectedSoundTitle = { state.soundEffectsList.getOrNull(state.selectedSoundEffectIndex)?.title.orEmpty() },
             getController = { ctx -> viewModel.getOrCreateController(ctx) },
             onPrepareAndPlay = { ex -> viewModel.prepareAndPlay(ex) },
@@ -136,6 +137,7 @@ private fun PublicationPlayerContent(
     errorState: ErrorViewState?,
     soundEffects: List<SoundEffectUi>,
     selectedSoundIndex: Int,
+    playlist: PublicationsPlaylist?,
     selectedSoundTitle: () -> String,
     getController: suspend (Context) -> Player,
     onPrepareAndPlay: (PublicationInfo) -> Unit,
@@ -202,8 +204,8 @@ private fun PublicationPlayerContent(
             )
 
         }
-        if (playlistSheetState.value) {
-            PlaylistBottomSheet() {
+        if (playlistSheetState.value && playlist != null) {
+            PlaylistBottomSheet(playlist) {
                 playlistSheetState.value = false
             }
         }
@@ -273,9 +275,11 @@ private fun ExerciseVideoPlayer(
         }
     }
 
-    LaunchedEffect(isFullscreen, configuration.orientation) {
+    LaunchedEffect(isFullscreen, configuration.orientation, publicationInfo.publicationType) {
         activity?.let { act ->
-            if (isFullscreen) {
+            if (publicationInfo.publicationType == PublicationType.MEDITATION) {
+                act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            } else if (isFullscreen) {
                 act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             } else {
                 act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
@@ -283,7 +287,7 @@ private fun ExerciseVideoPlayer(
         }
     }
 
-    DisposableEffect(activity, isFullscreen) {
+    DisposableEffect(activity, isFullscreen, publicationInfo.publicationType) {
         onDispose {
             activity?.let { act ->
                 val isChanging = try {
@@ -292,7 +296,7 @@ private fun ExerciseVideoPlayer(
                     false
                 }
                 if (!isChanging) {
-                    act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                    act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 }
             }
         }
@@ -512,10 +516,17 @@ private fun BoxScope.PlayerControlsOverlay(
 }
 
 @Composable
-private fun ApplyExerciseScreenOrientation(activity: Activity?) {
-    DisposableEffect(activity) {
+private fun ApplyExerciseScreenOrientation(
+    activity: Activity?,
+    publicationType: PublicationType?
+) {
+    DisposableEffect(activity, publicationType) {
         val previous = activity?.requestedOrientation
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        if (publicationType == PublicationType.MEDITATION) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        }
         onDispose {
             val isChanging = try {
                 activity?.isChangingConfigurations == true
@@ -533,14 +544,22 @@ private fun ApplyExerciseScreenOrientation(activity: Activity?) {
 
 @Composable
 private fun ApplyExerciseScreenSystemBars(activity: Activity?) {
-    DisposableEffect(activity) {
+    val configuration = LocalConfiguration.current
+    val isLandscape =
+        configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    DisposableEffect(activity, isLandscape) {
         activity?.let { act ->
             val window = act.window
             val controller = WindowInsetsControllerCompat(window, window.decorView)
             WindowCompat.setDecorFitsSystemWindows(window, false)
-            controller.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            controller.hide(WindowInsetsCompat.Type.systemBars())
+            if (isLandscape) {
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                controller.hide(WindowInsetsCompat.Type.systemBars())
+            } else {
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
         }
         onDispose {
             activity?.let { act ->

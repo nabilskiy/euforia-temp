@@ -30,4 +30,15 @@ class MeditationRepository @Inject constructor(
             }
         }
     }
+
+    suspend fun getByMainCategoryId(packageId: Int): ResultWrapper<List<Meditation>> {
+        return withContext(Dispatchers.IO) {
+            val localMeditations = meditationDao.getAllByMainCategoryId(packageId)
+            if (localMeditations.isNotEmpty()) {
+                ResultWrapper.Success(localMeditations)
+            } else {
+                ResultWrapper.Success(emptyList())
+            }
+        }
+    }
 }
