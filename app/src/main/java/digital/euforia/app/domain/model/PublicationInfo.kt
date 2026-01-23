@@ -17,4 +17,5 @@ data class PublicationInfo(
     val color3: String? = null,
     val publishedAt: Long?,
     val durationMinutes: Int?,
+    val isFavourite: Boolean = false
 )

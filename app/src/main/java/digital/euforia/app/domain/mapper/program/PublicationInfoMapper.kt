@@ -29,6 +29,7 @@ class PublicationInfoMapper @Inject constructor() {
             color3 = meditation.color3,
             publishedAt = meditation.publishedAt,
             durationMinutes = meditation.computeDurationMinutes(),
+            isFavourite = meditation.isFavourite
         )
 
     fun fromExercise(exercise: Exercise): PublicationInfo =
@@ -46,6 +47,7 @@ class PublicationInfoMapper @Inject constructor() {
             color3 = exercise.color3,
             publishedAt = exercise.publishedAt,
             durationMinutes = exercise.computeDurationMinutes(),
+            isFavourite = exercise.isFavourite
         )
 
     fun fromArticle(article: Article): PublicationInfo =
@@ -63,6 +65,7 @@ class PublicationInfoMapper @Inject constructor() {
             color3 = article.color3,
             publishedAt = article.publishedAt,
             durationMinutes = article.computeDurationMinutes(),
+            isFavourite = article.isFavourite
         )
 
     fun fromNetworkMeditation(meditation: NetworkMeditation): PublicationInfo =
@@ -133,6 +136,7 @@ class PublicationInfoMapper @Inject constructor() {
         publishedAt: Long?,
         durationMinutes: Int,
         categoryVideoCoverUrl: String? = null,
+        isFavourite: Boolean = false,
         ): PublicationInfo =
         PublicationInfo(
             id = id,
@@ -149,6 +153,7 @@ class PublicationInfoMapper @Inject constructor() {
             color3 = color3,
             publishedAt = publishedAt,
             durationMinutes = durationMinutes,
+            isFavourite = isFavourite
         )
 
     private fun secondsToMinutesAtLeast1(seconds: Int?): Int =

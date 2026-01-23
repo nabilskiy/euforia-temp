@@ -86,6 +86,7 @@ data class Meditation(
     @ColumnInfo(name = "video_url") val videoUrl: String?,
     @ColumnInfo(name = "audio_preview_url") val audioPreviewUrl: String?,
     @ColumnInfo(name = "video_preview_url") val videoPreviewUrl: String?,
+    @ColumnInfo(name = "is_favourite") val isFavourite: Boolean = false,
 
     @Embedded(prefix = "audio_file_") val audio: File?,
     @Embedded(prefix = "video_file_") val video: File?,
@@ -129,6 +130,7 @@ data class Exercise(
     @ColumnInfo(name = "video_url") val videoUrl: String?,
     @ColumnInfo(name = "audio_preview_url") val audioPreviewUrl: String?,
     @ColumnInfo(name = "video_preview_url") val videoPreviewUrl: String?,
+    @ColumnInfo(name = "is_favourite") val isFavourite: Boolean = false,
 
     @Embedded(prefix = "audio_file_") val audio: File?,
     @Embedded(prefix = "video_file_") val video: VideoFile?,
@@ -165,6 +167,7 @@ data class Article(
     @ColumnInfo(name = "color_3") val color3: String?,
 
     @ColumnInfo(name = "published_at") val publishedAt: Long?,
+    @ColumnInfo(name = "is_favourite") val isFavourite: Boolean = false,
 
     @Embedded(prefix = "music_") val music: File?,
 

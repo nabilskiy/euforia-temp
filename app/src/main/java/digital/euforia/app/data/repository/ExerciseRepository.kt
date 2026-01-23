@@ -30,4 +30,10 @@ class ExerciseRepository @Inject constructor(
             }
         }
     }
+
+    suspend fun updateIsFavourite(id: Int, isFavourite: Boolean) {
+        withContext(Dispatchers.IO) {
+            exerciseDao.updateIsFavourite(id, isFavourite)
+        }
+    }
 }

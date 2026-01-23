@@ -14,6 +14,7 @@ import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionError
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.R
+import timber.log.Timber
 
 @AndroidEntryPoint
 @UnstableApi
@@ -30,10 +31,23 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
         // Sync SFX playback with main player state
         exo.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
+                Timber.tag("PUBLICATION_PLAYBACK").d("Service: onIsPlayingChanged=$isPlaying")
                 sfxPlayer?.let { sp ->
                     if (isPlaying) sp.play() else sp.pause()
                 }
                 super.onIsPlayingChanged(isPlaying)
+            }
+
+            override fun onPlaybackStateChanged(state: Int) {
+                Timber.tag("PUBLICATION_PLAYBACK").d("Service: onPlaybackStateChanged=$state")
+            }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                Timber.tag("PUBLICATION_PLAYBACK").e(error, "Service: onPlayerError")
+            }
+
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                Timber.tag("PUBLICATION_PLAYBACK").d("Service: onMediaItemTransition=${mediaItem?.mediaId}, reason=$reason")
             }
         })
         player = exo
@@ -104,6 +118,16 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                         available,
                         base.availablePlayerCommands
                     )
+                }
+
+                override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
+                    super.onPostConnect(session, controller)
+                    Timber.tag("PUBLICATION_PLAYBACK").d("Service: onPostConnect from ${controller.packageName}")
+                }
+
+                override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo) {
+                    super.onDisconnected(session, controller)
+                    Timber.tag("PUBLICATION_PLAYBACK").d("Service: onDisconnected from ${controller.packageName}")
                 }
 
                 override fun onCustomCommand(

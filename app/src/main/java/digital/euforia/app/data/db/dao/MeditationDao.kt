@@ -37,6 +37,9 @@ interface MeditationDao {
     @Query("SELECT * FROM meditations WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Meditation>>
 
+    @Query("UPDATE meditations SET is_favourite = :isFavourite WHERE id = :id")
+    suspend fun updateIsFavourite(id: Int, isFavourite: Boolean)
+
     @Query("DELETE FROM meditations")
     suspend fun clearAll()
 }

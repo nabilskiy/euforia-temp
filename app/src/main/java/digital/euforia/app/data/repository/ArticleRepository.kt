@@ -35,4 +35,10 @@ class ArticleRepository @Inject constructor(
             }
         }
     }
+
+    suspend fun updateIsFavourite(id: Int, isFavourite: Boolean) {
+        withContext(Dispatchers.IO) {
+            articleDao.updateIsFavourite(id, isFavourite)
+        }
+    }
 }

@@ -37,6 +37,9 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Exercise>>
 
+    @Query("UPDATE exercises SET is_favourite = :isFavourite WHERE id = :id")
+    suspend fun updateIsFavourite(id: Int, isFavourite: Boolean)
+
     @Query("DELETE FROM exercises")
     suspend fun clearAll()
 }

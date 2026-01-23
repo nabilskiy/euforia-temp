@@ -7,59 +7,59 @@ import android.content.pm.ActivityInfo
 import android.view.LayoutInflater
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
-import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
-import androidx.media3.ui.DefaultTimeBar
-import androidx.media3.ui.TimeBar
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.DefaultTimeBar
+import androidx.media3.ui.PlayerView
+import androidx.media3.ui.TimeBar
 import androidx.navigation.NavHostController
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -80,14 +80,17 @@ import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.formatDuration
+import digital.euforia.app.ui.util.sharePublication
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.ProgressIndicator
+import digital.euforia.app.ui.util.widget.PublicationOptionMenu
 import digital.euforia.app.ui.util.widget.SoundEffectUi
 import digital.euforia.app.ui.util.widget.SoundsEffectsView
+import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-import kotlinx.coroutines.delay
+import timber.log.Timber
 
 @Composable
 fun PublicationPlayerScreen(
@@ -116,13 +119,15 @@ fun PublicationPlayerScreen(
             soundEffects = state.soundEffectsList,
             selectedSoundIndex = state.selectedSoundEffectIndex,
             playlist = state.playlist,
+            onPublicationSelected = viewModel::onPublicationSelected,
             selectedSoundTitle = { state.soundEffectsList.getOrNull(state.selectedSoundEffectIndex)?.title.orEmpty() },
             getController = { ctx -> viewModel.getOrCreateController(ctx) },
             onPrepareAndPlay = { ex -> viewModel.prepareAndPlay(ex) },
             onRetryClick = { },
             onDownloadsClick = { },
             onSoundEffectClick = viewModel::onSoundEffectSelected,
-            onMuteClick = viewModel::onMuteClicked
+            onMuteClick = viewModel::onMuteClicked,
+            onFavouriteClick = viewModel::onFavouriteClicked
         )
     }
 }
@@ -138,6 +143,7 @@ private fun PublicationPlayerContent(
     soundEffects: List<SoundEffectUi>,
     selectedSoundIndex: Int,
     playlist: PublicationsPlaylist?,
+    onPublicationSelected: (PublicationInfo) -> Unit,
     selectedSoundTitle: () -> String,
     getController: suspend (Context) -> Player,
     onPrepareAndPlay: (PublicationInfo) -> Unit,
@@ -145,6 +151,7 @@ private fun PublicationPlayerContent(
     onDownloadsClick: () -> Unit,
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
+    onFavouriteClick: (PublicationInfo) -> Unit,
 ) {
     val videoUrl = publicationInfo?.videoUrl
 
@@ -155,8 +162,22 @@ private fun PublicationPlayerContent(
 
     val context = LocalContext.current
     var controllerPlayer by remember { mutableStateOf<Player?>(null) }
-    LaunchedEffect(publicationInfo.id) {
+    LaunchedEffect(Unit) {
         controllerPlayer = getController(context)
+    }
+
+    var currentMediaId by remember(publicationInfo?.id) { mutableStateOf(publicationInfo?.id) }
+
+    LaunchedEffect(controllerPlayer) {
+        val player = controllerPlayer ?: return@LaunchedEffect
+        while (true) {
+            val mediaItem = player.currentMediaItem
+            val id = (mediaItem?.localConfiguration?.tag as? PublicationInfo)?.id
+            if (id != null && id != currentMediaId) {
+                currentMediaId = id
+            }
+            delay(500)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -200,14 +221,18 @@ private fun PublicationPlayerContent(
                 },
                 onPlaylistClick = {
                     playlistSheetState.value = true
-                }
+                },
+                onFavouriteClick = onFavouriteClick
             )
-
         }
-        if (playlistSheetState.value && playlist != null) {
-            PlaylistBottomSheet(playlist) {
-                playlistSheetState.value = false
-            }
+
+        if (playlistSheetState.value && playlist != null && publicationInfo != null) {
+            PlaylistBottomSheet(
+                playlist = playlist,
+                selectedPublicationId = currentMediaId ?: publicationInfo.id,
+                isPremium = isPremium,
+                onPublicationSelected = onPublicationSelected,
+                onDismiss = { playlistSheetState.value = false })
         }
         VolumeBottomSheet(
             visible = showSheet,
@@ -240,6 +265,7 @@ private fun ExerciseVideoPlayer(
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
     onPlaylistClick: () -> Unit,
+    onFavouriteClick: (PublicationInfo) -> Unit,
 ) {
     val context = LocalContext.current
     val activity = remember { context.findActivity() }
@@ -251,10 +277,24 @@ private fun ExerciseVideoPlayer(
     var interactionTick by remember { mutableIntStateOf(0) }
 
     var player by remember { mutableStateOf<androidx.media3.common.Player?>(null) }
-    LaunchedEffect(publicationInfo.id) {
+    LaunchedEffect(player == null) {
+        if (player != null) return@LaunchedEffect
         val controller = getController(context)
-        onPrepareAndPlay(publicationInfo)
         player = controller
+        Timber.tag("PUBLICATION_PLAYBACK")
+            .d("ExerciseVideoPlayer: LaunchedEffect player init, currentMediaId=${(controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id}")
+        if (controller.playbackState == Player.STATE_IDLE || (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id != publicationInfo.id) {
+            onPrepareAndPlay(publicationInfo)
+        }
+    }
+
+    LaunchedEffect(publicationInfo.id) {
+        val controller = player ?: return@LaunchedEffect
+        Timber.tag("PUBLICATION_PLAYBACK")
+            .d("ExerciseVideoPlayer: LaunchedEffect publicationId changed to ${publicationInfo.id}, playerState=${controller.playbackState}, currentMediaId=${(controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id}")
+        if (controller.playbackState == Player.STATE_IDLE || (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id != publicationInfo.id) {
+            onPrepareAndPlay(publicationInfo)
+        }
     }
 
     var isPlaying by remember { mutableStateOf(false) }
@@ -389,6 +429,7 @@ private fun ExerciseVideoPlayer(
         if (controlsVisible && player != null) {
             PlayerControlsOverlay(
                 type = publicationInfo.publicationType,
+                publicationInfo = publicationInfo,
                 player = player!!,
                 title = publicationInfo.title.orEmpty(),
                 isFullscreen = isFullscreen,
@@ -412,7 +453,8 @@ private fun ExerciseVideoPlayer(
                 },
                 onSoundEffectClick = onSoundEffectClick,
                 onMuteClick = onMuteClick,
-                onPlaylistClick = onPlaylistClick
+                onPlaylistClick = onPlaylistClick,
+                onFavouriteClick = onFavouriteClick
             )
         }
     }
@@ -433,6 +475,7 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 @Composable
 private fun BoxScope.PlayerControlsOverlay(
     type: PublicationType,
+    publicationInfo: PublicationInfo,
     player: Player,
     title: String,
     isFullscreen: Boolean,
@@ -446,6 +489,7 @@ private fun BoxScope.PlayerControlsOverlay(
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
     onPlaylistClick: () -> Unit,
+    onFavouriteClick: (PublicationInfo) -> Unit,
 ) {
     var durationMs by remember {
         androidx.compose.runtime.mutableLongStateOf(
@@ -457,6 +501,7 @@ private fun BoxScope.PlayerControlsOverlay(
     var positionMs by remember { androidx.compose.runtime.mutableLongStateOf(player.currentPosition) }
     var bufferedPositionMs by remember { androidx.compose.runtime.mutableLongStateOf(player.bufferedPosition) }
     var playWhenReady by remember { mutableStateOf(player.playWhenReady) }
+    var currentTitle by remember(title) { mutableStateOf(title) }
 
     LaunchedEffect(player) {
         while (true) {
@@ -464,13 +509,25 @@ private fun BoxScope.PlayerControlsOverlay(
             positionMs = player.currentPosition
             bufferedPositionMs = player.bufferedPosition
             playWhenReady = player.playWhenReady
+
+            val mediaTitle = player.mediaMetadata.title?.toString()
+            if (!mediaTitle.isNullOrBlank()) {
+                currentTitle = mediaTitle
+            }
+
+            // TODO: remove before pr
+            if (System.currentTimeMillis() % 1000 < 300) {
+                Timber.tag("PUBLICATION_PLAYBACK")
+                    .d("PlayerState: playing=${player.isPlaying}, state=${player.playbackState}, ready=${player.playWhenReady}, pos=$positionMs/$durationMs")
+            }
             delay(250)
         }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(color = Black.copy(alpha = 0.3f))) {
         ControlsTopBar(
-            title = title,
+            title = currentTitle,
+            publicationInfo = publicationInfo,
             isLandscape = isLandscape,
             isFullscreen = isFullscreen,
             onClose = {
@@ -479,15 +536,18 @@ private fun BoxScope.PlayerControlsOverlay(
             onToggleFullscreen = {
                 onUserInteraction(); onToggleFullscreen()
             },
+            onFavouriteClick = onFavouriteClick
         )
 
         PlayPauseButton(
             playing = playWhenReady,
             onToggle = {
                 onUserInteraction()
-                val newPlay = !playWhenReady
-                player.playWhenReady = newPlay
-                playWhenReady = newPlay
+                if (player.isPlaying) {
+                    player.pause()
+                } else {
+                    player.play()
+                }
             },
             hazeState = hazeState,
         )
@@ -585,13 +645,19 @@ private fun ReleasePlaybackOnDispose(
     key: Any?,
     viewModel: PublicationPlayerViewModel
 ) {
-    DisposableEffect(activity, key) {
+    // We want to stop playback only when the screen is actually closed, 
+    // not when the 'key' (publication ID) changes, because changing the key 
+    // happens when we transition between items in a playlist.
+    DisposableEffect(activity) {
+        Timber.tag("PUBLICATION_PLAYBACK").d("ReleasePlaybackOnDispose: init")
         onDispose {
             val isChanging = try {
                 activity?.isChangingConfigurations == true
             } catch (_: Throwable) {
                 false
             }
+            Timber.tag("PUBLICATION_PLAYBACK")
+                .d("ReleasePlaybackOnDispose: onDispose isChanging=$isChanging")
             if (!isChanging) {
                 viewModel.stopPlaybackAndRelease(stopService = true)
             }
@@ -602,11 +668,14 @@ private fun ReleasePlaybackOnDispose(
 @Composable
 private fun BoxScope.ControlsTopBar(
     title: String,
+    publicationInfo: PublicationInfo,
     isLandscape: Boolean,
     isFullscreen: Boolean,
     onClose: () -> Unit,
     onToggleFullscreen: () -> Unit,
+    onFavouriteClick: (PublicationInfo) -> Unit,
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -639,13 +708,19 @@ private fun BoxScope.ControlsTopBar(
                     )
                 }
             }
-            IconButton(onClick = { }) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_menu),
-                    contentDescription = "Menu",
-                    tint = White
-                )
-            }
+            PublicationOptionMenu(
+                isFavourite = publicationInfo.isFavourite,
+                onClick = {},
+                onAddFavouriteClick = { onFavouriteClick(publicationInfo) },
+                onShareClick = {
+                    sharePublication(
+                        context = context,
+                        publicationType = publicationInfo.publicationType,
+                        id = publicationInfo.id
+                    )
+                },
+                onReportErrorClick = {}
+            )
         }
     }
 }
@@ -674,6 +749,7 @@ private fun BoxScope.PlayPauseButton(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun BoxScope.BottomControls(
     type: PublicationType,

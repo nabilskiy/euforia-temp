@@ -4,18 +4,31 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import digital.euforia.app.R
 import digital.euforia.app.ui.theme.NavBarBackground
+import digital.euforia.app.ui.theme.Red
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.openAboutEuforia
 
 
 @Composable
@@ -34,9 +47,19 @@ fun OptionsMenu(
                 text = {
                     Text(
                         text = localizedRes.string(item.titleRes),
-                        color = White,
+                        color = item.color,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal)
                     )
+                },
+                trailingIcon = item.iconRes?.let {
+                    {
+                        Icon(
+                            modifier = Modifier.size(24.dp),
+                            painter = painterResource(id = it),
+                            contentDescription = null,
+                            tint = item.color
+                        )
+                    }
                 },
                 onClick = {
                     item.onClick()
@@ -53,7 +76,55 @@ fun OptionsMenu(
     }
 }
 
+@Composable
+fun PublicationOptionMenu(
+    isFavourite: Boolean = false,
+    onClick: () -> Unit,
+    onAddFavouriteClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onReportErrorClick: (() -> Unit)? = null
+) {
+    val context = LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = !expanded }) {
+            Icon(
+                painter = painterResource(R.drawable.ic_menu),
+                contentDescription = "Menu",
+                tint = White
+            )
+        }
+
+        OptionsMenu(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            menuItems = listOfNotNull(
+                MenuItem(
+                    titleRes = R.string.add_to_favorites,
+                    iconRes = if (isFavourite) R.drawable.ic_heart_filled
+                    else R.drawable.ic_heart,
+                    onClick = onAddFavouriteClick
+                ),
+                MenuItem(
+                    titleRes = R.string.share,
+                    iconRes = R.drawable.ic_share,
+                    onClick = onShareClick
+                ),
+                onReportErrorClick?.let {
+                    MenuItem(
+                        titleRes = R.string.report_error,
+                        color = Red,
+                        onClick = it
+                    )
+                }
+            )
+        )
+    }
+}
+
 data class MenuItem(
     val titleRes: Int,
+    val iconRes: Int? = null,
+    val color: Color = White,
     val onClick: () -> Unit
 )

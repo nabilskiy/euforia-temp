@@ -41,4 +41,10 @@ class MeditationRepository @Inject constructor(
             }
         }
     }
+
+    suspend fun updateIsFavourite(id: Int, isFavourite: Boolean) {
+        withContext(Dispatchers.IO) {
+            meditationDao.updateIsFavourite(id, isFavourite)
+        }
+    }
 }

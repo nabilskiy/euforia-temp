@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +31,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,15 +45,22 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.ui.theme.AppBarBackground
+import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.AudioEqualizerView
+import digital.euforia.app.ui.util.widget.MaxView
+import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.titleItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistBottomSheet(
     playlist: PublicationsPlaylist,
+    selectedPublicationId: Int?,
+    isPremium: Boolean,
+    onPublicationSelected: (PublicationInfo) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -84,7 +94,6 @@ fun PlaylistBottomSheet(
         containerColor = BottomSheetBackground,
         tonalElevation = 12.dp,
     ) {
-
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = appBarModifier.fillMaxWidth()) {
                 IconButton(onClick = onDismiss, modifier = Modifier.padding(16.dp)) {
@@ -105,12 +114,21 @@ fun PlaylistBottomSheet(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
             ) {
                 titleItem(titleRes = R.string.playlist_title)
 
                 playlist.publicationInfosList.forEach { publicationInfo ->
-                    playlistItem(publicationInfo = publicationInfo)
+                    playlistItem(
+                        publicationInfo = publicationInfo,
+                        isSelected = publicationInfo.id == selectedPublicationId,
+                        isPremium = isPremium,
+                        onClick = {
+                            onPublicationSelected(publicationInfo)
+                            onDismiss()
+                        }
+                    )
                 }
                 item {
                     Spacer(modifier = Modifier.fillMaxWidth().height(1500.dp))
@@ -120,47 +138,64 @@ fun PlaylistBottomSheet(
     }
 }
 
-private fun LazyListScope.playlistItem(publicationInfo: PublicationInfo) =
-    item(key = publicationInfo.id) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = White.copy(alpha = 0.1f))
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+private fun LazyListScope.playlistItem(
+    publicationInfo: PublicationInfo,
+    isSelected: Boolean,
+    isPremium: Boolean,
+    onClick: () -> Unit
+) = item(key = publicationInfo.id) {
+    Row(
+        modifier = Modifier
+            .noRippleClickable(onClick)
+            .fillMaxWidth()
+            .background(color = White.copy(alpha = 0.1f), shape = RoundedCornerShape(24.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(modifier = Modifier.clip(RoundedCornerShape(16.dp)).size(56.dp)) {
             AsyncImage(
                 model = publicationInfo.imageUrl,
                 contentDescription = null,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(96.dp)
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = publicationInfo.title.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = White
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_type_audio),
-                        contentDescription = null,
-                        tint = White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "${publicationInfo.durationMinutes} minutes",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = White.copy(alpha = 0.7f)
+
+            if (!isPremium && publicationInfo.isPremium) {
+                MaxView(modifier = Modifier.align(Alignment.Center))
+            } else {
+                if (isSelected) {
+                    AudioEqualizerView(
+                        modifier = Modifier.align(Alignment.Center)
+                            .background(color = Black.copy(alpha = 0.1f)).padding(8.dp)
                     )
                 }
             }
         }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = publicationInfo.title.orEmpty(),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = White
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_type_audio),
+                    contentDescription = null,
+                    tint = White.copy(alpha = 0.7f),
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "${publicationInfo.durationMinutes} minutes",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = White.copy(alpha = 0.7f)
+                )
+            }
+        }
     }
+}

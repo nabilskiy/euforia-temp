@@ -36,6 +36,9 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Article>>
 
+    @Query("UPDATE articles SET is_favourite = :isFavourite WHERE id = :id")
+    suspend fun updateIsFavourite(id: Int, isFavourite: Boolean)
+
     @Query("DELETE FROM articles")
     suspend fun clearAll()
 }

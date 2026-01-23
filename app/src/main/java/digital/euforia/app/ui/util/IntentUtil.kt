@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import digital.euforia.app.R
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.subscription.Configuration
 
 
@@ -432,4 +433,26 @@ fun openSystemSettings(context: Context) {
         Uri.fromParts("package", context.packageName, null)
     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
+}
+
+fun sharePublication(
+    context: Context,
+    publicationType: PublicationType,
+    id: Int
+) {
+    val path = when (publicationType) {
+        PublicationType.ARTICLE -> "articles"
+        PublicationType.MEDITATION -> "meditations"
+        PublicationType.EXERCISE -> "exercises"
+    }
+    val url = "https://euforia.digital/$path/$id"
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, url)
+    }
+
+    context.startActivity(
+        Intent.createChooser(intent, context.getString(R.string.share))
+    )
 }
