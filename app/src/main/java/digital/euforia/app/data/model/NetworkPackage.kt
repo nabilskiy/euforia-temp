@@ -32,23 +32,23 @@ data class NetworkPackage(
     @field:Json(name = "articles") val articles: List<NetworkArticle> = emptyList(),
 )
 
-fun NetworkPackage.toEntity(): Package =
-    digital.euforia.app.data.db.entity.Package(
-        id = id,
-        type = type,
-        pro = pro,
-        alias = alias,
-        authorId = authorId,
-        name = name,
-        subtitle = subtitle,
-        description = description,
-        keywords = keywords,
-        imageUrl = imageUrl,
-        imagePreviewUrl = imagePreviewUrl,
-        imageCoverUrl = imageCoverUrl,
-        videoCoverUrl = videoCoverUrl,
-        color1 = color1,
-        color2 = color2,
-        color3 = color3,
-        publishedAt = publishedAt,
-    )
+fun NetworkPackage.toEntity(): Package = Package(
+    id = id,
+    type = type,
+    pro = pro,
+    alias = alias,
+    authorId = authorId,
+    name = name,
+    subtitle = subtitle,
+    description = description,
+    keywords = keywords,
+    imageUrl = imageUrl,
+    imagePreviewUrl = imagePreviewUrl,
+    imageCoverUrl = imageCoverUrl,
+    videoCoverUrl = videoCoverUrl,
+    color1 = color1,
+    color2 = color2,
+    color3 = color3,
+    publishedAt = publishedAt,
+    publicationsCount = meditations.size + exercises.size + articles.size,
+)

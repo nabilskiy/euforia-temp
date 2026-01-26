@@ -65,9 +65,7 @@ class ProgramDetailsViewModel @Inject constructor(
                         result.meditations.map { meditation -> meditation.toMeditationUi() }
                     val articles = result.articles.map { article -> article.toArticleUi() }
                     val exercises = result.exercises.map { exercise -> exercise.toExerciseUi() }
-                    val program = result.pkg.toProgramUi(
-                        result.articles.size + result.exercises.size + result.meditations.size
-                    )
+                    val program = result.pkg.toProgramUi()
                     reduceState {
                         copy(
                             program = program,

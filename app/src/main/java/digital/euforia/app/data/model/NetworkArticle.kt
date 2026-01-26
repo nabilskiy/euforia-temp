@@ -2,6 +2,7 @@ package digital.euforia.app.data.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import digital.euforia.app.data.db.entity.Article
 
 @JsonClass(generateAdapter = true)
 data class NetworkArticle(
@@ -35,8 +36,8 @@ data class NetworkArticle(
     @field:Json(name = "content_length") val contentLength: Int?
 )
 
-fun NetworkArticle.toEntity(): digital.euforia.app.data.db.entity.Article =
-    digital.euforia.app.data.db.entity.Article(
+fun NetworkArticle.toEntity(packageId: Int?): Article =
+    Article(
         id = id,
         type = type,
         alias = alias,

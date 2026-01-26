@@ -73,6 +73,7 @@ class RepositoryModule {
     ): PackageRepository {
         return PackageRepository(
             api = api,
+            database = database,
             packageDao = database.packageDao(),
             meditationDao = database.meditationDao(),
             exerciseDao = database.exerciseDao(),

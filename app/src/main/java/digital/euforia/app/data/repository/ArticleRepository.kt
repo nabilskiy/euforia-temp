@@ -30,7 +30,7 @@ class ArticleRepository @Inject constructor(
             } else {
                 api.getArticle(articleId)
                     .map { networkArticles ->
-                        networkArticles.toEntity().also { articleDao.upsert(it) }
+                        networkArticles.toEntity(networkArticles.mainPackageId).also { articleDao.upsert(it) }
                     }
             }
         }

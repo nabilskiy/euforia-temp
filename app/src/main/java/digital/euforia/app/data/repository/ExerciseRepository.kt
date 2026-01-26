@@ -23,7 +23,7 @@ class ExerciseRepository @Inject constructor(
                 ResultWrapper.Success(localExercise)
             } else {
                 api.getExercise(id).map { networkExercise ->
-                    networkExercise.toEntity().also {
+                    networkExercise.toEntity(networkExercise.mainPackageId).also {
                         exerciseDao.upsert(it)
                     }
                 }

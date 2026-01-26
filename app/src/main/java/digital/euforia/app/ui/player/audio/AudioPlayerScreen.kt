@@ -14,7 +14,6 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import androidx.media3.session.MediaController
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -29,8 +28,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.SessionCommand
 import digital.euforia.app.ui.navigation.Home
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
-import digital.euforia.app.ui.subscription.UserActivity
-import digital.euforia.app.ui.subscription.UserActivity.PURCHASE_SUCCESS
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import timber.log.Timber
 
 @OptIn(UnstableApi::class)
@@ -62,116 +60,115 @@ fun SharedTransitionScope.AudioPlayerScreen(
             viewModel.logOnSeek()
         }
     )
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        Timber.tag("PLAN_SCREEN").d("Activity result: $result")
-        if (result.resultCode == PURCHASE_SUCCESS) {
-//            isCongratsVisible.value = true
+    SubscriptionActivityLauncher(
+        screenId = 18,
+        onSuccess = { viewModel.onNavigateHome() }
+    ) { launchSubscriptionActivity ->
+        val wrappedLaunch = {
+            controller?.pause()
+            launchSubscriptionActivity()
         }
-        viewModel.onNavigateHome()
-        // handle result here
-    }
-    val launchSubscriptionActivity: () -> Unit = {
-        controller?.pause()
-        val intent = Intent(context, UserActivity::class.java).apply {
-            putExtra(UserActivity.EXTRA_SCREEN_ID, 18)
+        viewModel.collectSideEffect { sideEffect ->
+            handleSideEffect(sideEffect, navController, wrappedLaunch)
         }
-        launcher.launch(intent)
-    }
-    viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect, navController, launchSubscriptionActivity)
-    }
 
 
-    // Release player when leaving the screen
-    DisposableEffect(Unit) {
-        onDispose {
-            controller?.let { c ->
-                c.pause()
-                c.clearMediaItems()
-                stopSfx(c)
-                c.release()
-            }
-            context.stopService(Intent(context, AudioPlaybackService::class.java))
-        }
-    }
-
-    val (currentMs, durationMs) = rememberPlaybackProgress(controller)
-
-    val sharedKey = state.accompanimentWithItems?.let { acc ->
-        "acc_${acc.accompaniment.id}_${state.timeOfDay.name}"
-    }
-
-    val ui = AudioPlayerUiState(
-        entryPoint = state.entryPoint,
-        timeOfDay = state.timeOfDay,
-        title = state.title.orEmpty(),
-        playState = state.playState,
-        pages = state.pages,
-        currentPageIndex = state.currentPageIndex,
-        selectedSoundIndex = state.selectedSoundEffectIndex,
-        avatarPreviewUrl = state.avatarPreviewUrl,
-        avatarsList = state.avatarsList,
-        avatarPreviewIds = state.avatarPreviewIds,
-        avatarUi = state.selectedAvatar,
-        soundsEffects = state.soundEffectsList,
-        sharedElementKey = sharedKey
-    )
-    VolumeBottomSheet(
-        visible = showSheet,
-        value = volume,
-        title = viewModel.getCurrentSoundEffectUi()?.title.orEmpty(),
-        onValueChange = {
-            volume = it
-            controller?.let { setSfxVolume(it, volume) }
-        },
-        onDone = {
-            // player.volume = volume
-            showSheet = false
-        },
-        onDismiss = { showSheet = false }
-    )
-
-    AudioPlayerScaffold(
-        modifier = Modifier.sharedElement(shared, animatedVisibilityScope),
-        ui = ui,
-        currentTimeMs = currentMs,
-        durationMs = durationMs,
-        shared = shared,
-        animatedVisibilityScope = animatedVisibilityScope,
-        isNetworkAvailable = state.isNetworkAvailable,
-        errorState = state.errorState,
-        logListenLaterEvent = viewModel::onListenLaterClicked,
-        onBack = { navController.popBackStack() },
-        onPageSelected = viewModel::onPageSelected,
-        onPlay = {
-            controller?.play()
-            viewModel.logPlayClicked()
-        },
-        onPause = { controller?.pause() },
-        onSeekTo = { positionMs -> controller?.seekTo(positionMs.toLong()) },
-        onMuteClick = {
-            viewModel.onMuteClicked()
-            controller?.let { stopSfx(it) }
-        },
-        onSoundEffectClick = { index ->
-            if (index != state.selectedSoundEffectIndex) {
-                viewModel.onSoundEffectSelected(index)
-                state.soundEffectsList.getOrNull(index)?.let { sfx ->
-                    controller?.let { playSfx(it, sfx.audioUrl, volume) }
+        // Release player when leaving the screen
+        DisposableEffect(Unit) {
+            onDispose {
+                controller?.let { c ->
+                    c.pause()
+                    c.clearMediaItems()
+                    stopSfx(c)
+                    c.release()
                 }
-            } else {
-                showSheet = true
+                context.stopService(Intent(context, AudioPlaybackService::class.java))
             }
-        },
-        onAvatarClick = viewModel::onAvatarSelected,
-        navigateAvatars = viewModel::onNavigateToAvatars,
-        navigatePlayer = viewModel::onNavigateToPlayer,
-        saveProgress = { viewModel.savePlaybackProgress(currentMs / durationMs) },
-        onRetryClick = viewModel::onRetryClicked,
-        onDownloadsClick = viewModel::onDownloadsClicked
-    )
+        }
+
+        val (currentMs, durationMs) = rememberPlaybackProgress(controller)
+
+        val sharedKey = state.accompanimentWithItems?.let { acc ->
+            "acc_${acc.accompaniment.id}_${state.timeOfDay.name}"
+        }
+
+        val ui = AudioPlayerUiState(
+            entryPoint = state.entryPoint,
+            timeOfDay = state.timeOfDay,
+            title = state.title.orEmpty(),
+            playState = state.playState,
+            pages = state.pages,
+            currentPageIndex = state.currentPageIndex,
+            selectedSoundIndex = state.selectedSoundEffectIndex,
+            avatarPreviewUrl = state.avatarPreviewUrl,
+            avatarsList = state.avatarsList,
+            avatarPreviewIds = state.avatarPreviewIds,
+            avatarUi = state.selectedAvatar,
+            soundsEffects = state.soundEffectsList,
+            sharedElementKey = sharedKey
+        )
+        VolumeBottomSheet(
+            visible = showSheet,
+            value = volume,
+            title = viewModel.getCurrentSoundEffectUi()?.title.orEmpty(),
+            onValueChange = {
+                volume = it
+                controller?.let { setSfxVolume(it, volume) }
+            },
+            onDone = {
+                // player.volume = volume
+                showSheet = false
+            },
+            onDismiss = { showSheet = false }
+        )
+
+        AudioPlayerScaffold(
+            modifier = Modifier.sharedElement(shared, animatedVisibilityScope),
+            ui = ui,
+            currentTimeMs = currentMs,
+            durationMs = durationMs,
+            shared = shared,
+            animatedVisibilityScope = animatedVisibilityScope,
+            isNetworkAvailable = state.isNetworkAvailable,
+            errorState = state.errorState,
+            logListenLaterEvent = viewModel::onListenLaterClicked,
+            onBack = {
+                if (state.pages.getOrNull(state.currentPageIndex) == PlayerPage.Avatars) {
+                    viewModel.onNavigateToPlayer()
+                } else {
+                    viewModel.savePlaybackProgress(currentMs / durationMs)
+                    navController.popBackStack()
+                }
+            },
+            onPageSelected = viewModel::onPageSelected,
+            onPlay = {
+                controller?.play()
+                viewModel.logPlayClicked()
+            },
+            onPause = { controller?.pause() },
+            onSeekTo = { positionMs -> controller?.seekTo(positionMs.toLong()) },
+            onMuteClick = {
+                viewModel.onMuteClicked()
+                controller?.let { stopSfx(it) }
+            },
+            onSoundEffectClick = { index ->
+                if (index != state.selectedSoundEffectIndex) {
+                    viewModel.onSoundEffectSelected(index)
+                    state.soundEffectsList.getOrNull(index)?.let { sfx ->
+                        controller?.let { playSfx(it, sfx.audioUrl, volume) }
+                    }
+                } else {
+                    showSheet = true
+                }
+            },
+            onAvatarClick = viewModel::onAvatarSelected,
+            navigateAvatars = viewModel::onNavigateToAvatars,
+            navigatePlayer = viewModel::onNavigateToPlayer,
+            saveProgress = { viewModel.savePlaybackProgress(currentMs / durationMs) },
+            onRetryClick = viewModel::onRetryClicked,
+            onDownloadsClick = viewModel::onDownloadsClicked
+        )
+    }
 }
 
 
@@ -204,11 +201,14 @@ private fun handleSideEffect(
     when (sideEffect) {
         AudioPlayerSideEffect.NavigateBack -> navController.popBackStack()
         AudioPlayerSideEffect.NavigateHome -> navController.navigate(Home) {
-            popUpTo("home") { inclusive = false }
+            popUpTo(Home) { inclusive = false }
         }
 
         AudioPlayerSideEffect.NavigatePaywall -> {
             launchSubscriptionActivity()
+            navController.navigate(Home) {
+                popUpTo(Home) { inclusive = false }
+            }
         }
 
         else -> {}

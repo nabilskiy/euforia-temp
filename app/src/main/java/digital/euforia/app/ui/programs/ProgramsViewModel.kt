@@ -46,7 +46,7 @@ class ProgramsViewModel @Inject constructor(
                     val programs = resultList.map { result ->
                         articles.addAll(result.articles.map { article -> article.toArticleUi() })
                         exercises.addAll(result.exercises.map { exercise -> exercise.toExerciseUi() })
-                        result.pkg.toProgramUi(result.articles.size + result.exercises.size + result.meditations.size)
+                        result.pkg.toProgramUi()
                     }
                     exercises.sortBy { exerciseUi -> exerciseUi.publishedAt }
                     reduceState {
@@ -73,8 +73,9 @@ class ProgramsViewModel @Inject constructor(
 
     private fun observePremium() {
         viewModelScope.launch {
-            profilePreferences.getIsPremiumFlow().collectLatest { isPremium -> }
-            reduceState { copy(isPremium = isPremium) }
+            profilePreferences.getIsPremiumFlow().collectLatest { isPremium ->
+                reduceState { copy(isPremium = isPremium) }
+            }
         }
     }
 

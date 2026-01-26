@@ -65,6 +65,7 @@ import digital.euforia.app.ui.util.widget.titleItem
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import timber.log.Timber
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -209,57 +210,48 @@ private fun FirstWeekContent(
             firstIndex > 0 || firstOffset > thresholdPx
         }
     }
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        Timber.tag("PLAN_SCREEN").d("Activity result: $result")
-        // handle result here
-    }
-    val launchSubscriptionActivity: () -> Unit = {
-        val intent = Intent(context, UserActivity::class.java)
-        launcher.launch(intent)
-    }
     var isFeedbackSheetVisible by remember { mutableStateOf(false) }
     var isSupportSheetVisible by remember { mutableStateOf(false) }
-    Box() {
-        BlurredAppBar(
-            titleRes = R.string.today_menu_intro,
-            hazeState = hazeState,
-            shouldBlur = shouldBlur,
-            onUpgradeClick = {
-                launchSubscriptionActivity()
-            },
-            isBackAllowed = true,
-            onBackClick = onBackClick,
-            navController = navController
-        )
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().hazeSource(hazeState),
-//            verticalArrangement = Arrangement.Absolute.spacedBy(16.dp),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = AppBarHeightMedium,
-                bottom = 56.dp
-            ),
-        ) {
-            titleItem(R.string.today_menu_intro)
-            item {
-                Text(
-                    text = LocalLocalizedRes.current.string(R.string.vibes_demo_period_header_text),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = White.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-            }
-            days.forEachIndexed { index, day ->
-                dayItem(
-                    day = day,
-                    index = index,
-                    timeOfDayConfig = timeOfDayConfig,
-                    onClick = onClick
-                )
+    SubscriptionActivityLauncher { launchSubscriptionActivity ->
+        Box() {
+            BlurredAppBar(
+                titleRes = R.string.today_menu_intro,
+                hazeState = hazeState,
+                shouldBlur = shouldBlur,
+                onUpgradeClick = {
+                    launchSubscriptionActivity()
+                },
+                isBackAllowed = true,
+                onBackClick = onBackClick,
+                navController = navController
+            )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize().hazeSource(hazeState),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = AppBarHeightMedium,
+                    bottom = 56.dp
+                ),
+            ) {
+                titleItem(R.string.today_menu_intro)
+                item {
+                    Text(
+                        text = LocalLocalizedRes.current.string(R.string.vibes_demo_period_header_text),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = White.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+                days.forEachIndexed { index, day ->
+                    dayItem(
+                        day = day,
+                        index = index,
+                        timeOfDayConfig = timeOfDayConfig,
+                        onClick = onClick
+                    )
+                }
             }
         }
     }

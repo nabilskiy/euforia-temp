@@ -6,7 +6,7 @@ import digital.euforia.app.data.db.entity.Meditation
 import digital.euforia.app.data.db.entity.Package
 
 
-fun Package.toProgramUi(resourcesCount: Int): ProgramUi {
+fun Package.toProgramUi(): ProgramUi {
     return ProgramUi(
         id = id,
         isPremium = pro,
@@ -21,7 +21,7 @@ fun Package.toProgramUi(resourcesCount: Int): ProgramUi {
         color1 = color1,
         color2 = color2,
         color3 = color3,
-        resourceCount = resourcesCount,
+        resourceCount = publicationsCount,
     )
 }
 

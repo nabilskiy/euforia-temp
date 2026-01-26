@@ -76,7 +76,7 @@ fun SharedTransitionScope.AudioPlayerScaffold(
             navigatePlayer()
         } else {
             saveProgress()
-//            onBack()
+            onBack()
         }
     }
 
@@ -162,9 +162,7 @@ fun SharedTransitionScope.AudioPlayerScaffold(
             AudioPlayerAppBar(
                 currentPageIndex = ui.currentPageIndex,
                 entryPoint = ui.entryPoint,
-                onBackClick = {
-                    if (ui.pages.getOrNull(ui.currentPageIndex) == PlayerPage.Avatars) navigatePlayer() else saveProgress()
-                })
+                onBackClick = onBack)
         }
 
     }

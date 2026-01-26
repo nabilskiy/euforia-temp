@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import digital.euforia.app.data.db.converter.AccompanimentTypeConverters
 import digital.euforia.app.data.db.converter.FeedbackTypeConverters
+import digital.euforia.app.data.db.converter.IntListConverter
 import digital.euforia.app.data.db.converter.PhraseListConverters
 import digital.euforia.app.data.db.dao.AccompanimentDao
 import digital.euforia.app.data.db.dao.FileDao
@@ -39,9 +40,9 @@ import digital.euforia.app.data.db.entity.FeedbackForm
 import digital.euforia.app.data.db.entity.FeedbackOption
 import digital.euforia.app.data.db.entity.FeedbackQuestion
 
-@TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class])
+@TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class, IntListConverter::class])
 @Database(
-    version = 8,
+    version = 9,
     entities = [
         SampleEntity::class,
         Accompaniment::class,

@@ -37,9 +37,18 @@ interface MeditationDao {
     @Query("SELECT * FROM meditations WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Meditation>>
 
+    @Query("SELECT * FROM meditations WHERE related_package_ids LIKE '%,' || :packageId || ',%' OR related_package_ids LIKE '[' || :packageId || ',%' OR related_package_ids LIKE '%,' || :packageId || ']' OR related_package_ids LIKE '[' || :packageId || ']'")
+    fun getByRelatedPackageId(packageId: Int): List<Meditation>
+
+    @Query("SELECT * FROM meditations WHERE related_package_ids LIKE '%,' || :packageId || ',%' OR related_package_ids LIKE '[' || :packageId || ',%' OR related_package_ids LIKE '%,' || :packageId || ']' OR related_package_ids LIKE '[' || :packageId || ']'")
+    fun getByRelatedPackageIdFlow(packageId: Int): Flow<List<Meditation>>
+
     @Query("UPDATE meditations SET is_favourite = :isFavourite WHERE id = :id")
     suspend fun updateIsFavourite(id: Int, isFavourite: Boolean)
 
     @Query("DELETE FROM meditations")
     suspend fun clearAll()
+
+    @Query("DELETE FROM meditations WHERE id NOT IN (:ids)")
+    suspend fun deleteNotIn(ids: List<Int>)
 }

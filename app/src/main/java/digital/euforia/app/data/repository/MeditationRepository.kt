@@ -23,7 +23,7 @@ class MeditationRepository @Inject constructor(
                 ResultWrapper.Success(localMeditation)
             } else {
                 api.getMeditation(id).map { networkMeditation ->
-                    networkMeditation.toEntity().also {
+                    networkMeditation.toEntity(networkMeditation.mainPackageId).also {
                         meditationDao.upsert(it)
                     }
                 }

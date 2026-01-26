@@ -2,6 +2,7 @@ package digital.euforia.app.data.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import digital.euforia.app.data.db.entity.Exercise
 
 @JsonClass(generateAdapter = true)
 data class NetworkExercise(
@@ -61,8 +62,8 @@ fun NetworkVideoUrls.toEntity(): digital.euforia.app.data.db.entity.VideoUrls =
         dash = dash,
     )
 
-fun NetworkExercise.toEntity(): digital.euforia.app.data.db.entity.Exercise =
-    digital.euforia.app.data.db.entity.Exercise(
+fun NetworkExercise.toEntity(packageId: Int?): Exercise =
+    Exercise(
         id = id,
         type = type,
         alias = alias,

@@ -2,13 +2,8 @@
 
 package digital.euforia.app.ui.plan
 
-import android.content.Intent
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.Keep
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.tween
@@ -40,10 +35,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.pullToRefresh
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -84,22 +76,19 @@ import digital.euforia.app.ui.plan.item.videoItem
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.settings.support.SupportBottomSheet
-import digital.euforia.app.ui.subscription.UserActivity
-import digital.euforia.app.ui.subscription.UserActivity.PURCHASE_SUCCESS
 import digital.euforia.app.ui.theme.AppBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.openAboutEuforia
-import digital.euforia.app.ui.util.widget.CongratsPopup
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.MenuItem
 import digital.euforia.app.ui.util.widget.NoConnectionView
 import digital.euforia.app.ui.util.widget.OptionsMenu
 import digital.euforia.app.ui.util.widget.ProgressIndicator
-import digital.euforia.app.ui.util.widget.PullToRefresh
 import digital.euforia.app.ui.util.widget.WeekSkipWarningDialog
 import digital.euforia.app.ui.util.widget.ifTrue
 import digital.euforia.app.ui.util.widget.noRippleClickable
@@ -118,21 +107,7 @@ fun SharedTransitionScope.PlanScreen(
     val hazeState = rememberHazeState()
     var isSkipWeekDialogVisible by remember { mutableStateOf(false) }
     var isFinishWeekDialogVisible by remember { mutableStateOf(false) }
-    val isCongratsVisible = remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        Timber.tag("PLAN_SCREEN").d("Activity result: $result")
-        if (result.resultCode == PURCHASE_SUCCESS) {
-            isCongratsVisible.value = true
-        }
-        // handle result here
-    }
-    val launchSubscriptionActivity: () -> Unit = {
-        val intent = Intent(context, UserActivity::class.java)
-        launcher.launch(intent)
-    }
+
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(
             sideEffect, navController, showFinishWeekDialog = {
@@ -143,72 +118,72 @@ fun SharedTransitionScope.PlanScreen(
             })
     }
 
-    PlanContent(
-        hazeState = hazeState,
-        days = state.days,
-        completedDays = state.completedDays,
-        selectedDayIndex = state.selectedDayIndex,
-        freeDemoDays = state.freeDemoDays,
-        isPremium = state.isPremium,
-        isDemo = state.isDemo,
-        timeOfDay = state.timeOfDay,
-        timeOfDayConfig = state.timeOfDayConfig,
-        completedDailyTasks = state.completedDailyTasks,
-        dailyTasks = state.dailyTasks,
-        continuousDays = state.continuousDays,
-        topPrograms = state.topPackages,
-        bannerConfig = state.bannerConfig,
-        extraPackage = state.extraPackage,
-        navController = navController,
-        animatedVisibilityScope = animatedVisibilityScope,
-        isCongratsVisible = isCongratsVisible,
-        launcher = launcher,
-        launchSubscriptionActivity = launchSubscriptionActivity,
-        coverUrl = state.todayVideoCoverUrl,
-        todayOffset = state.todayOffset,
-        isLoading = state.isLoading,
-        isAccompanimentsLoading = state.isAccompanimentLoading,
-        errorState = state.errorState,
-        isRefreshing = state.isRefreshing,
-        analyticSender = viewModel.analyticSender,
-        onRefresh = viewModel::onRefresh,
-        onDaySelected = viewModel::onDaySelected,
-        onDayTimeItemClick = viewModel::onDayTimeItemClick,
-        onSkipDemoClick = viewModel::onSkipDemo,
-        onFinishWeekClick = viewModel::onFinishWeek,
-        onRetryClick = viewModel::onRetryClicked,
-        onDownloadClick = viewModel::onDownloadClicked,
-    )
-
-    if (isSkipWeekDialogVisible) {
-        WeekSkipWarningDialog(
+    SubscriptionActivityLauncher { launchSubscriptionActivity ->
+        PlanContent(
             hazeState = hazeState,
-
-            onCancel = { isSkipWeekDialogVisible = false },
-            onSkip = {
-                isSkipWeekDialogVisible = false
-                viewModel.onSkipDemo()
-            },
+            days = state.days,
+            completedDays = state.completedDays,
+            selectedDayIndex = state.selectedDayIndex,
+            freeDemoDays = state.freeDemoDays,
+            isPremium = state.isPremium,
+            isDemo = state.isDemo,
+            timeOfDay = state.timeOfDay,
+            timeOfDayConfig = state.timeOfDayConfig,
+            completedDailyTasks = state.completedDailyTasks,
+            dailyTasks = state.dailyTasks,
+            continuousDays = state.continuousDays,
+            topPrograms = state.topPackages,
+            bannerConfig = state.bannerConfig,
+            extraPackage = state.extraPackage,
+            navController = navController,
+            animatedVisibilityScope = animatedVisibilityScope,
+            coverUrl = state.todayVideoCoverUrl,
+            todayOffset = state.todayOffset,
+            isLoading = state.isLoading,
+            isAccompanimentsLoading = state.isAccompanimentLoading,
+            errorState = state.errorState,
+            isRefreshing = state.isRefreshing,
+            analyticSender = viewModel.analyticSender,
+            onRefresh = viewModel::onRefresh,
+            onDaySelected = viewModel::onDaySelected,
+            onDayTimeItemClick = viewModel::onDayTimeItemClick,
+            onSkipDemoClick = viewModel::onSkipDemo,
+            onFinishWeekClick = viewModel::onFinishWeek,
+            onRetryClick = viewModel::onRetryClicked,
+            onDownloadClick = viewModel::onDownloadClicked,
+            launchSubscriptionActivity = launchSubscriptionActivity,
         )
-    }
 
-    AnimatedVisibility(
-        visible = isFinishWeekDialogVisible,
-        enter = slideInHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth },
-        exit = slideOutHorizontally(animationSpec = tween(250)) { fullWidth -> fullWidth }
-    ) {
-        Box(Modifier.fillMaxSize().zIndex(1f)) {
-            FinishWeekScreen(
-                navController = navController,
-                navBarVisibilityState = navBarVisibilityState,
+        if (isSkipWeekDialogVisible) {
+            WeekSkipWarningDialog(
                 hazeState = hazeState,
-                onPremiumClick = {
-                    launchSubscriptionActivity()
+
+                onCancel = { isSkipWeekDialogVisible = false },
+                onSkip = {
+                    isSkipWeekDialogVisible = false
+                    viewModel.onSkipDemo()
                 },
-                onBackClick = {
-                    isFinishWeekDialogVisible = false
-                }
             )
+        }
+
+        AnimatedVisibility(
+            visible = isFinishWeekDialogVisible,
+            enter = slideInHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth },
+            exit = slideOutHorizontally(animationSpec = tween(250)) { fullWidth -> fullWidth }
+        ) {
+            Box(Modifier.fillMaxSize().zIndex(1f)) {
+                FinishWeekScreen(
+                    navController = navController,
+                    navBarVisibilityState = navBarVisibilityState,
+                    hazeState = hazeState,
+                    onPremiumClick = {
+                        launchSubscriptionActivity()
+                    },
+                    onBackClick = {
+                        isFinishWeekDialogVisible = false
+                    }
+                )
+            }
         }
     }
     BackHandler {
@@ -240,8 +215,6 @@ private fun SharedTransitionScope.PlanContent(
     extraPackage: ExtraPackage?,
     navController: NavHostController,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    isCongratsVisible: MutableState<Boolean>,
-    launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
     coverUrl: String?,
     todayOffset: TodayOffset,
 //    networkAvailable: Boolean,
@@ -403,10 +376,6 @@ private fun SharedTransitionScope.PlanContent(
             SupportBottomSheet() {
                 isSupportSheetVisible = false
             }
-        }
-
-        if (isCongratsVisible.value) {
-            CongratsPopup() { isCongratsVisible.value = false }
         }
     }
 }

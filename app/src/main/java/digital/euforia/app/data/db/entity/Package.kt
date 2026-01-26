@@ -46,6 +46,7 @@ data class Package(
     @ColumnInfo(name = "color_3") val color3: String?,
 
     @ColumnInfo(name = "published_at") val publishedAt: Long?,
+    @ColumnInfo(name = "publications_count") val publicationsCount: Int = 0,
 ) {
 
     companion object Companion {
@@ -62,7 +63,6 @@ data class Meditation(
     @ColumnInfo(name = "main_category_id") val mainCategoryId: Int?,
     @ColumnInfo(name = "main_package_id") val mainPackageId: Int?,
     @ColumnInfo(name = "pro") val pro: Boolean,
-
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "subtitle") val subtitle: String?,
     @ColumnInfo(name = "description") val description: String?,
@@ -90,6 +90,7 @@ data class Meditation(
 
     @Embedded(prefix = "audio_file_") val audio: File?,
     @Embedded(prefix = "video_file_") val video: File?,
+    @ColumnInfo(name = "related_package_ids") val relatedPackageIds: List<Int> = emptyList(),
 ) {
 
     fun computeDurationMinutes(): Int {
@@ -134,6 +135,7 @@ data class Exercise(
 
     @Embedded(prefix = "audio_file_") val audio: File?,
     @Embedded(prefix = "video_file_") val video: VideoFile?,
+    @ColumnInfo(name = "related_package_ids") val relatedPackageIds: List<Int> = emptyList(),
 ) {
 
     fun computeDurationMinutes(): Int {
@@ -172,6 +174,7 @@ data class Article(
     @Embedded(prefix = "music_") val music: File?,
 
     @ColumnInfo(name = "content_length") val contentLength: Int?,
+    @ColumnInfo(name = "related_package_ids") val relatedPackageIds: List<Int> = emptyList(),
 ) {
 
     fun computeDurationMinutes(): Int {

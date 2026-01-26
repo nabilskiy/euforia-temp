@@ -91,6 +91,7 @@ import digital.euforia.app.ui.util.widget.applyIf
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import timber.log.Timber
 
 @Composable
@@ -136,73 +137,65 @@ private fun SharedTransitionScope.SettingsContent(
             firstIndex > 0 || firstOffset > thresholdPx
         }
     }
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        Timber.tag("PLAN_SCREEN").d("Activity result: $result")
-        // handle result here
-    }
-    val launchSubscriptionActivity: () -> Unit = {
-        val intent = Intent(context, UserActivity::class.java)
-        launcher.launch(intent)
-    }
     var isFeedbackSheetVisible by remember { mutableStateOf(false) }
     var isSupportSheetVisible by remember { mutableStateOf(false) }
-    Box() {
-        BlurredAppBar(
-            titleRes = R.string.profile_title,
-            hazeState = hazeState,
-            shouldBlur = shouldBlur,
-            onUpgradeClick = {
-                launchSubscriptionActivity()
-            },
-            isBackAllowed = false,
-            navController = navController,
-            premiumButtonState = if (isPremium) PremiumButtonState.MAX else PremiumButtonState.UPGRADE
-        )
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().hazeSource(hazeState),
-            verticalArrangement = spacedBy(16.dp),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = AppBarHeightMedium,
-                bottom = 56.dp
-            ),
-        ) {
-            settingsSharedTitleItem(this@SettingsContent, animatedVisibilityScope)
-            for ((index, settingGroup) in settingGroups.withIndex()) {
-                if (index != 0) dividerItem(index)
-                settingGroupItem(
-                    settingGroup = settingGroup,
-                    onItemClick = {
-                        handleSettingClick(
-                            settingItem = it,
-                            navController = navController,
-                            context = context,
-                            analyticSender = analyticSender,
-                            showFeedbackSheet = {
-                                isFeedbackSheetVisible = true
-                            },
-                            showSupportSheet = {
-                                isSupportSheetVisible = true
-                            })
-                    })
+    SubscriptionActivityLauncher { launchSubscriptionActivity ->
+        Box() {
+            BlurredAppBar(
+                titleRes = R.string.profile_title,
+                hazeState = hazeState,
+                shouldBlur = shouldBlur,
+                onUpgradeClick = {
+                    launchSubscriptionActivity()
+                },
+                isBackAllowed = false,
+                navController = navController,
+                premiumButtonState = if (isPremium) PremiumButtonState.MAX else PremiumButtonState.UPGRADE
+            )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize().hazeSource(hazeState),
+                verticalArrangement = spacedBy(16.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = AppBarHeightMedium,
+                    bottom = 56.dp
+                ),
+            ) {
+                settingsSharedTitleItem(this@SettingsContent, animatedVisibilityScope)
+                for ((index, settingGroup) in settingGroups.withIndex()) {
+                    if (index != 0) dividerItem(index)
+                    settingGroupItem(
+                        settingGroup = settingGroup,
+                        onItemClick = {
+                            handleSettingClick(
+                                settingItem = it,
+                                navController = navController,
+                                context = context,
+                                analyticSender = analyticSender,
+                                showFeedbackSheet = {
+                                    isFeedbackSheetVisible = true
+                                },
+                                showSupportSheet = {
+                                    isSupportSheetVisible = true
+                                })
+                        })
+                }
+                developerItem(analyticSender = analyticSender)
             }
-            developerItem(analyticSender = analyticSender)
-        }
 
 
-        if (isFeedbackSheetVisible) {
-            FeedbackBottomSheet() {
-                isFeedbackSheetVisible = false
+            if (isFeedbackSheetVisible) {
+                FeedbackBottomSheet() {
+                    isFeedbackSheetVisible = false
+                }
             }
-        }
 
-        if (isSupportSheetVisible) {
-            SupportBottomSheet() {
-                isSupportSheetVisible = false
+            if (isSupportSheetVisible) {
+                SupportBottomSheet() {
+                    isSupportSheetVisible = false
+                }
             }
         }
     }

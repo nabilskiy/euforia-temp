@@ -51,11 +51,11 @@ import digital.euforia.app.R
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
-import digital.euforia.app.ui.theme.CalendarGradient
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
@@ -77,24 +77,28 @@ fun ProgramsScreen(
         handleSideEffect(sideEffect, navController)
     }
 
-    ProgramsContent(
-        navController = navController,
-        isPremium = state.isPremium,
-        isLoading = state.isLoading,
-        errorState = state.errorState,
-        programsConfig = state.programsConfig,
-        programs = state.programs,
-        articles = state.articles,
-        exercises = state.exercises,
-        exerciseDescription = state.exerciseTitle,
-        articleDescription = state.articleTitle,
-        onRetryClick = viewModel::onRetryClick,
-        onDownloadsClick = viewModel::onDownloadsClicked,
-        onBackClick = { navController.popBackStack() },
-        onProgramClick = viewModel::onProgramClicked,
-        onArticleClick = viewModel::onArticleClicked,
-        onExerciseClick = viewModel::onExerciseClicked
-    )
+    SubscriptionActivityLauncher { launchSubscriptionActivity ->
+        ProgramsContent(
+            navController = navController,
+            isPremium = state.isPremium,
+            isLoading = state.isLoading,
+            errorState = state.errorState,
+            programsConfig = state.programsConfig,
+            programs = state.programs,
+            articles = state.articles,
+            exercises = state.exercises,
+            exerciseDescription = state.exerciseTitle,
+            articleDescription = state.articleTitle,
+            onRetryClick = viewModel::onRetryClick,
+            onDownloadsClick = viewModel::onDownloadsClicked,
+            onBackClick = { navController.popBackStack() },
+            onProgramClick = viewModel::onProgramClicked,
+            onArticleClick = viewModel::onArticleClicked,
+            onExerciseClick = viewModel::onExerciseClicked,
+            launchSubscriptionActivity = launchSubscriptionActivity,
+
+            )
+    }
 }
 
 @Composable
@@ -114,7 +118,8 @@ private fun ProgramsContent(
     onBackClick: () -> Unit,
     onProgramClick: (ProgramUi) -> Unit,
     onArticleClick: (ArticleUi) -> Unit,
-    onExerciseClick: (ExerciseUi) -> Unit
+    onExerciseClick: (ExerciseUi) -> Unit,
+    launchSubscriptionActivity: () -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
@@ -137,7 +142,8 @@ private fun ProgramsContent(
             isBackAllowed = false,
             shouldBlur = shouldBlur, hazeState = hazeState, onBackClick = onBackClick,
             navController = navController,
-            premiumButtonState = if (isPremium) PremiumButtonState.MAX else PremiumButtonState.UPGRADE,
+            premiumButtonState = if (isPremium) PremiumButtonState.NONE else PremiumButtonState.UPGRADE,
+            onUpgradeClick = launchSubscriptionActivity
         )
 
         if (isLoading) {
@@ -177,6 +183,7 @@ private fun ProgramsContent(
                     isPremium = isPremium,
                     iconRes = R.drawable.ic_type_exercise,
                     itemId = { it.id },
+                    itemAlias = { it.alias },
                     itemTitle = { it.name },
                     isPremiumContent = { it.isPremium },
                     itemImageUrl = { it.imageUrl },
@@ -192,6 +199,7 @@ private fun ProgramsContent(
                     isPremium = isPremium,
                     iconRes = R.drawable.ic_type_read,
                     itemId = { it.id },
+                    itemAlias = { it.alias },
                     itemTitle = { it.name },
                     isPremiumContent = { it.isPremium },
                     itemImageUrl = { it.imageUrl },
@@ -221,6 +229,7 @@ private fun <T> LazyListScope.genericRowItem(
     isPremium: Boolean,
     iconRes: Int,
     itemId: (T) -> Int,
+    itemAlias: (T) -> String,
     itemTitle: (T) -> String,
     isPremiumContent: (T) -> Boolean,
     itemImageUrl: (T) -> String?,
@@ -251,7 +260,7 @@ private fun <T> LazyListScope.genericRowItem(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items.forEach { item ->
-                item(key = "exercise_${itemId(item)}") {
+                item(key = "item_${itemAlias(item)}_${itemId(item)}") {
                     HorizontalItemView(
                         imageUrl = itemImageUrl(item),
                         isPremiumContent = isPremiumContent(item),

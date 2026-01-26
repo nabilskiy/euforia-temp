@@ -16,7 +16,7 @@ interface ArticleDao {
     @Upsert
     suspend fun upsertAll(items: List<Article>)
 
-    @Upsert fun upsert(item: Article)
+    @Upsert suspend fun upsert(item: Article)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: Article)
@@ -36,9 +36,18 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE main_package_id = :packageId")
     fun getByPackageIdFlow(packageId: Int): Flow<List<Article>>
 
+    @Query("SELECT * FROM articles WHERE related_package_ids LIKE '%,' || :packageId || ',%' OR related_package_ids LIKE '[' || :packageId || ',%' OR related_package_ids LIKE '%,' || :packageId || ']' OR related_package_ids LIKE '[' || :packageId || ']'")
+    fun getByRelatedPackageId(packageId: Int): List<Article>
+
+    @Query("SELECT * FROM articles WHERE related_package_ids LIKE '%,' || :packageId || ',%' OR related_package_ids LIKE '[' || :packageId || ',%' OR related_package_ids LIKE '%,' || :packageId || ']' OR related_package_ids LIKE '[' || :packageId || ']'")
+    fun getByRelatedPackageIdFlow(packageId: Int): Flow<List<Article>>
+
     @Query("UPDATE articles SET is_favourite = :isFavourite WHERE id = :id")
     suspend fun updateIsFavourite(id: Int, isFavourite: Boolean)
 
     @Query("DELETE FROM articles")
     suspend fun clearAll()
+
+    @Query("DELETE FROM articles WHERE id NOT IN (:ids)")
+    suspend fun deleteNotIn(ids: List<Int>)
 }

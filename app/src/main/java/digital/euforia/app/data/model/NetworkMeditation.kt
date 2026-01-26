@@ -2,6 +2,7 @@ package digital.euforia.app.data.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import digital.euforia.app.data.db.entity.Meditation
 
 @JsonClass(generateAdapter = true)
 data class NetworkMeditation(
@@ -41,8 +42,8 @@ data class NetworkMeditation(
     @field:Json(name = "video") val video: NetworkFile?,
 )
 
-fun NetworkMeditation.toEntity(): digital.euforia.app.data.db.entity.Meditation =
-    digital.euforia.app.data.db.entity.Meditation(
+fun NetworkMeditation.toEntity(packageId: Int?): Meditation =
+    Meditation(
         id = id,
         type = type,
         alias = alias,

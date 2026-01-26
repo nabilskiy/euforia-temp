@@ -335,7 +335,15 @@ class AudioPlayerViewModel @Inject constructor(
         }
     }
 
-    fun onListenLaterClicked() {}
+    fun onListenLaterClicked() {
+        intent {
+            val sideEffect = when (entryPoint) {
+                AudioPlayerEntryPoint.DAY -> AudioPlayerSideEffect.NavigateBack
+                AudioPlayerEntryPoint.ONBOARDING -> AudioPlayerSideEffect.NavigatePaywall
+            }
+            postSideEffect(sideEffect)
+        }
+    }
 
     fun logPlayClicked() {
         if (entryPoint != AudioPlayerEntryPoint.ONBOARDING) {

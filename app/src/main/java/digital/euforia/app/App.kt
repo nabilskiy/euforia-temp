@@ -107,13 +107,8 @@ class App : Application() {
         }
 
         initTokens()
-//        syncAppSettings()
-//        syncAccompaniments()
-//        syncResources()
-//        syncFAQ()
         syncFeedbackForm()
-//        Firebase.remoteConfig.setDefaultsAsync(R.raw.remote_config_defaults)
-//        Firebase.remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
+        shouldSync()
     }
 
     private fun initLogger() {

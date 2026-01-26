@@ -1,8 +1,5 @@
 package digital.euforia.app.ui.devoptions
 
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Column
@@ -21,14 +18,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import digital.euforia.app.ui.subscription.UserActivity
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import timber.log.Timber
 
 @Composable
@@ -129,21 +125,14 @@ fun OptionView(
 
 @Composable
 fun SubscriptionButton(screenId: Int) {
-    val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        Timber.tag("DEV_OPTIONS").d("Subscription result: $result")
-    }
-    Button(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = {
-        val intent = Intent(context, UserActivity::class.java).apply {
-            putExtra(UserActivity.EXTRA_SCREEN_ID, screenId)
+    SubscriptionActivityLauncher(screenId = screenId) { launch ->
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                launch()
+            }) {
+            Text(text = "Open UserActivity (screenId=$screenId)")
         }
-        launcher.launch(intent)
-    }) {
-        Text(text = "Open UserActivity (screenId=$screenId)")
     }
 }
 
