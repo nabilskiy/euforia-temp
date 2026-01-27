@@ -79,7 +79,6 @@ fun OptionsMenu(
 @Composable
 fun PublicationOptionMenu(
     isFavourite: Boolean = false,
-    onClick: () -> Unit,
     onAddFavouriteClick: () -> Unit,
     onShareClick: () -> Unit,
     onReportErrorClick: (() -> Unit)? = null
@@ -117,6 +116,40 @@ fun PublicationOptionMenu(
                         onClick = it
                     )
                 }
+            )
+        )
+    }
+}
+
+@Composable
+fun ProgramOptionMenu(
+    onAboutClick: () -> Unit,
+    onShareClick: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = !expanded }) {
+            Icon(
+                painter = painterResource(R.drawable.ic_menu),
+                contentDescription = "Menu",
+                tint = White
+            )
+        }
+
+        OptionsMenu(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            menuItems = listOf(
+                MenuItem(
+                    titleRes = R.string.package_menu_about,
+                    iconRes = R.drawable.ic_info,
+                    onClick = onAboutClick
+                ),
+                MenuItem(
+                    titleRes = R.string.share,
+                    iconRes = R.drawable.ic_share,
+                    onClick = onShareClick
+                )
             )
         )
     }

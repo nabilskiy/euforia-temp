@@ -92,8 +92,9 @@ class ProgramDetailsViewModel @Inject constructor(
 
     private fun observePremium() {
         viewModelScope.launch {
-            profilePreferences.getIsPremiumFlow().collectLatest { isPremium -> }
+            profilePreferences.getIsPremiumFlow().collectLatest { isPremium ->
             reduceState { copy(isPremium = isPremium) }
+                }
         }
     }
 

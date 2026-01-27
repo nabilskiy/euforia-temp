@@ -45,16 +45,19 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.ui.navigation.HomeDestination
@@ -64,15 +67,19 @@ import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.shadow
+import digital.euforia.app.ui.util.sharePublication
 import digital.euforia.app.ui.util.toComposeColor
 import digital.euforia.app.ui.util.toDateString
 import digital.euforia.app.ui.util.widget.AnimatedSizeBox
 import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
+import digital.euforia.app.ui.util.widget.MaxView
 import digital.euforia.app.ui.util.widget.PremiumButtonState
 import digital.euforia.app.ui.util.widget.ProgressIndicator
+import digital.euforia.app.ui.util.widget.PublicationOptionMenu
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.compose.collectAsState
@@ -94,22 +101,32 @@ fun PublicationScreen(
     }
 
     NavBarlessScreen(navBarVisibilityState) {
-        PublicationContent(
-            publicationInfo = state.publicationInfo,
-            navController = navController,
-            isPremium = state.isPremium,
-            isLoading = state.isLoading,
-            errorState = state.errorState,
-            programTitle = viewModel.packageTitle.orEmpty(),
-            articleSheetState = isArticleSheetVisible,
-            onRetryClick = viewModel::onRetryClicked,
-            onDownloadsClick = viewModel::onDownloadsClicked,
-            similarItems = state.similarPublications,
-            onSimilarItemClick = viewModel::onPublicationClicked,
-            onShowSimilarClick = viewModel::onShowSimilarClicked,
-            onBackClick = { navController.popBackStack() },
-            onPlayClick = viewModel::onPlayClicked
-        )
+        SubscriptionActivityLauncher { launchSubscriptionActivity ->
+            PublicationContent(
+                publicationInfo = state.publicationInfo,
+                navController = navController,
+                isPremium = state.isPremium,
+                isLoading = state.isLoading,
+                errorState = state.errorState,
+                programTitle = viewModel.packageTitle.orEmpty(),
+                articleSheetState = isArticleSheetVisible,
+                onRetryClick = viewModel::onRetryClicked,
+                onDownloadsClick = viewModel::onDownloadsClicked,
+                similarItems = state.similarPublications,
+                onSimilarItemClick = viewModel::onPublicationClicked,
+                onShowSimilarClick = viewModel::onShowSimilarClicked,
+                onBackClick = { navController.popBackStack() },
+                onPlayClick = {
+                    if (state.publicationInfo?.isPremium == true && !state.isPremium) {
+                        launchSubscriptionActivity()
+                    } else {
+                        viewModel.onPlayClicked()
+                    }
+                },
+                onFavouriteClick = viewModel::onFavouriteClicked,
+                launchSubscriptionActivity = launchSubscriptionActivity,
+            )
+        }
     }
 }
 
@@ -128,12 +145,14 @@ private fun PublicationContent(
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onBackClick: () -> Unit,
-    onPlayClick: () -> Unit
+    onPlayClick: () -> Unit,
+    onFavouriteClick: (PublicationInfo) -> Unit,
+    launchSubscriptionActivity: () -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
-    val hazeState = dev.chrisbanes.haze.rememberHazeState()
+    val hazeState = rememberHazeState()
     val density = LocalDensity.current
     val thresholdPx = with(density) { 16.dp.roundToPx() }
     val shouldBlur by remember(listState) {
@@ -204,7 +223,7 @@ private fun PublicationContent(
                 return Offset.Zero
             }
 
-            override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+            override suspend fun onPreFling(available: Velocity): Velocity {
                 // when user releases after stretching, snap back to normal (0)
                 if (headerOffset.value > 0f) {
                     headerOffset.animateTo(
@@ -220,9 +239,9 @@ private fun PublicationContent(
             }
 
             override suspend fun onPostFling(
-                consumed: androidx.compose.ui.unit.Velocity,
-                available: androidx.compose.ui.unit.Velocity
-            ): androidx.compose.ui.unit.Velocity {
+                consumed: Velocity,
+                available: Velocity
+            ): Velocity {
                 // if still stretched after fling, return to normal
                 if (headerOffset.value > 0f) {
                     headerOffset.animateTo(
@@ -253,6 +272,17 @@ private fun PublicationContent(
             shouldBlur = shouldBlur, hazeState = hazeState, onBackClick = onBackClick,
             navController = navController,
             premiumButtonState = PremiumButtonState.NONE,
+            actionButton = {
+                publicationInfo?.let { publicationInfo ->
+                    ActionsView(
+                        publicationInfo = publicationInfo,
+                        isPremium = isPremium,
+                        isFavourite = publicationInfo.isFavourite,
+                        onFavouriteClick = onFavouriteClick,
+                        launchSubscriptionActivity = launchSubscriptionActivity
+                    )
+                }
+            }
         )
 
         if (isLoading) {
@@ -452,7 +482,7 @@ fun LazyListScope.infoItem(
             modifier = Modifier.fillMaxWidth(),
             text = localizedRes.string(titleRes),
             style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.SemiBold
+                fontWeight = SemiBold
             ),
             color = White
         )
@@ -491,7 +521,7 @@ private fun LazyListScope.similarItem(
                 modifier = Modifier,
                 text = localizedRes.string(R.string.similar_publications_title),
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = SemiBold
                 ),
                 color = White
             )
@@ -630,6 +660,38 @@ private fun PlayButton(modifier: Modifier = Modifier, type: PublicationType) {
                 )
             )
         }
+    }
+}
+
+@Composable
+private fun ActionsView(
+    publicationInfo: PublicationInfo,
+    isPremium: Boolean,
+    isFavourite: Boolean,
+    onFavouriteClick: (PublicationInfo) -> Unit,
+    launchSubscriptionActivity: () -> Unit,
+) {
+    val context = LocalContext.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (publicationInfo.isPremium && !isPremium) {
+            MaxView(
+                modifier = Modifier.noRippleClickable(launchSubscriptionActivity)
+            )
+        }
+        PublicationOptionMenu(
+            isFavourite = isFavourite,
+            onAddFavouriteClick = { onFavouriteClick(publicationInfo) },
+            onShareClick = {
+                sharePublication(
+                    context = context,
+                    publicationType = publicationInfo.publicationType,
+                    id = publicationInfo.id,
+                )
+            },
+        )
     }
 }
 

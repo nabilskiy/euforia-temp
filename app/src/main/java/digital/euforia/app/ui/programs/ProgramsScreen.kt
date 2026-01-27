@@ -96,8 +96,7 @@ fun ProgramsScreen(
             onArticleClick = viewModel::onArticleClicked,
             onExerciseClick = viewModel::onExerciseClicked,
             launchSubscriptionActivity = launchSubscriptionActivity,
-
-            )
+        )
     }
 }
 

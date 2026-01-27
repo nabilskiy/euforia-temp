@@ -456,3 +456,19 @@ fun sharePublication(
         Intent.createChooser(intent, context.getString(R.string.share))
     )
 }
+
+fun shareProgram(
+    context: Context,
+    id: Int
+) {
+    val url = "https://euforia.digital/packages/$id"
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, url)
+    }
+
+    context.startActivity(
+        Intent.createChooser(intent, context.getString(R.string.share))
+    )
+}

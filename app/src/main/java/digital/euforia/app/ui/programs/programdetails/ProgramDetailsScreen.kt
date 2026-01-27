@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.programs.programdetails
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -41,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
@@ -51,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,10 +79,14 @@ import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
+import digital.euforia.app.ui.util.shareProgram
+import digital.euforia.app.ui.util.sharePublication
 import digital.euforia.app.ui.util.toComposeColor
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.MaxView
+import digital.euforia.app.ui.util.widget.ProgramOptionMenu
 import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.CoroutineScope
@@ -99,26 +106,29 @@ fun ProgramDetailsScreen(
     }
 
     NavBarlessScreen(navBarVisibilityState) {
-        ProgramDetailsContent(
-            navController = navController,
-            isPremium = state.isPremium,
-            isLoading = state.isLoading,
-            errorState = state.errorState,
-            programUi = state.program,
-            meditations = state.meditations,
-            articles = state.articles,
-            exercises = state.exercises,
-            programsConfig = state.programsConfig,
-            resourcesCount = state.resourcesCount,
-            currentPage = state.currentPage,
-            onRetryClick = viewModel::onRetryClicked,
-            onDownloadsClick = viewModel::onDownloadsClicked,
-            onBackClick = { navController.popBackStack() },
-            onPageSelected = viewModel::onPageSelected,
-            onMeditationClick = viewModel::onMeditationClicked,
-            onArticleClick = viewModel::onArticleClicked,
-            onExerciseClick = viewModel::onExerciseClicked
-        )
+        SubscriptionActivityLauncher { launchSubscriptionActivity ->
+            ProgramDetailsContent(
+                navController = navController,
+                isPremium = state.isPremium,
+                isLoading = state.isLoading,
+                errorState = state.errorState,
+                programUi = state.program,
+                meditations = state.meditations,
+                articles = state.articles,
+                exercises = state.exercises,
+                programsConfig = state.programsConfig,
+                resourcesCount = state.resourcesCount,
+                currentPage = state.currentPage,
+                onRetryClick = viewModel::onRetryClicked,
+                onDownloadsClick = viewModel::onDownloadsClicked,
+                onBackClick = { navController.popBackStack() },
+                onPageSelected = viewModel::onPageSelected,
+                onMeditationClick = viewModel::onMeditationClicked,
+                onArticleClick = viewModel::onArticleClicked,
+                onExerciseClick = viewModel::onExerciseClicked,
+                launchSubscriptionActivity = launchSubscriptionActivity,
+            )
+        }
     }
 }
 
@@ -141,7 +151,8 @@ private fun ProgramDetailsContent(
     onPageSelected: (Int) -> Unit,
     onMeditationClick: (MeditationUi) -> Unit,
     onArticleClick: (ArticleUi) -> Unit,
-    onExerciseClick: (ExerciseUi) -> Unit
+    onExerciseClick: (ExerciseUi) -> Unit,
+    launchSubscriptionActivity: () -> Unit,
 ) {
     val pagerState = rememberPagerState { 3 }
     subscribeToPagerUpdates(
@@ -211,13 +222,35 @@ private fun ProgramDetailsContent(
         }
     }
 
+    val context = LocalContext.current
+    val isAboutVisible = remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().background(NavBarBackground)) {
         AppBar(
             titleText = programUi?.name.orEmpty(),
             showTitle = shouldBlur,
             onBackClick = onBackClick,
-            navController = navController,
+            actionButton = {
+                Row(
+                    horizontalArrangement = spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (programUi?.isPremium == true && !isPremium) {
+                        MaxView(
+                            modifier = Modifier.noRippleClickable(launchSubscriptionActivity)
+                        )
+                    }
+                    ProgramOptionMenu(
+                        onAboutClick = { isAboutVisible.value = true },
+                        onShareClick = {
+                            shareProgram(
+                                context = context,
+                                id = programUi?.id ?: 0,
+                            )
+                        }
+                    )
+                }
+            }
         )
 
         if (isLoading) {
@@ -273,6 +306,14 @@ private fun ProgramDetailsContent(
                     )
                 }
             }
+        }
+
+        if (isAboutVisible.value) {
+            AboutPopup(
+                text = programUi?.description.orEmpty(),
+                hazeState = hazeState,
+                onClick = { isAboutVisible.value = false }
+            )
         }
     }
 }
@@ -604,7 +645,6 @@ private fun LazyListScope.titleItem(
 fun AppBar(
     titleText: String,
     showTitle: Boolean,
-    navController: NavHostController,
     onBackClick: () -> Unit = {},
     actionButton: @Composable () -> Unit? = {}
 ) {
@@ -614,16 +654,17 @@ fun AppBar(
     } else {
         Modifier.zIndex(1f)
     }
-    Box(
+    Row(
         modifier = appBarModifier
             .statusBarsPadding()
             .fillMaxWidth()
             .height(AppBarHeightMedium),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier
-                .noRippleClickable { onBackClick() }
-                .align(CenterStart),
+                .noRippleClickable { onBackClick() },
             horizontalArrangement = spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -640,20 +681,21 @@ fun AppBar(
                 style = appbarMedium.copy(fontWeight = FontWeight.Medium)
             )
         }
-        Box(
-            modifier = Modifier.align(Alignment.CenterEnd),
+        Text(
+            modifier = Modifier
+                .weight(1f)
+                .basicMarquee(
+                    iterations = Int.MAX_VALUE,
+                ),
+            text = if (showTitle) titleText else "",
+            color = White,
+            style = appbarMedium,
+            maxLines = 1,
+            textAlign = TextAlign.Center
+        )
 
-            ) {
-            actionButton()
-        }
-        if (showTitle) {
-            Text(
-                modifier = Modifier.align(Alignment.Center),
-                text = titleText,
-                color = White,
-                style = appbarMedium
-            )
-        }
+        actionButton()
+
     }
 }
 
@@ -675,6 +717,7 @@ private fun handleSideEffect(
         is ProgramDetailsSideEffect.NavigateToDownloads -> navController.navigate(
             HomeDestination.Downloads
         )
+
         is ProgramDetailsSideEffect.NavigateToPublication -> navController.navigate(
             HomeDestination.PublicationDetails(
                 id = sideEffect.id,

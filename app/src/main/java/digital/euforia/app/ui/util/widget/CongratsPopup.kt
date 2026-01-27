@@ -31,6 +31,7 @@ import digital.euforia.app.ui.theme.PremiumGradient
 import digital.euforia.app.ui.theme.White
 import androidx.compose.ui.window.Dialog
 import com.airbnb.lottie.model.content.CircleShape
+import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.util.LocalLocalizedRes
 
 @Composable
@@ -50,10 +51,10 @@ fun CongratsPopup(
             isPlaying = true
         )
     }
-//    Dialog(onDismissRequest = onDismissRequest) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(color = Black.copy(alpha = 0.2f))
 
     ) {
         val localizedRes = LocalLocalizedRes.current
@@ -114,5 +115,4 @@ fun CongratsPopup(
             }
         }
     }
-//    }
 }

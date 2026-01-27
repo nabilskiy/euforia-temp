@@ -710,7 +710,6 @@ private fun BoxScope.ControlsTopBar(
             }
             PublicationOptionMenu(
                 isFavourite = publicationInfo.isFavourite,
-                onClick = {},
                 onAddFavouriteClick = { onFavouriteClick(publicationInfo) },
                 onShareClick = {
                     sharePublication(

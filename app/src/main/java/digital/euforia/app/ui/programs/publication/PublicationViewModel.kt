@@ -9,6 +9,7 @@ import digital.euforia.app.R
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.program.GetPublicationInfoUseCase
 import digital.euforia.app.domain.usecase.program.GetSimilarPublicationsUseCase
+import digital.euforia.app.domain.usecase.program.UpdateFavouriteUseCase
 import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
@@ -23,6 +24,7 @@ class PublicationViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getPublicationInfoUseCase: GetPublicationInfoUseCase,
     private val getSimilarPublicationsUseCase: GetSimilarPublicationsUseCase,
+    private val updateFavouriteUseCase: UpdateFavouriteUseCase
 ) : ViewModel(), ContainerHost<PublicationState, PublicationSideEffect> {
 
     private val id: Int =
@@ -120,6 +122,27 @@ class PublicationViewModel @Inject constructor(
 
     fun onRetryClicked() {
         load()
+    }
+
+    fun onFavouriteClicked(publicationInfo: PublicationInfo) {
+        viewModelScope.launch {
+            val newIsFavourite = !publicationInfo.isFavourite
+
+            updateFavouriteUseCase.invoke(
+                id = publicationInfo.id,
+                isFavourite = newIsFavourite,
+                type = publicationInfo.publicationType
+            )
+            intent {
+                reduce {
+                    state.copy(
+                        publicationInfo = publicationInfo.copy(
+                            isFavourite = newIsFavourite
+                        )
+                    )
+                }
+            }
+        }
     }
 }
 

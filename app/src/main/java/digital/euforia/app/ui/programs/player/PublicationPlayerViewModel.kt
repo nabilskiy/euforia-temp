@@ -251,7 +251,7 @@ class PublicationPlayerViewModel @Inject constructor(
                 Timber.tag("PUBLICATION_PLAYBACK").d("loadPublication: fetched info for $id")
                 publicationInfo.also {
                     if (it.publicationType == PublicationType.MEDITATION) {
-                        publicationInfo.categoryId?.let { categoryId ->
+                        publicationInfo.packageId?.let { categoryId ->
                             getPlaylistUseCase.invoke(categoryId).onSuccess { playlist ->
                                 Timber.tag("PUBLICATION_PLAYBACK")
                                     .d("loadPublication: fetched playlist size ${playlist.publicationInfosList.size}")

@@ -16,6 +16,7 @@ class PublicationInfoMapper @Inject constructor() {
     fun fromMeditation(meditation: Meditation, pkg: Package? = null): PublicationInfo =
         buildPublication(
             id = meditation.id,
+            packageId = meditation.mainPackageId,
             categoryId = meditation.mainCategoryId,
             categoryVideoCoverUrl = pkg?.videoCoverUrl,
             isPremium = meditation.pro,
@@ -35,6 +36,7 @@ class PublicationInfoMapper @Inject constructor() {
     fun fromExercise(exercise: Exercise): PublicationInfo =
         buildPublication(
             id = exercise.id,
+            packageId = exercise.mainPackageId,
             categoryId = exercise.mainCategoryId,
             isPremium = exercise.pro,
             type = PublicationType.EXERCISE,
@@ -53,6 +55,7 @@ class PublicationInfoMapper @Inject constructor() {
     fun fromArticle(article: Article): PublicationInfo =
         buildPublication(
             id = article.id,
+            packageId = article.mainPackageId,
             categoryId = article.mainCategoryId,
             isPremium = article.pro,
             type = PublicationType.ARTICLE,
@@ -71,6 +74,7 @@ class PublicationInfoMapper @Inject constructor() {
     fun fromNetworkMeditation(meditation: NetworkMeditation): PublicationInfo =
         buildPublication(
             id = meditation.id,
+            packageId = meditation.mainPackageId,
             categoryId = meditation.mainCategoryId,
             isPremium = meditation.pro,
             type = PublicationType.MEDITATION,
@@ -88,6 +92,7 @@ class PublicationInfoMapper @Inject constructor() {
     fun fromNetworkExercise(exercise: NetworkExercise): PublicationInfo =
         buildPublication(
             id = exercise.id,
+            packageId = exercise.mainPackageId,
             categoryId = exercise.mainCategoryId,
             isPremium = exercise.pro,
             type = PublicationType.EXERCISE,
@@ -107,6 +112,7 @@ class PublicationInfoMapper @Inject constructor() {
     fun fromNetworkArticle(article: NetworkArticle): PublicationInfo =
         buildPublication(
             id = article.id,
+            packageId = article.mainPackageId,
             categoryId = article.mainCategoryId,
             isPremium = article.pro,
             type = PublicationType.ARTICLE,
@@ -123,6 +129,7 @@ class PublicationInfoMapper @Inject constructor() {
 
     private fun buildPublication(
         id: Int,
+        packageId: Int?,
         categoryId: Int?,
         isPremium: Boolean,
         type: PublicationType,
@@ -140,7 +147,7 @@ class PublicationInfoMapper @Inject constructor() {
         ): PublicationInfo =
         PublicationInfo(
             id = id,
-            categoryId = categoryId,
+            packageId = packageId,
             categoryVideoCoverUrl = categoryVideoCoverUrl,
             isPremium = isPremium,
             publicationType = type,
