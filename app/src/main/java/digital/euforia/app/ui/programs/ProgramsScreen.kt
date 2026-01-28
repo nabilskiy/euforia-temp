@@ -48,9 +48,11 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.hazeSource
 import digital.euforia.app.R
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
@@ -95,6 +97,8 @@ fun ProgramsScreen(
             onProgramClick = viewModel::onProgramClicked,
             onArticleClick = viewModel::onArticleClicked,
             onExerciseClick = viewModel::onExerciseClicked,
+            onMoreExercisesClick = viewModel::onMoreExercisesClicked,
+            onMoreArticlesClick = viewModel::onMoreArticlesClicked,
             launchSubscriptionActivity = launchSubscriptionActivity,
         )
     }
@@ -108,16 +112,18 @@ private fun ProgramsContent(
     errorState: ErrorViewState?,
     programsConfig: List<ProgramsConfig>,
     programs: List<ProgramUi>,
-    articles: List<ArticleUi>,
-    exercises: List<ExerciseUi>,
+    articles: List<PublicationInfo>,
+    exercises: List<PublicationInfo>,
     exerciseDescription: String,
     articleDescription: String,
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onBackClick: () -> Unit,
     onProgramClick: (ProgramUi) -> Unit,
-    onArticleClick: (ArticleUi) -> Unit,
-    onExerciseClick: (ExerciseUi) -> Unit,
+    onArticleClick: (PublicationInfo) -> Unit,
+    onExerciseClick: (PublicationInfo) -> Unit,
+    onMoreExercisesClick: () -> Unit,
+    onMoreArticlesClick: () -> Unit,
     launchSubscriptionActivity: () -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
@@ -183,11 +189,11 @@ private fun ProgramsContent(
                     iconRes = R.drawable.ic_type_exercise,
                     itemId = { it.id },
                     itemAlias = { it.alias },
-                    itemTitle = { it.name },
+                    itemTitle = { it.title },
                     isPremiumContent = { it.isPremium },
                     itemImageUrl = { it.imageUrl },
-                    itemDuration = { it.duration ?: 0 },
-                    onMoreClick = {},
+                    itemDuration = { it.durationMinutes ?: 0 },
+                    onMoreClick = onMoreExercisesClick,
                     onItemClick = { onExerciseClick(it) }
                 )
                 dividerItem()
@@ -199,11 +205,11 @@ private fun ProgramsContent(
                     iconRes = R.drawable.ic_type_read,
                     itemId = { it.id },
                     itemAlias = { it.alias },
-                    itemTitle = { it.name },
+                    itemTitle = { it.title },
                     isPremiumContent = { it.isPremium },
                     itemImageUrl = { it.imageUrl },
-                    itemDuration = { it.duration ?: 0 },
-                    onMoreClick = {},
+                    itemDuration = { it.durationMinutes ?: 0 },
+                    onMoreClick = onMoreArticlesClick,
                     onItemClick = { onArticleClick(it) }
                 )
                 item {
@@ -509,7 +515,15 @@ private fun handleSideEffect(sideEffect: ProgramsSideEffect, navController: NavH
 
         is ProgramsSideEffect.NavigateToDownloads -> navController.navigate(HomeDestination.Downloads)
 
-        else -> {
-        }
+        is ProgramsSideEffect.NavigateToPublications -> navController.navigate(
+            HomeDestination.Publications(
+                type = sideEffect.publicationType,
+                ids = sideEffect.ids
+            )
+        )
+
+        is ProgramsSideEffect.NavigateToExercises -> navController.navigate(HomeDestination.Exercises)
+
+        else -> {}
     }
 }

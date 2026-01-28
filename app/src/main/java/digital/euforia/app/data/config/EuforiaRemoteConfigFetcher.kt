@@ -1,8 +1,10 @@
 package digital.euforia.app.data.config
 
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types.newParameterizedType
 import digital.euforia.app.domain.model.config.BannerConfig
 import digital.euforia.app.domain.model.config.DemoUnlockDayConfig
+import digital.euforia.app.domain.model.config.ExerciseConfig
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
@@ -149,7 +151,7 @@ class EuforiaRemoteConfigFetcher(
 
             if (json.isBlank()) return emptyList()
 
-            val listType = com.squareup.moshi.Types.newParameterizedType(
+            val listType = newParameterizedType(
                 MutableList::class.java,
                 NetworkPackageConfig::class.java
             )
@@ -162,6 +164,27 @@ class EuforiaRemoteConfigFetcher(
         } catch (e: Throwable) {
             logError(TAG, e)
            emptyList()
+        }
+    }
+
+    fun getExercisesConfig(): List<ExerciseConfig> {
+        return try {
+            val json = remoteConfig.getString(KEY_EXERCISES_LIST_TEMPLATE)
+            if (json.isBlank()) return emptyList()
+
+            val listType = newParameterizedType(
+                MutableList::class.java,
+                NetworkExerciseConfig::class.java
+            )
+            val blocks: List<NetworkExerciseConfig> =
+                moshi.adapter<List<NetworkExerciseConfig>>(listType).fromJson(json) ?: emptyList()
+
+            blocks.map { block ->
+                block.toDomain()
+            }
+        } catch (e: Throwable) {
+            logError(TAG, e)
+            emptyList()
         }
     }
 
@@ -192,6 +215,7 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_LIBRARY_TITLE = "library_title"
         private const val KEY_LIBRARY_LIST_TEMPLATE_KEY = "library_list_template_key"
         private const val KEY_LIBRARY_LIST_TEMPLATE = "library_list_template"
+        private const val KEY_EXERCISES_LIST_TEMPLATE = "exercises_list_template"
         private const val DEFAULT_LIBRARY_TEMPLATE_KEY = "library_2_list_template"
     }
 }

@@ -1,5 +1,6 @@
 package digital.euforia.app.domain.usecase.program
 
+import digital.euforia.app.data.api.EuforiaApi
 import digital.euforia.app.data.repository.ArticleRepository
 import digital.euforia.app.data.repository.ExerciseRepository
 import digital.euforia.app.data.repository.MeditationRepository
@@ -13,10 +14,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class GetPublicationInfoUseCase @Inject constructor(
-    private val articleRepository: ArticleRepository,
-    private val exerciseRepository: ExerciseRepository,
-    private val meditationRepository: MeditationRepository,
-    private val packageRepository: PackageRepository,
+    private val api: EuforiaApi,
     private val publicationInfoMapper: PublicationInfoMapper,
 ) {
     suspend operator fun invoke(
@@ -25,18 +23,16 @@ class GetPublicationInfoUseCase @Inject constructor(
     ): ResultWrapper<PublicationInfo> {
         return withContext(Dispatchers.IO) {
             when (publicationType) {
-                PublicationType.ARTICLE -> articleRepository.getById(id)
-                    .map { publicationInfoMapper.fromArticle(it) }
-
-                PublicationType.EXERCISE -> exerciseRepository.getById(id).map {
-                    publicationInfoMapper.fromExercise(it)
+                PublicationType.ARTICLE -> api.getArticle(id).map { networkArticle ->
+                    publicationInfoMapper.fromNetworkArticle(networkArticle)
                 }
 
-                PublicationType.MEDITATION -> meditationRepository.getById(id).map { meditation ->
-                    val pkg = meditation.mainPackageId?.let { mainPackageId ->
-                        packageRepository.getById(mainPackageId).dataOrNull
-                    }
-                    publicationInfoMapper.fromMeditation(meditation, pkg)
+                PublicationType.EXERCISE -> api.getExercise(id).map { networkExercise ->
+                    publicationInfoMapper.fromNetworkExercise(networkExercise)
+                }
+
+                PublicationType.MEDITATION -> api.getMeditation(id).map { networkMeditation ->
+                    publicationInfoMapper.fromNetworkMeditation(networkMeditation)
                 }
             }
         }

@@ -18,9 +18,10 @@ class PublicationInfoMapper @Inject constructor() {
             id = meditation.id,
             packageId = meditation.mainPackageId,
             categoryId = meditation.mainCategoryId,
-            categoryVideoCoverUrl = pkg?.videoCoverUrl,
+            videoCoverUrl = pkg?.videoCoverUrl,
             isPremium = meditation.pro,
             type = PublicationType.MEDITATION,
+            alias = meditation.alias,
             title = meditation.name,
             subtitle = meditation.subtitle,
             imageUrl = meditation.imageUrl,
@@ -40,6 +41,7 @@ class PublicationInfoMapper @Inject constructor() {
             categoryId = exercise.mainCategoryId,
             isPremium = exercise.pro,
             type = PublicationType.EXERCISE,
+            alias = exercise.alias,
             title = exercise.name,
             subtitle = exercise.subtitle,
             imageUrl = exercise.imageUrl,
@@ -59,6 +61,7 @@ class PublicationInfoMapper @Inject constructor() {
             categoryId = article.mainCategoryId,
             isPremium = article.pro,
             type = PublicationType.ARTICLE,
+            alias = article.alias,
             title = article.name,
             subtitle = article.subtitle,
             imageUrl = article.imageUrl,
@@ -71,13 +74,18 @@ class PublicationInfoMapper @Inject constructor() {
             isFavourite = article.isFavourite
         )
 
-    fun fromNetworkMeditation(meditation: NetworkMeditation): PublicationInfo =
+    fun fromNetworkMeditation(
+        meditation: NetworkMeditation,
+        videoCoverUrl: String? = null
+    ): PublicationInfo =
         buildPublication(
             id = meditation.id,
             packageId = meditation.mainPackageId,
+            videoCoverUrl = videoCoverUrl,
             categoryId = meditation.mainCategoryId,
             isPremium = meditation.pro,
             type = PublicationType.MEDITATION,
+            alias = meditation.alias,
             title = meditation.name,
             subtitle = meditation.subtitle,
             imageUrl = meditation.imageUrl,
@@ -96,6 +104,7 @@ class PublicationInfoMapper @Inject constructor() {
             categoryId = exercise.mainCategoryId,
             isPremium = exercise.pro,
             type = PublicationType.EXERCISE,
+            alias = exercise.alias,
             title = exercise.name,
             subtitle = exercise.subtitle,
             imageUrl = exercise.imageUrl,
@@ -116,6 +125,7 @@ class PublicationInfoMapper @Inject constructor() {
             categoryId = article.mainCategoryId,
             isPremium = article.pro,
             type = PublicationType.ARTICLE,
+            alias = article.alias,
             title = article.name,
             subtitle = article.subtitle,
             imageUrl = article.imageUrl,
@@ -133,6 +143,7 @@ class PublicationInfoMapper @Inject constructor() {
         categoryId: Int?,
         isPremium: Boolean,
         type: PublicationType,
+        alias: String,
         title: String,
         subtitle: String?,
         imageUrl: String?,
@@ -142,15 +153,17 @@ class PublicationInfoMapper @Inject constructor() {
         color3: String?,
         publishedAt: Long?,
         durationMinutes: Int,
-        categoryVideoCoverUrl: String? = null,
+        videoCoverUrl: String? = null,
         isFavourite: Boolean = false,
-        ): PublicationInfo =
+    ): PublicationInfo =
         PublicationInfo(
             id = id,
             packageId = packageId,
-            categoryVideoCoverUrl = categoryVideoCoverUrl,
+            categoryId = categoryId,
+            categoryVideoCoverUrl = videoCoverUrl,
             isPremium = isPremium,
             publicationType = type,
+            alias = alias,
             title = title,
             subtitle = subtitle,
             imageUrl = imageUrl,

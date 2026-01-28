@@ -80,6 +80,7 @@ import digital.euforia.app.ui.util.widget.MaxView
 import digital.euforia.app.ui.util.widget.PremiumButtonState
 import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.PublicationOptionMenu
+import digital.euforia.app.ui.util.widget.applyIf
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.compose.collectAsState
@@ -676,9 +677,12 @@ private fun ActionsView(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (publicationInfo.isPremium && !isPremium) {
+        if (publicationInfo.isPremium) {
             MaxView(
-                modifier = Modifier.noRippleClickable(launchSubscriptionActivity)
+                modifier = Modifier
+                    .applyIf(!isPremium) {
+                        noRippleClickable(launchSubscriptionActivity)
+                    }
             )
         }
         PublicationOptionMenu(

@@ -68,6 +68,8 @@ class PublicationViewModel @Inject constructor(
 
     private fun loadSimilarPublications(publicationInfo: PublicationInfo) {
         viewModelScope.launch {
+            publicationInfo.categoryId ?: return@launch
+
             getSimilarPublicationsUseCase.invoke(
                 publicationType = publicationType,
                 categoryId = publicationInfo.categoryId,

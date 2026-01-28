@@ -1,9 +1,9 @@
 package digital.euforia.app.ui.programs.programdetails
 
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
@@ -18,14 +18,14 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -47,7 +47,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -63,25 +62,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.ui.home.NavBarHeight
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.NavBarlessScreen
-import digital.euforia.app.ui.onboarding.pager.PagerPage
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
-import digital.euforia.app.ui.programs.ArticleUi
-import digital.euforia.app.ui.programs.ExerciseUi
-import digital.euforia.app.ui.programs.MeditationUi
 import digital.euforia.app.ui.programs.ProgramUi
+import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.shareProgram
-import digital.euforia.app.ui.util.sharePublication
 import digital.euforia.app.ui.util.toComposeColor
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
@@ -117,15 +117,12 @@ fun ProgramDetailsScreen(
                 articles = state.articles,
                 exercises = state.exercises,
                 programsConfig = state.programsConfig,
-                resourcesCount = state.resourcesCount,
                 currentPage = state.currentPage,
                 onRetryClick = viewModel::onRetryClicked,
                 onDownloadsClick = viewModel::onDownloadsClicked,
                 onBackClick = { navController.popBackStack() },
                 onPageSelected = viewModel::onPageSelected,
-                onMeditationClick = viewModel::onMeditationClicked,
-                onArticleClick = viewModel::onArticleClicked,
-                onExerciseClick = viewModel::onExerciseClicked,
+                onPublicationClick = viewModel::onPublicationClicked,
                 launchSubscriptionActivity = launchSubscriptionActivity,
             )
         }
@@ -139,19 +136,16 @@ private fun ProgramDetailsContent(
     isLoading: Boolean,
     errorState: ErrorViewState?,
     programUi: ProgramUi?,
-    meditations: List<MeditationUi>,
-    articles: List<ArticleUi>,
-    exercises: List<ExerciseUi>,
+    meditations: List<PublicationInfo>,
+    articles: List<PublicationInfo>,
+    exercises: List<PublicationInfo>,
     programsConfig: List<ProgramsConfig>,
-    resourcesCount: Int,
     currentPage: Int,
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onBackClick: () -> Unit,
     onPageSelected: (Int) -> Unit,
-    onMeditationClick: (MeditationUi) -> Unit,
-    onArticleClick: (ArticleUi) -> Unit,
-    onExerciseClick: (ExerciseUi) -> Unit,
+    onPublicationClick: (PublicationInfo) -> Unit,
     launchSubscriptionActivity: () -> Unit,
 ) {
     val pagerState = rememberPagerState { 3 }
@@ -168,7 +162,7 @@ private fun ProgramDetailsContent(
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
-    val hazeState = dev.chrisbanes.haze.rememberHazeState()
+    val hazeState = rememberHazeState()
     val density = LocalDensity.current
     val thresholdPx = with(density) { 236.dp.roundToPx() }
     val shouldBlur by remember(listState) {
@@ -273,7 +267,7 @@ private fun ProgramDetailsContent(
             ) {
                 titleItem(
                     titleText = programUi?.name.orEmpty(),
-                    resourcesCount = resourcesCount,
+                    resourcesCount = programUi?.resourceCount ?: 0,
                     imageUrl = programUi?.imageUrl,
                     alpha = titleAlpha
                 )
@@ -294,9 +288,7 @@ private fun ProgramDetailsContent(
                     articlesUi = articles,
                     exercisesUi = exercises,
                     pagerState = pagerState,
-                    onMeditationClick = onMeditationClick,
-                    onArticleClick = onArticleClick,
-                    onExerciseClick = onExerciseClick
+                    onPublicationClick = onPublicationClick,
                 )
                 item {
                     Spacer(
@@ -321,13 +313,11 @@ private fun ProgramDetailsContent(
 private fun LazyListScope.pagerItem(
     modifier: Modifier,
     color: Color = White,
-    meditationUi: List<MeditationUi>,
-    articlesUi: List<ArticleUi>,
-    exercisesUi: List<ExerciseUi>,
+    meditationUi: List<PublicationInfo>,
+    articlesUi: List<PublicationInfo>,
+    exercisesUi: List<PublicationInfo>,
     pagerState: PagerState,
-    onMeditationClick: (MeditationUi) -> Unit,
-    onArticleClick: (ArticleUi) -> Unit,
-    onExerciseClick: (ExerciseUi) -> Unit
+    onPublicationClick: (PublicationInfo) -> Unit,
 ) = item(key = "pager") {
     HorizontalPager(
         modifier = modifier.fillMaxWidth(),
@@ -342,10 +332,10 @@ private fun LazyListScope.pagerItem(
                 isPlayable = true,
                 items = meditationUi,
                 itemImageUrl = { it.imageUrl.orEmpty() },
-                itemTitle = { it.name },
-                itemDuration = { it.duration ?: 1 },
+                itemTitle = { it.title },
+                itemDuration = { it.durationMinutes ?: 1 },
                 isPremiumContent = { it.isPremium },
-                onClick = { onMeditationClick(it) }
+                onClick = { onPublicationClick(it) }
             )
 
             1 -> GenericPagerPage(
@@ -355,10 +345,10 @@ private fun LazyListScope.pagerItem(
                 isPlayable = false,
                 items = articlesUi,
                 itemImageUrl = { it.imageUrl.orEmpty() },
-                itemTitle = { it.name },
-                itemDuration = { it.duration ?: 1 },
+                itemTitle = { it.title },
+                itemDuration = { it.durationMinutes ?: 1 },
                 isPremiumContent = { it.isPremium },
-                onClick = { onArticleClick(it) }
+                onClick = { onPublicationClick(it) }
             )
 
             else -> GenericPagerPage(
@@ -368,10 +358,10 @@ private fun LazyListScope.pagerItem(
                 isPlayable = true,
                 items = exercisesUi,
                 itemImageUrl = { it.imageUrl.orEmpty() },
-                itemTitle = { it.name },
-                itemDuration = { it.duration ?: 1 },
+                itemTitle = { it.title },
+                itemDuration = { it.durationMinutes ?: 1 },
                 isPremiumContent = { it.isPremium },
-                onClick = { onExerciseClick(it) }
+                onClick = { onPublicationClick(it) }
             )
         }
     }
@@ -390,6 +380,8 @@ fun <T> GenericPagerPage(
     isPremiumContent: (T) -> Boolean,
     onClick: (T) -> Unit
 ) {
+    val hazeState = rememberHazeState()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -402,6 +394,7 @@ fun <T> GenericPagerPage(
                 iconRes = iconRes,
                 isPlayable = isPlayable,
                 color = color,
+                hazeState = hazeState,
                 item = item,
                 itemImageUrl = itemImageUrl,
                 itemTitle = itemTitle,
@@ -420,6 +413,7 @@ private fun <T> GenericListItem(
     iconRes: Int,
     isPlayable: Boolean,
     color: Color,
+    hazeState: HazeState,
     item: T,
     itemImageUrl: (T) -> String,
     itemTitle: (T) -> String,
@@ -437,7 +431,9 @@ private fun <T> GenericListItem(
     ) {
         Box(modifier = Modifier.padding(16.dp)) {
             AsyncImage(
-                modifier = Modifier.clip(RoundedCornerShape(24.dp)).size(96.dp),
+                modifier = Modifier
+                    .hazeSource(hazeState)
+                    .clip(RoundedCornerShape(24.dp)).size(96.dp),
                 model = itemImageUrl(item),
                 contentScale = ContentScale.Crop,
                 contentDescription = null
@@ -448,15 +444,24 @@ private fun <T> GenericListItem(
                 )
             } else {
                 if (isPlayable) {
-                    Icon(
+                    Box(
                         modifier = Modifier.align(Alignment.Center)
-                            .background(color = White.copy(alpha = 0.1f), shape = CircleShape)
-                            .padding(8.dp)
-                            .size(16.dp),
-                        painter = painterResource(id = R.drawable.ic_play),
-                        contentDescription = null,
-                        tint = White
-                    )
+                            .clip(CircleShape)
+                            .hazeEffect(
+                                state = hazeState,
+                                style = HazeMaterials.ultraThin(DarkGray)
+                            )
+                            .zIndex(1f)
+                    ) {
+                        Icon(
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .size(16.dp),
+                            painter = painterResource(id = R.drawable.ic_play),
+                            contentDescription = null,
+                            tint = White
+                        )
+                    }
                 }
             }
         }

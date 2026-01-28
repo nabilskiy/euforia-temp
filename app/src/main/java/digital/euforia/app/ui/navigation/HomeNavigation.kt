@@ -19,6 +19,7 @@ import digital.euforia.app.ui.plan.PlanScreen
 import digital.euforia.app.ui.plan.firstweek.FirstWeekScreen
 import digital.euforia.app.ui.player.audio.AudioPlayerScreen
 import digital.euforia.app.ui.programs.ProgramsScreen
+import digital.euforia.app.ui.programs.exercises.ExercisesScreen
 import digital.euforia.app.ui.programs.player.PublicationPlayerScreen
 import digital.euforia.app.ui.programs.publication.PublicationScreen
 import digital.euforia.app.ui.programs.programdetails.ProgramDetailsScreen
@@ -225,6 +226,12 @@ fun HomeNavigation(navController: NavHostController, isBottomBarShown: MutableSt
                     navController = navController,
                     viewModel = hiltViewModel(),
                     navBarVisibilityState = isBottomBarShown,
+                )
+            }
+            composable<HomeDestination.Exercises> {
+                ExercisesScreen(
+                    navController = navController,
+                    viewModel = hiltViewModel(),
                 )
             }
         }

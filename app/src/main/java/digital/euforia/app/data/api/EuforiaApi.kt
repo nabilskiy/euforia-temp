@@ -2,18 +2,17 @@ package digital.euforia.app.data.api
 
 import digital.euforia.app.data.model.NetworkAccompaniment
 import digital.euforia.app.data.model.NetworkArticle
+import digital.euforia.app.data.model.NetworkCategory
 import digital.euforia.app.data.model.NetworkExercise
-import digital.euforia.app.data.model.NetworkMusic
-import digital.euforia.app.data.model.NetworkMeditation
-import digital.euforia.app.data.model.NetworkPackage
-import digital.euforia.app.data.model.NetworkResource
 import digital.euforia.app.data.model.NetworkFaqCategory
-import digital.euforia.app.data.model.NetworkSettings
-import digital.euforia.app.data.model.NetworkSound
 import digital.euforia.app.data.model.NetworkFaqItem
 import digital.euforia.app.data.model.NetworkFeedbackForm
-import digital.euforia.app.data.model.NetworkSubscription
-import digital.euforia.app.data.model.SubscriptionRequest
+import digital.euforia.app.data.model.NetworkMeditation
+import digital.euforia.app.data.model.NetworkMusic
+import digital.euforia.app.data.model.NetworkPackage
+import digital.euforia.app.data.model.NetworkResource
+import digital.euforia.app.data.model.NetworkSettings
+import digital.euforia.app.data.model.NetworkSound
 import digital.euforia.app.domain.util.ResultWrapper
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
@@ -105,6 +104,7 @@ interface EuforiaApi {
     suspend fun getMeditations(
         @Query("ids") ids: String? = null,
         @Query("category_id") categoryId: Int? = null,
+        @Query("package_id") packageId: Int? = null,
         @Query("q") q: String? = null,
     ): ResultWrapper<List<NetworkMeditation>>
 
@@ -120,6 +120,7 @@ interface EuforiaApi {
         @Query("ids") ids: String? = null,
         @Query("category_id") categoryId: Int? = null,
         @Query("q") q: String? = null,
+        @Query("pro") pro: String? = null, // all, pro, free
     ): ResultWrapper<List<NetworkExercise>>
 
     @GET("articles-content/{id}")
@@ -146,4 +147,10 @@ interface EuforiaApi {
     suspend fun getPackage(
         @Path("id") id: Int
     ): ResultWrapper<NetworkPackage>
+
+    @GET("categories/{type}/{id}")
+    suspend fun getCategory(
+        @Path("type") type: String,
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkCategory>
 }

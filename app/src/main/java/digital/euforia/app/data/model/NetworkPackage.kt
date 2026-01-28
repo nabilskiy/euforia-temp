@@ -3,6 +3,7 @@ package digital.euforia.app.data.model
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import digital.euforia.app.data.db.entity.Package
+import digital.euforia.app.ui.programs.ProgramUi
 
 @JsonClass(generateAdapter = true)
 data class NetworkPackage(

@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.config.ProgramsConfig
+import digital.euforia.app.domain.usecase.program.GetProgramDetailsUseCase
 import digital.euforia.app.domain.usecase.program.GetProgramWithChildrenUseCase
 import digital.euforia.app.ui.programs.ArticleUi
 import digital.euforia.app.ui.programs.ExerciseUi
@@ -32,7 +34,8 @@ import kotlin.collections.map
 class ProgramDetailsViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val configFetcher: EuforiaRemoteConfigFetcher,
-    private val getProgramWithChildrenUseCase: GetProgramWithChildrenUseCase,
+//    private val getProgramWithChildrenUseCase: GetProgramWithChildrenUseCase,
+    private val getProgramDetailsUseCase: GetProgramDetailsUseCase,
     private val profilePreferences: ProfilePreferences,
 ) : ViewModel(), ContainerHost<ProgramDetailsState, ProgramDetailsSideEffect> {
     private val programId: Int = requireNotNull(savedStateHandle.get<Int>("programId"))
@@ -59,42 +62,29 @@ class ProgramDetailsViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             reduceState { copy(isLoading = true, errorState = null) }
-            getProgramWithChildrenUseCase.invoke(programId).onSuccess { result ->
-                if (result != null) {
-                    val meditations =
-                        result.meditations.map { meditation -> meditation.toMeditationUi() }
-                    val articles = result.articles.map { article -> article.toArticleUi() }
-                    val exercises = result.exercises.map { exercise -> exercise.toExerciseUi() }
-                    val program = result.pkg.toProgramUi()
-                    reduceState {
-                        copy(
-                            program = program,
-                            articles = articles,
-                            exercises = exercises,
-                            meditations = meditations,
-                            resourcesCount = articles.size + exercises.size + meditations.size,
-                            errorState = null
-                        )
-                    }
-                } else {
-                    reduceState { copy(errorState = ErrorViewState.EmptyState) }
+            getProgramDetailsUseCase.invoke(programId).onSuccess { programDetails ->
+                reduceState {
+                    copy(
+                        program = programDetails.program,
+                        articles = programDetails.articlesList,
+                        exercises = programDetails.exercisesList,
+                        meditations = programDetails.meditationsList,
+                        errorState = null
+                    )
                 }
-                // Handle successful data load
             }.onFailure { error ->
-                reduceState { copy(isLoading = false, errorState = error.mapToErrorViewState()) }
-                // Handle error during data load
+                reduceState { copy(errorState = error.mapToErrorViewState()) }
             }.onFinish {
                 reduceState { copy(isLoading = false) }
             }
-            // Implementation for loading data goes here
         }
     }
 
     private fun observePremium() {
         viewModelScope.launch {
             profilePreferences.getIsPremiumFlow().collectLatest { isPremium ->
-            reduceState { copy(isPremium = isPremium) }
-                }
+                reduceState { copy(isPremium = isPremium) }
+            }
         }
     }
 
@@ -112,40 +102,15 @@ class ProgramDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onArticleClicked(articleUi: ArticleUi) {
+    fun onPublicationClicked(publicationInfo: PublicationInfo) {
         val state = container.stateFlow.value
         postEffect(
             ProgramDetailsSideEffect.NavigateToPublication(
-                id = articleUi.id,
-                type = PublicationType.ARTICLE,
+                id = publicationInfo.id,
+                type = publicationInfo.publicationType,
                 packageTitle = state.program?.name.orEmpty()
             )
         )
-//        postEffect(ProgramDetailsSideEffect.NavigateToArticle(articleUi.id))
-    }
-
-    fun onExerciseClicked(exerciseUi: ExerciseUi) {
-        val state = container.stateFlow.value
-        postEffect(
-            ProgramDetailsSideEffect.NavigateToPublication(
-                id = exerciseUi.id,
-                type = PublicationType.EXERCISE,
-                packageTitle = state.program?.name.orEmpty()
-            )
-        )
-//        postEffect(ProgramDetailsSideEffect.NavigateToExercise(exerciseUi.id))
-    }
-
-    fun onMeditationClicked(meditationUi: MeditationUi) {
-        val state = container.stateFlow.value
-        postEffect(
-            ProgramDetailsSideEffect.NavigateToPublication(
-                id = meditationUi.id,
-                type = PublicationType.MEDITATION,
-                packageTitle = state.program?.name.orEmpty()
-            )
-        )
-//        postEffect(ProgramDetailsSideEffect.NavigateToMeditation(meditationUi.id))
     }
 }
 
@@ -155,11 +120,10 @@ data class ProgramDetailsState(
     val isPremium: Boolean = false,
     val errorState: ErrorViewState? = null,
     val program: ProgramUi? = null,
-    val exercises: List<ExerciseUi> = emptyList(),
-    val articles: List<ArticleUi> = emptyList(),
-    val meditations: List<MeditationUi> = emptyList(),
+    val exercises: List<PublicationInfo> = emptyList(),
+    val articles: List<PublicationInfo> = emptyList(),
+    val meditations: List<PublicationInfo> = emptyList(),
     val programsConfig: List<ProgramsConfig> = emptyList(),
-    val resourcesCount: Int = 0,
 )
 
 sealed class ProgramDetailsSideEffect {

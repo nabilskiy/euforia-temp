@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.config.BlockType
 import digital.euforia.app.domain.model.config.ProgramsConfig
+import digital.euforia.app.domain.usecase.program.GetProgramsUseCase
 import digital.euforia.app.domain.usecase.program.GetProgramsWithChildrenUseCase
 import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.util.postEffect
@@ -24,6 +26,7 @@ import javax.inject.Inject
 class ProgramsViewModel @Inject constructor(
     private val profilePreferences: ProfilePreferences,
     private val getProgramsWithChildrenUseCase: GetProgramsWithChildrenUseCase,
+    private val getProgramsUseCase: GetProgramsUseCase,
     private val configFetcher: EuforiaRemoteConfigFetcher,
 ) : ViewModel(),
     ContainerHost<ProgramsState, ProgramsSideEffect> {
@@ -39,35 +42,24 @@ class ProgramsViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             reduceState { copy(isLoading = true, errorState = null) }
-            getProgramsWithChildrenUseCase.invoke().onSuccess { resultList ->
-                if (resultList != null) {
-                    val articles = mutableListOf<ArticleUi>()
-                    val exercises = mutableListOf<ExerciseUi>()
-                    val programs = resultList.map { result ->
-                        articles.addAll(result.articles.map { article -> article.toArticleUi() })
-                        exercises.addAll(result.exercises.map { exercise -> exercise.toExerciseUi() })
-                        result.pkg.toProgramUi()
-                    }
-                    exercises.sortBy { exerciseUi -> exerciseUi.publishedAt }
+            getProgramsUseCase.invoke().onSuccess { result ->
+                if (result.programList.isNotEmpty()) {
                     reduceState {
                         copy(
-                            programs = programs,
-                            articles = articles.take(12),
-                            exercises = exercises.take(12),
+                            programs = result.programList,
+                            articles = result.articlesList,
+                            exercises = result.exercisesList,
                             errorState = null
                         )
                     }
                 } else {
                     reduceState { copy(errorState = ErrorViewState.EmptyState) }
                 }
-                // Handle successful data load
             }.onFailure { error ->
-                reduceState { copy(isLoading = false, errorState = error.mapToErrorViewState()) }
-                // Handle error during data load
+                reduceState { copy(errorState = error.mapToErrorViewState()) }
             }.onFinish {
                 reduceState { copy(isLoading = false) }
             }
-            // Implementation for loading data goes here
         }
     }
 
@@ -96,12 +88,12 @@ class ProgramsViewModel @Inject constructor(
         }
     }
 
-    fun onArticleClicked(articleUi: ArticleUi) {
-        onPublicationClicked(articleUi.id, articleUi.mainPackageId, PublicationType.ARTICLE)
+    fun onArticleClicked(articleUi: PublicationInfo) {
+        onPublicationClicked(articleUi.id, articleUi.packageId, PublicationType.ARTICLE)
     }
 
-    fun onExerciseClicked(exerciseUi: ExerciseUi) {
-        onPublicationClicked(exerciseUi.id, exerciseUi.mainPackageId, PublicationType.EXERCISE)
+    fun onExerciseClicked(exerciseUi: PublicationInfo) {
+        onPublicationClicked(exerciseUi.id, exerciseUi.packageId, PublicationType.EXERCISE)
     }
 
     private fun onPublicationClicked(id: Int, packageId: Int?, publicationType: PublicationType) {
@@ -127,6 +119,19 @@ class ProgramsViewModel @Inject constructor(
 
     fun onProgramClicked(programUi: ProgramUi) {
         postEffect(ProgramsSideEffect.NavigateToProgramDetail(programUi.id))
+    }
+
+    fun onMoreExercisesClicked() {
+        postEffect(ProgramsSideEffect.NavigateToExercises)
+    }
+
+    fun onMoreArticlesClicked() {
+        postEffect(
+            ProgramsSideEffect.NavigateToPublications(
+                publicationType = PublicationType.ARTICLE,
+                ids = ""
+            )
+        )
     }
 }
 
@@ -223,8 +228,8 @@ data class ProgramsState(
     val isPremium: Boolean = false,
     val errorState: ErrorViewState? = null,
     val programs: List<ProgramUi> = emptyList(),
-    val exercises: List<ExerciseUi> = emptyList(),
-    val articles: List<ArticleUi> = emptyList(),
+    val exercises: List<PublicationInfo> = emptyList(),
+    val articles: List<PublicationInfo> = emptyList(),
     val exerciseTitle: String = "Exercises",
     val articleTitle: String = "Articles",
     val programsConfig: List<ProgramsConfig> = emptyList()
@@ -238,4 +243,11 @@ sealed class ProgramsSideEffect {
         val type: PublicationType,
         val packageTitle: String
     ) : ProgramsSideEffect()
+
+    data class NavigateToPublications(
+        val publicationType: PublicationType,
+        val ids: String
+    ) : ProgramsSideEffect()
+
+    data object NavigateToExercises : ProgramsSideEffect()
 }
