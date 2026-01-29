@@ -5,8 +5,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.program.ExerciseUiBlock
 import digital.euforia.app.domain.usecase.program.GetExerciseBlocksUseCase
+import digital.euforia.app.ui.programs.ProgramsSideEffect
+import digital.euforia.app.ui.programs.publication.PublicationType
+import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
@@ -62,6 +66,35 @@ class ExercisesViewModel @Inject constructor(
             }
         }
     }
+
+    fun onMoreClicked(publicationsList: List<PublicationInfo>) {
+        postEffect(
+            ExercisesSideEffect.NavigateToPublications(
+                publicationType = PublicationType.EXERCISE,
+                ids = publicationsList.joinToString(",") { it.id.toString() }
+            )
+        )
+    }
+
+    fun onExerciseClicked(publication: PublicationInfo) {
+        postEffect(
+            ExercisesSideEffect.NavigateToPublication(
+                id = publication.id,
+                type = PublicationType.EXERCISE,
+                packageTitle = ""
+            )
+        )
+    }
+
+    fun onBannerClicked(publicationIds: List<Int>) {
+        val ids = publicationIds.joinToString(",")
+        postEffect(
+            ExercisesSideEffect.NavigateToPublications(
+                publicationType = PublicationType.EXERCISE,
+                ids = ids
+            )
+        )
+    }
 }
 
 data class ExercisesState(
@@ -71,4 +104,17 @@ data class ExercisesState(
     val exerciseBlocks: List<ExerciseUiBlock> = emptyList()
 )
 
-sealed class ExercisesSideEffect {}
+sealed class ExercisesSideEffect {
+    data class NavigateToPublication(
+        val id: Int,
+        val type: PublicationType,
+        val packageTitle: String
+    ) : ExercisesSideEffect()
+
+    data class NavigateToPublications(
+        val publicationType: PublicationType,
+        val ids: String
+    ) : ExercisesSideEffect()
+
+    data object NavigateToDownloads : ExercisesSideEffect()
+}

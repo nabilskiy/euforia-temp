@@ -1,42 +1,46 @@
 package digital.euforia.app.data.config
 
 import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class NetworkExerciseConfig(
-    @field:Json(name = "type")
+    @Json(name = "type")
     val type: String,
 
-    @field:Json(name = "entityId")
+    @Json(name = "entityId")
     val entityId: Int? = null,
 
-    @field:Json(name = "entityIds")
+    @Json(name = "entityIds")
     val entityIds: List<Int>? = null,
 
-    @field:Json(name = "entity")
+    @Json(name = "entity")
     val entity: NetworkExerciseEntity? = null,
 
-    @field:Json(name = "data")
+    @Json(name = "data")
     val data: NetworkExerciseData? = null,
 
-    @field:Json(name = "filters")
+    @Json(name = "filters")
     val filters: Any? = null
 )
 
+@JsonClass(generateAdapter = true)
 data class NetworkExerciseEntity(
-    @field:Json(name = "img_url")
+    @Json(name = "img_url")
     val imageUrl: String? = null,
 
-    @field:Json(name = "action_url")
+    @Json(name = "action_url")
     val actionUrl: String? = null
 )
 
+@JsonClass(generateAdapter = true)
 data class NetworkExerciseData(
-    @field:Json(name = "title")
+    @Json(name = "title")
     val title: String? = null,
 
-    @field:Json(name = "description")
+    @Json(name = "description")
     val description: String? = null,
 
-    @field:Json(name = "maxItems")
+    @Json(name = "maxItems")
     val maxItems: Int? = null
 )

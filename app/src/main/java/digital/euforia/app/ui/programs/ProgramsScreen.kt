@@ -64,6 +64,7 @@ import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.MaxView
 import digital.euforia.app.ui.util.widget.PremiumButtonState
 import digital.euforia.app.ui.util.widget.ProgressIndicator
+import digital.euforia.app.ui.util.widget.genericRowItem
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.titleItem
 import org.orbitmvi.orbit.compose.collectAsState
@@ -225,89 +226,6 @@ private fun LazyListScope.dividerItem() = item() {
         color = White.copy(alpha = 0.1f),
         modifier = Modifier.fillMaxWidth().padding(16.dp)
     )
-}
-
-private fun <T> LazyListScope.genericRowItem(
-    items: List<T>,
-    title: String,
-    description: String,
-    isPremium: Boolean,
-    iconRes: Int,
-    itemId: (T) -> Int,
-    itemAlias: (T) -> String,
-    itemTitle: (T) -> String,
-    isPremiumContent: (T) -> Boolean,
-    itemImageUrl: (T) -> String?,
-    itemDuration: (T) -> Int,
-    onMoreClick: () -> Unit,
-    onItemClick: (T) -> Unit
-) = item(key = "${title.lowercase()}_item") {
-    val localizedRes = LocalLocalizedRes.current
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            text = description.uppercase(),
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = Medium),
-            color = White.copy(alpha = 0.6f),
-        )
-        Text(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            text = title,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = SemiBold),
-            color = White,
-        )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 300.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items.forEach { item ->
-                item(key = "item_${itemAlias(item)}_${itemId(item)}") {
-                    HorizontalItemView(
-                        imageUrl = itemImageUrl(item),
-                        isPremiumContent = isPremiumContent(item),
-                        titleText = itemTitle(item),
-                        duration = itemDuration(item),
-                        isPremium = isPremium,
-                        iconRes = iconRes,
-                        onClick = { onItemClick(item) }
-                    )
-                }
-
-            }
-            moreItem(onMoreClick)
-        }
-    }
-}
-
-private fun LazyListScope.moreItem(onClick: () -> Unit) = item {
-    val localizedRes = LocalLocalizedRes.current
-    Column(
-        modifier = Modifier.noRippleClickable { onClick() }.height(196.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            modifier = Modifier.padding(bottom = 8.dp).size(32.dp)
-                .background(color = White.copy(alpha = 0.1f), shape = CircleShape).padding(4.dp),
-            painter = painterResource(R.drawable.ic_next),
-            contentDescription = null,
-            tint = White.copy(alpha = 0.6f)
-        )
-        Text(
-            text = localizedRes.string(R.string.read_more),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            textAlign = TextAlign.End,
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontSize = 12.sp,
-                fontWeight = SemiBold,
-            ),
-            color = White.copy(alpha = 0.6f),
-        )
-    }
 }
 
 @Composable

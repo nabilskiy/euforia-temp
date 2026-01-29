@@ -1,8 +1,62 @@
 package digital.euforia.app.ui.programs.exercises
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
+import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
+import digital.euforia.app.R
+import digital.euforia.app.domain.model.PublicationInfo
+import digital.euforia.app.domain.usecase.program.ExerciseUiBlock
+import digital.euforia.app.domain.usecase.program.ExerciseUiBlock.ExerciseList
+import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.programs.ProgramsSideEffect
+import digital.euforia.app.ui.programs.publication.getIconRes
+import digital.euforia.app.ui.theme.AvatarBackground
+import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.widget.BlurredAppBar
+import digital.euforia.app.ui.util.widget.MaxView
+import digital.euforia.app.ui.util.widget.genericRowItem
+import digital.euforia.app.ui.util.widget.noRippleClickable
+import digital.euforia.app.ui.util.widget.titleItem
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -13,18 +67,255 @@ fun ExercisesScreen(
 ) {
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect)
+        handleSideEffect(sideEffect, navController)
     }
 
-    ExercisesContent()
+    ExercisesContent(
+        navController = navController,
+        exerciseBlocks = state.exerciseBlocks,
+        isPremium = state.isPremium,
+        onBackClick = {
+            navController.popBackStack()
+        },
+        onExerciseClick = viewModel::onExerciseClicked,
+        onMoreClick = viewModel::onMoreClicked,
+        onBannerClick = viewModel::onBannerClicked
+    )
 }
 
 @Composable
-private fun ExercisesContent() {
+private fun ExercisesContent(
+    navController: NavHostController,
+    exerciseBlocks: List<ExerciseUiBlock>,
+    isPremium: Boolean,
+    onBackClick: () -> Unit,
+    onExerciseClick: (PublicationInfo) -> Unit,
+    onMoreClick: (List<PublicationInfo>) -> Unit,
+    onBannerClick: (List<Int>) -> Unit
+) {
+    val listState = rememberLazyListState()
+    val hazeState = rememberHazeState()
+    val density = LocalDensity.current
+    val context = LocalContext.current
+    val thresholdPx = with(density) { 16.dp.roundToPx() }
+    val shouldBlur by remember(listState) {
+        derivedStateOf {
+            val firstIndex = listState.firstVisibleItemIndex
+            val firstOffset = listState.firstVisibleItemScrollOffset
+            // Blur when the very first list item (spacer) scrolled off enough
+            // or when any next item became the first visible one.
+            firstIndex > 0 || firstOffset > thresholdPx
+        }
+    }
+    val itemsHazeState = rememberHazeState()
+
+
+    Box() {
+        BlurredAppBar(
+            backTitleRes = R.string.library_title,
+            titleRes = R.string.exercises_title,
+            shouldBlur = shouldBlur,
+            hazeState = hazeState,
+            onBackClick = onBackClick,
+            // Shared element for back title "My Euforia"
+            navController = navController
+        )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().hazeSource(hazeState),
+            state = listState,
+            verticalArrangement = Arrangement.Absolute.spacedBy(16.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = AppBarHeightMedium + 16.dp,
+                bottom = 56.dp
+            ),
+        ) {
+            titleItem(
+                titleRes = R.string.exercises_title
+            )
+
+            exerciseBlocks.forEachIndexed { index, block ->
+                when (block) {
+                    is ExerciseList -> genericRowItem(
+                        items = block.publicationInfoList,
+                        title = block.title,
+                        description = block.description,
+                        isPremium = isPremium,
+                        iconRes = R.drawable.ic_type_exercise,
+                        itemId = { it.id },
+                        itemAlias = { it.alias },
+                        itemTitle = { it.title },
+                        isPremiumContent = { it.isPremium },
+                        itemImageUrl = { it.imageUrl },
+                        itemDuration = { it.durationMinutes ?: 0 },
+                        onMoreClick = { onMoreClick(block.publicationInfoList) },
+                        onItemClick = { onExerciseClick(it) }
+
+                    )
+
+                    is ExerciseUiBlock.Banner -> {
+                        bannerItem(
+                            index = index,
+                            banner = block,
+                            onClick = onBannerClick
+                        )
+                    }
+
+                    is ExerciseUiBlock.Exercise -> {
+                        exerciseItem(
+                            index = index,
+                            publicationInfo = block.publicationInfo,
+                            isPremium = isPremium,
+                            hazeState = itemsHazeState,
+                            onClick = onExerciseClick
+                        )
+                    }
+
+                    is ExerciseUiBlock.Category -> {
+                        genericRowItem(
+                            items = block.publicationInfoList,
+                            title = block.title,
+                            description = null,
+                            isPremium = isPremium,
+                            iconRes = R.drawable.ic_type_exercise,
+                            itemId = { it.id },
+                            itemAlias = { it.alias },
+                            itemTitle = { it.title },
+                            isPremiumContent = { it.isPremium },
+                            itemImageUrl = { it.imageUrl },
+                            itemDuration = { it.durationMinutes ?: 0 },
+                            onMoreClick = { onMoreClick(block.publicationInfoList) },
+                            onItemClick = { onExerciseClick(it) }
+
+                        )
+                    }
+
+                    else -> {}
+                }
+            }
+            item {
+                Spacer(modifier = Modifier.navigationBarsPadding().padding(bottom = 96.dp))
+            }
+        }
+    }
 }
 
-private fun handleSideEffect(sideEffect: ExercisesSideEffect) {
+private fun LazyListScope.bannerItem(
+    index: Int,
+    banner: ExerciseUiBlock.Banner,
+    onClick: (List<Int>) -> Unit
+) = item(key = "banner_${index}") {
+    AsyncImage(
+        model = banner.imageUrl,
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .fillMaxWidth()
+            .noRippleClickable {
+                onClick(banner.ids)
+            }
+    )
+}
+
+private fun LazyListScope.exerciseItem(
+    index: Int,
+    publicationInfo: PublicationInfo,
+    isPremium: Boolean,
+    hazeState: HazeState,
+    onClick: (PublicationInfo) -> Unit,
+) = item(key = "exercise_$index") {
+
+    Box(
+        modifier = Modifier.noRippleClickable { onClick(publicationInfo) }
+            .padding(horizontal = 16.dp).clip(RoundedCornerShape(32.dp))
+            .fillMaxWidth(),
+    ) {
+        AsyncImage(
+            modifier = Modifier.aspectRatio(1f)
+                .hazeSource(hazeState),
+            model = publicationInfo.imageUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop
+        )
+        if (!isPremium && publicationInfo.isPremium) {
+            MaxView(
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                .hazeEffect(
+                    state = hazeState,
+                    style = HazeMaterials.ultraThin(AvatarBackground)
+                )
+                .zIndex(1f)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = publicationInfo.title.orEmpty(),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
+                color = White,
+            )
+            Row() {
+                Icon(
+                    modifier = Modifier.size(16.dp),
+                    painter = painterResource(publicationInfo.publicationType.getIconRes()),
+                    contentDescription = null,
+                    tint = White.copy(alpha = 0.6f)
+                )
+
+                Text(
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    text = "•",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.ExtraLight,
+                    ),
+                    color = White.copy(alpha = 0.6f),
+                )
+                Text(
+                    text = "${publicationInfo.durationMinutes} minutes",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.ExtraLight,
+                    ),
+                    color = White.copy(alpha = 0.6f),
+                )
+            }
+
+            Text(
+                text = publicationInfo.subtitle.orEmpty(),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal),
+                color = White.copy(alpha = 0.6f),
+                maxLines = 2,
+                overflow = Ellipsis,
+            )
+        }
+    }
+}
+
+
+private fun handleSideEffect(sideEffect: ExercisesSideEffect, navController: NavHostController) {
     when (sideEffect) {
+        is ExercisesSideEffect.NavigateToPublication -> navController.navigate(
+            HomeDestination.PublicationDetails(
+                sideEffect.id,
+                sideEffect.type,
+                sideEffect.packageTitle
+            )
+        )
+
+        is ExercisesSideEffect.NavigateToPublications -> navController.navigate(
+            HomeDestination.Publications(
+                type = sideEffect.publicationType,
+                ids = sideEffect.ids
+            )
+        )
+
+        is ExercisesSideEffect.NavigateToDownloads -> navController.navigate(HomeDestination.Downloads)
         else -> {}
     }
 }
