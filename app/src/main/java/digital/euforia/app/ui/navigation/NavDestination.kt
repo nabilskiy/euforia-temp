@@ -4,6 +4,7 @@ import androidx.annotation.Keep
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.programs.publication.PublicationType
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -54,7 +55,7 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val accompanimentId: Int,
         val timeOfDay: TimeOfDay,
         val entryPoint: AudioPlayerEntryPoint
-    )
+    ) : HomeDestination()
 
     @Serializable
     @Keep
@@ -141,14 +142,14 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val id: Int,
         val publicationType: PublicationType,
         val packageTitle: String,
-    )
+    ) : HomeDestination()
 
     @Serializable
     @Keep
     data class Publications(
         val type: PublicationType,
         val ids: String,
-    )
+    ) : HomeDestination()
 
     @Serializable
     @Keep

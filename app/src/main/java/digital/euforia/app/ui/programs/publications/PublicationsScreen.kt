@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -196,7 +197,7 @@ private fun PublicationInfoItem(
             )
         }
 
-        Column(
+        Row(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .hazeEffect(
                     state = hazeState,
@@ -204,45 +205,65 @@ private fun PublicationInfoItem(
                 )
                 .zIndex(1f)
                 .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
-            Text(
-                text = publicationInfo.title.orEmpty(),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
-                color = White,
-            )
-            Row() {
-                Icon(
-                    modifier = Modifier.size(16.dp),
-                    painter = painterResource(publicationInfo.publicationType.getIconRes()),
-                    contentDescription = null,
-                    tint = White.copy(alpha = 0.6f)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = publicationInfo.title.orEmpty(),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
+                    color = White,
                 )
+                Row() {
+                    Icon(
+                        modifier = Modifier.size(16.dp),
+                        painter = painterResource(publicationInfo.publicationType.getIconRes()),
+                        contentDescription = null,
+                        tint = White.copy(alpha = 0.6f)
+                    )
 
-                Text(
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    text = "•",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.ExtraLight,
-                    ),
-                    color = White.copy(alpha = 0.6f),
-                )
-                Text(
-                    text = "${publicationInfo.durationMinutes} minutes",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.ExtraLight,
-                    ),
-                    color = White.copy(alpha = 0.6f),
-                )
+                    Text(
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        text = "•",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.ExtraLight,
+                        ),
+                        color = White.copy(alpha = 0.6f),
+                    )
+                    Text(
+                        text = "${publicationInfo.durationMinutes} minutes",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.ExtraLight,
+                        ),
+                        color = White.copy(alpha = 0.6f),
+                    )
+                }
+
+                if (publicationInfo.publicationType == PublicationType.ARTICLE) {
+                    Text(
+                        text = publicationInfo.subtitle.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal),
+                        color = White.copy(alpha = 0.6f),
+                        maxLines = 2,
+                        overflow = Ellipsis,
+                    )
+                }
             }
 
-            Text(
-                text = publicationInfo.subtitle.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal),
-                color = White.copy(alpha = 0.6f),
-                maxLines = 2,
-                overflow = Ellipsis,
-            )
+            if (publicationInfo.publicationType != PublicationType.ARTICLE) {
+                Icon(
+                    modifier = Modifier.background(
+                        color = White.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    ).padding(10.dp).size(14.dp),
+                    painter = painterResource(id = R.drawable.ic_play),
+                    contentDescription = null,
+                    tint = White
+                )
+            }
         }
     }
 }

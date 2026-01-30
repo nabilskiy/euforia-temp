@@ -1,6 +1,7 @@
 package digital.euforia.app.ui
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,6 +31,7 @@ import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.di.ApplicationCoroutineScope
+import digital.euforia.app.domain.usecase.ParseDeepLinkUseCase
 import digital.euforia.app.ui.navigation.AppNavigation
 import digital.euforia.app.ui.theme.EuforiaTheme
 import digital.euforia.app.ui.util.LocalizedScope
@@ -65,21 +67,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var analyticSender: AnalyticSender
 
+    @Inject
+    lateinit var parseDeepLinkUseCase: ParseDeepLinkUseCase
+
     private lateinit var billingViewModel: BillingViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        updateRemoteConfig()
-
-        // Apply the saved language to the activity before setting content
-//        val appLang = compositionLocalOf { "en" } // default
-//
-//        scope.launch {
-//            appPreferences.getLanguageFlow().collectLatest {
-//                appLang.provides(it ?: "en")
-//
-//            }
-//        }
         initBillingViewModel()
         setupEdgeToEdge()
         setContent {
@@ -104,59 +98,24 @@ class MainActivity : ComponentActivity() {
                             driftRadiusY = 80f,
                         )
                     }
-//                    var lang by rememberSaveable { mutableStateOf("en") }
 
-//                    CompositionLocalProvider(appLang provides lang) {
+                    val deeplinkDestination = intent.data?.let { uri ->
+                        parseDeepLinkUseCase.invoke(uri)
+                    }
 
                     LocalizedScope(langTag = state.language) {
-                        AppNavigation(navController = navController, spheresState = spheresState)
+                        AppNavigation(
+                            navController = navController,
+                            spheresState = spheresState,
+                            deepLinkDestination = deeplinkDestination
+                        )
                     }
                 }
-//                }
             }
         }
     }
 
-    private fun applyLanguage(context: Context) {
-        // Run in the main thread since we're updating the UI
-//        scope.launch(Dispatchers.Main) {
-//            appPreferences.getLanguageFlow().collect { newLanguage ->
-//                val locale = Locale.forLanguageTag(newLanguage)
-//                val newContext = context.updateLocale(locale)
-//                val localizedResources = newContext.resources
-////                val localizedString = localizedResources.getString(R.string.some_text)
-//            }
-//            val language = getLanguage()
-//            Timber.tag("LANG_BUG").d("Lang in prefs: $language")
-//
-//            config.setLocale(locale)
-//
-//
-//            Locale.setDefault(locale)
-//
-//            config.setLayoutDirection(locale)
-//
-//            // Update the configuration
-////            resources.updateConfiguration(config, resources.displayMetrics)
-//            // Set up a listener for language changes
-//            scope.launch {
-//                appPreferences.getLanguageFlow().collect { newLanguage ->
-//                    Timber.tag("LANG_BUG").d("flow collected lang: $newLanguage")
-//                    if (newLanguage != null && newLanguage != language) {
-//                        Timber.tag("LANG_BUG").d("recreating")
-//                        // Language changed, recreate the activity
-//                        recreate()
-//                    }
-//                }
-//            }
-//        }
-    }
-
-
     fun Context.applyLocale(tag: String): Context {
-//        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
-//        val localeCode = prefs.getString("locale", "en") ?: "en" // дефолт
-
         val locale = Locale.forLanguageTag(tag)
         Locale.setDefault(locale)
 
@@ -190,7 +149,8 @@ class MainActivity : ComponentActivity() {
 //                    PreferencesManager.setIsPro(this, false)
                 }
             } catch (ignored: Exception) {
-                Timber.tag(logTag()).d("Error observing premium status: ${ignored.localizedMessage}")
+                Timber.tag(logTag())
+                    .d("Error observing premium status: ${ignored.localizedMessage}")
             }
         }
     }
@@ -201,5 +161,18 @@ class MainActivity : ComponentActivity() {
 
         billingViewModel = ViewModelProvider(this).get(BillingViewModel::class.java)
         billingViewModel.premiumLiveData.observe(this, premiumObserver)
+    }
+
+    private fun handleDeepLink(intent: Intent) {
+        val uri = intent.data ?: return
+        val cmd = parseDeepLinkUseCase.invoke(uri)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // warm start
+        val command = intent.data?.let { uri ->
+            parseDeepLinkUseCase.invoke(uri)
+        } // do smth with this
     }
 }

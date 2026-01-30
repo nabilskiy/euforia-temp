@@ -57,15 +57,27 @@ class GetExerciseBlocksUseCase @Inject constructor(
 
     private suspend fun processBanner(config: ExerciseConfig): ExerciseUiBlock.Banner? {
         if (config.entity == null) return null
-        val ids: List<Int> = config.entity.actionUrl.orEmpty()
-            .substringAfter("ids=")
-            .split(",")
-            .mapNotNull { it.toIntOrNull() }
-
-        return ExerciseUiBlock.Banner(
-            imageUrl = config.entity.imageUrl.orEmpty(),
-            ids = ids
-        )
+        val actionUrl = config.entity.actionUrl ?: return null
+        if (actionUrl.contains("ids=")) {
+            val ids = actionUrl
+                .substringAfter("ids=")
+                .split(",")
+                .mapNotNull { it.toIntOrNull() }
+            return ExerciseUiBlock.Banner(
+                imageUrl = config.entity.imageUrl.orEmpty(),
+                ids = ids,
+                id = null
+            )
+        } else {
+            val id = actionUrl
+                .substringAfterLast("/")
+                .toIntOrNull()
+            return ExerciseUiBlock.Banner(
+                imageUrl = config.entity.imageUrl.orEmpty(),
+                ids = emptyList(),
+                id = id
+            )
+        }
     }
 
     private suspend fun processExerciseCategory(config: ExerciseConfig): ExerciseUiBlock.Category? {
@@ -135,7 +147,8 @@ sealed class ExerciseUiBlock {
 
     data class Banner(
         val imageUrl: String,
-        val ids: List<Int>
+        val ids: List<Int>,
+        val id: Int?
     ) : ExerciseUiBlock()
 
     data class Category(

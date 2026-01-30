@@ -322,11 +322,13 @@ private fun PublicationContent(
                         )
                     }
 
-                    similarItem(
-                        similarItems = similarItems,
-                        onClick = onSimilarItemClick,
-                        onShowSimilarClick = onShowSimilarClick
-                    )
+                    if (similarItems.isNotEmpty()) {
+                        similarItem(
+                            similarItems = similarItems,
+                            onClick = onSimilarItemClick,
+                            onShowSimilarClick = onShowSimilarClick
+                        )
+                    }
 
                     item {
                         Spacer(modifier = Modifier.fillMaxWidth().height(152.dp))

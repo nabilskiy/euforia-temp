@@ -86,14 +86,32 @@ class ExercisesViewModel @Inject constructor(
         )
     }
 
-    fun onBannerClicked(publicationIds: List<Int>) {
-        val ids = publicationIds.joinToString(",")
-        postEffect(
+    fun onBannerClicked(banner: ExerciseUiBlock.Banner) {
+        val sideEffect = if (banner.ids.isNotEmpty()) {
+            val ids = banner.ids.joinToString(",")
             ExercisesSideEffect.NavigateToPublications(
                 publicationType = PublicationType.EXERCISE,
                 ids = ids
             )
-        )
+        } else if (banner.id != null) {
+            ExercisesSideEffect.NavigateToPublication(
+                id = banner.id,
+                type = PublicationType.EXERCISE,
+                packageTitle = ""
+            )
+        } else {
+            return
+        }
+
+        postEffect(sideEffect)
+    }
+
+    fun onRetryClick() {
+        loadExerciseBlocks()
+    }
+
+    fun onDownloadsClicked() {
+        postEffect(ExercisesSideEffect.NavigateToDownloads)
     }
 }
 

@@ -6,6 +6,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import com.appsflyer.AppsFlyerConversionListener
+import com.appsflyer.AppsFlyerLib
 import com.google.firebase.Firebase
 import com.google.firebase.remoteconfig.remoteConfig
 import dagger.hilt.android.HiltAndroidApp
@@ -109,6 +111,34 @@ class App : Application() {
         initTokens()
         syncFeedbackForm()
         shouldSync()
+        initAppsFlyer()
+    }
+
+    private fun initAppsFlyer() {
+        val conversionListener = object : AppsFlyerConversionListener {
+            override fun onConversionDataSuccess(data: MutableMap<String, Any>?) {
+                data?.let {
+                    Timber.d("AppsFlyer: onConversionDataSuccess: $it")
+                }
+            }
+
+            override fun onConversionDataFail(error: String?) {
+                Timber.e("AppsFlyer: onConversionDataFail: $error")
+            }
+
+            override fun onAppOpenAttribution(data: MutableMap<String, String>?) {
+                data?.let {
+                    Timber.d("AppsFlyer: onAppOpenAttribution: $it")
+                }
+            }
+
+            override fun onAttributionFailure(error: String?) {
+                Timber.e("AppsFlyer: onAttributionFailure: $error")
+            }
+        }
+
+        AppsFlyerLib.getInstance().init("G7qk8XdQMe93brUBjnYM3", conversionListener, this)
+        AppsFlyerLib.getInstance().start(this)
     }
 
     private fun initLogger() {

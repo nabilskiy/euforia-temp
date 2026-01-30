@@ -2,6 +2,9 @@ package digital.euforia.app.data.analytics
 
 import android.content.Context
 import android.os.Bundle
+import com.appsflyer.AFInAppEventParameterName
+import com.appsflyer.AFInAppEventType
+import com.appsflyer.AppsFlyerLib
 import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -23,6 +26,11 @@ class AnalyticSender @Inject constructor(
 
     private fun logEvent(eventName: String, params: Bundle? = null) {
 //        firebaseAnalytics?.logEvent(eventName, params)
+//        val afParams = mutableMapOf<String, Any>()
+//        params?.keySet()?.forEach { key ->
+//            params.get(key)?.let { afParams[key] = it }
+//        }
+//        AppsFlyerLib.getInstance().logEvent(context, eventName, afParams)
     }
 
     fun introShow() {
@@ -166,6 +174,12 @@ class AnalyticSender @Inject constructor(
             tag?.let { putString("tag", it) }
         }
         logEvent(eventName = "premium_buy_success", params = params)
+
+        val afParams = mutableMapOf<String, Any>()
+        afParams[AFInAppEventParameterName.CONTENT_ID] = productId
+        afParams[AFInAppEventParameterName.REVENUE] = 0 // In a real app, you would pass actual revenue
+        afParams[AFInAppEventParameterName.CURRENCY] = "USD"
+        AppsFlyerLib.getInstance().logEvent(context, AFInAppEventType.PURCHASE, afParams)
     }
 
     fun premiumBuyClick(productId: String, from: String, version: Int, tag: String? = null) {

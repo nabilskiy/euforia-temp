@@ -143,6 +143,8 @@ mock = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
 haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
 haze-materials = { group = "dev.chrisbanes.haze", name = "haze-materials", version.ref = "haze" }
+appsflyer = { group = "com.appsflyer", name = "af-android-sdk", version = "6.15.2" }
+installreferrer = { group = "com.android.installreferrer", name = "installreferrer", version = "2.2" }
 billing-client = { group = "com.android.billingclient", name = "billing", version.ref = "billing" }
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }

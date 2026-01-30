@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -19,21 +20,27 @@ import digital.euforia.app.ui.player.VibesPlayerScreen
 import digital.euforia.app.ui.player.audio.AudioPlayerScreen
 import digital.euforia.app.ui.splash.SplashScreen
 import digital.euforia.app.ui.video.VideoScreen
+import timber.log.Timber
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavigation(
     navController: NavHostController,
     spheresState: MutableState<Boolean>,
+    deepLinkDestination: HomeDestination?
 ) {
+    LaunchedEffect(Unit) {
+        navController.addOnDestinationChangedListener { _, destination, arguments ->
+            Timber.tag("NAVIGATION")
+                .d("Destination changed: ${destination.route}, args: $arguments")
+        }
+    }
+
     SharedTransitionLayout {
         NavHost(
-            modifier = Modifier.fillMaxSize()
-            /*.background(PrimaryBackground)*/,
+            modifier = Modifier.fillMaxSize(),
             navController = navController,
             startDestination = Splash
-//        startDestination = Vibes
-//        startDestination = Home
         ) {
             composable<Splash>(
                 enterTransition = {

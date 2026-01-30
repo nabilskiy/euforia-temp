@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.programs.exercises
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,9 +53,13 @@ import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.programs.ProgramsSideEffect
 import digital.euforia.app.ui.programs.publication.getIconRes
 import digital.euforia.app.ui.theme.AvatarBackground
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.BlurredAppBar
+import digital.euforia.app.ui.util.widget.ErrorView
+import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.MaxView
+import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.genericRowItem
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.titleItem
@@ -72,6 +78,8 @@ fun ExercisesScreen(
 
     ExercisesContent(
         navController = navController,
+        isLoading = state.isLoading,
+        errorState = state.errorState,
         exerciseBlocks = state.exerciseBlocks,
         isPremium = state.isPremium,
         onBackClick = {
@@ -79,19 +87,24 @@ fun ExercisesScreen(
         },
         onExerciseClick = viewModel::onExerciseClicked,
         onMoreClick = viewModel::onMoreClicked,
-        onBannerClick = viewModel::onBannerClicked
+        onBannerClick = viewModel::onBannerClicked,
+        onRetryClick = viewModel::onRetryClick,
+        onDownloadsClick = viewModel::onDownloadsClicked
     )
 }
 
 @Composable
 private fun ExercisesContent(
     navController: NavHostController,
-    exerciseBlocks: List<ExerciseUiBlock>,
     isPremium: Boolean,
+    isLoading: Boolean,
+    errorState: ErrorViewState?, exerciseBlocks: List<ExerciseUiBlock>,
     onBackClick: () -> Unit,
     onExerciseClick: (PublicationInfo) -> Unit,
     onMoreClick: (List<PublicationInfo>) -> Unit,
-    onBannerClick: (List<Int>) -> Unit
+    onBannerClick: (ExerciseUiBlock.Banner) -> Unit,
+    onRetryClick: () -> Unit,
+    onDownloadsClick: () -> Unit
 ) {
     val listState = rememberLazyListState()
     val hazeState = rememberHazeState()
@@ -110,73 +123,45 @@ private fun ExercisesContent(
     val itemsHazeState = rememberHazeState()
 
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             backTitleRes = R.string.library_title,
             titleRes = R.string.exercises_title,
             shouldBlur = shouldBlur,
             hazeState = hazeState,
             onBackClick = onBackClick,
-            // Shared element for back title "My Euforia"
             navController = navController
         )
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().hazeSource(hazeState),
-            state = listState,
-            verticalArrangement = Arrangement.Absolute.spacedBy(16.dp),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = AppBarHeightMedium + 16.dp,
-                bottom = 56.dp
-            ),
-        ) {
-            titleItem(
-                titleRes = R.string.exercises_title
+        if (isLoading) {
+            ProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else if (errorState != null) {
+            ErrorView(
+                modifier = Modifier.align(Alignment.Center),
+                state = errorState,
+                onRetryClick = onRetryClick,
+                onDownloadsClick = onDownloadsClick
             )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().hazeSource(hazeState),
+                state = listState,
+                verticalArrangement = Arrangement.Absolute.spacedBy(16.dp),
+                contentPadding = PaddingValues(
+                    top = AppBarHeightMedium + 16.dp,
+                    bottom = 56.dp
+                ),
+            ) {
+                titleItem(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    titleRes = R.string.exercises_title
+                )
 
-            exerciseBlocks.forEachIndexed { index, block ->
-                when (block) {
-                    is ExerciseList -> genericRowItem(
-                        items = block.publicationInfoList,
-                        title = block.title,
-                        description = block.description,
-                        isPremium = isPremium,
-                        iconRes = R.drawable.ic_type_exercise,
-                        itemId = { it.id },
-                        itemAlias = { it.alias },
-                        itemTitle = { it.title },
-                        isPremiumContent = { it.isPremium },
-                        itemImageUrl = { it.imageUrl },
-                        itemDuration = { it.durationMinutes ?: 0 },
-                        onMoreClick = { onMoreClick(block.publicationInfoList) },
-                        onItemClick = { onExerciseClick(it) }
-
-                    )
-
-                    is ExerciseUiBlock.Banner -> {
-                        bannerItem(
-                            index = index,
-                            banner = block,
-                            onClick = onBannerClick
-                        )
-                    }
-
-                    is ExerciseUiBlock.Exercise -> {
-                        exerciseItem(
-                            index = index,
-                            publicationInfo = block.publicationInfo,
-                            isPremium = isPremium,
-                            hazeState = itemsHazeState,
-                            onClick = onExerciseClick
-                        )
-                    }
-
-                    is ExerciseUiBlock.Category -> {
-                        genericRowItem(
+                exerciseBlocks.forEachIndexed { index, block ->
+                    when (block) {
+                        is ExerciseList -> genericRowItem(
                             items = block.publicationInfoList,
                             title = block.title,
-                            description = null,
+                            description = block.description,
                             isPremium = isPremium,
                             iconRes = R.drawable.ic_type_exercise,
                             itemId = { it.id },
@@ -187,15 +172,50 @@ private fun ExercisesContent(
                             itemDuration = { it.durationMinutes ?: 0 },
                             onMoreClick = { onMoreClick(block.publicationInfoList) },
                             onItemClick = { onExerciseClick(it) }
-
                         )
-                    }
 
-                    else -> {}
+                        is ExerciseUiBlock.Banner -> {
+                            bannerItem(
+                                index = index,
+                                banner = block,
+                                onClick = onBannerClick
+                            )
+                        }
+
+                        is ExerciseUiBlock.Exercise -> {
+                            exerciseItem(
+                                index = index,
+                                publicationInfo = block.publicationInfo,
+                                isPremium = isPremium,
+                                hazeState = itemsHazeState,
+                                onClick = onExerciseClick
+                            )
+                        }
+
+                        is ExerciseUiBlock.Category -> {
+                            genericRowItem(
+                                items = block.publicationInfoList,
+                                title = block.title,
+                                description = null,
+                                isPremium = isPremium,
+                                iconRes = R.drawable.ic_type_exercise,
+                                itemId = { it.id },
+                                itemAlias = { it.alias },
+                                itemTitle = { it.title },
+                                isPremiumContent = { it.isPremium },
+                                itemImageUrl = { it.imageUrl },
+                                itemDuration = { it.durationMinutes ?: 0 },
+                                onMoreClick = { onMoreClick(block.publicationInfoList) },
+                                onItemClick = { onExerciseClick(it) }
+                            )
+                        }
+
+                        else -> {}
+                    }
                 }
-            }
-            item {
-                Spacer(modifier = Modifier.navigationBarsPadding().padding(bottom = 96.dp))
+                item {
+                    Spacer(modifier = Modifier.navigationBarsPadding().padding(bottom = 96.dp))
+                }
             }
         }
     }
@@ -204,7 +224,7 @@ private fun ExercisesContent(
 private fun LazyListScope.bannerItem(
     index: Int,
     banner: ExerciseUiBlock.Banner,
-    onClick: (List<Int>) -> Unit
+    onClick: (ExerciseUiBlock.Banner) -> Unit
 ) = item(key = "banner_${index}") {
     AsyncImage(
         model = banner.imageUrl,
@@ -215,7 +235,7 @@ private fun LazyListScope.bannerItem(
             .clip(RoundedCornerShape(24.dp))
             .fillMaxWidth()
             .noRippleClickable {
-                onClick(banner.ids)
+                onClick(banner)
             }
     )
 }
@@ -246,7 +266,7 @@ private fun LazyListScope.exerciseItem(
             )
         }
 
-        Column(
+        Row(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .hazeEffect(
                     state = hazeState,
@@ -254,44 +274,52 @@ private fun LazyListScope.exerciseItem(
                 )
                 .zIndex(1f)
                 .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
-            Text(
-                text = publicationInfo.title.orEmpty(),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
-                color = White,
-            )
-            Row() {
-                Icon(
-                    modifier = Modifier.size(16.dp),
-                    painter = painterResource(publicationInfo.publicationType.getIconRes()),
-                    contentDescription = null,
-                    tint = White.copy(alpha = 0.6f)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = publicationInfo.title.orEmpty(),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
+                    color = White,
                 )
+                Row() {
+                    Icon(
+                        modifier = Modifier.size(16.dp),
+                        painter = painterResource(publicationInfo.publicationType.getIconRes()),
+                        contentDescription = null,
+                        tint = White.copy(alpha = 0.6f)
+                    )
 
-                Text(
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    text = "•",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.ExtraLight,
-                    ),
-                    color = White.copy(alpha = 0.6f),
-                )
-                Text(
-                    text = "${publicationInfo.durationMinutes} minutes",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.ExtraLight,
-                    ),
-                    color = White.copy(alpha = 0.6f),
-                )
+                    Text(
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        text = "•",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.ExtraLight,
+                        ),
+                        color = White.copy(alpha = 0.6f),
+                    )
+                    Text(
+                        text = "${publicationInfo.durationMinutes} minutes",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.ExtraLight,
+                        ),
+                        color = White.copy(alpha = 0.6f),
+                    )
+                }
             }
 
-            Text(
-                text = publicationInfo.subtitle.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal),
-                color = White.copy(alpha = 0.6f),
-                maxLines = 2,
-                overflow = Ellipsis,
+            Icon(
+                modifier = Modifier.background(
+                    color = White.copy(alpha = 0.1f),
+                    shape = CircleShape
+                ).padding(10.dp).size(14.dp),
+                painter = painterResource(id = R.drawable.ic_play),
+                contentDescription = null,
+                tint = White
             )
         }
     }

@@ -228,6 +228,8 @@ dependencies {
     implementation(libs.play.app.update.ktx)
     implementation(libs.haze)
     implementation(libs.haze.materials)
+    implementation(libs.appsflyer)
+    implementation(libs.installreferrer)
 
     // Billing
     implementation(libs.billing.client)

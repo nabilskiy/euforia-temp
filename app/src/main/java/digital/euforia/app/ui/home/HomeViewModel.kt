@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,6 +11,8 @@ import digital.euforia.app.domain.model.home.defaultNavBarItems
 import digital.euforia.app.domain.usecase.accompaniment.SyncAccompanimentsUseCase
 import digital.euforia.app.domain.usecase.home.GetNavBarItemsFlowUseCase
 import digital.euforia.app.domain.usecase.program.SyncPackagesUseCase
+import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.navigation.deeplink.DeepLinkCommand
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest

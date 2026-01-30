@@ -56,7 +56,7 @@ fun HomeScreen(
     val navController = rememberNavController()
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect)
+        handleSideEffect(sideEffect, navController)
     }
 
     HomeContent(
@@ -139,7 +139,7 @@ fun BoxScope.BottomNavigation(
                     isSelected = selectedIndex == index,
                     onClick = {
                         if (selectedIndex != index) {
-                            when(item) {
+                            when (item) {
                                 NavBarItem.PLAN -> analyticSender.tabTodayClick()
                                 NavBarItem.PROGRAMS -> analyticSender.tabLibraryClick()
                                 NavBarItem.SOUNDSCAPES -> analyticSender.tabScenesClick()
@@ -190,10 +190,9 @@ fun RowScope.BottomNavigationItem(item: NavBarItem, isSelected: Boolean, onClick
             MaxBadge(Modifier.align(Alignment.BottomCenter))
         }
     }
-
 }
 
-private fun handleSideEffect(sideEffect: HomeSideEffect) {
+private fun handleSideEffect(sideEffect: HomeSideEffect, navController: NavHostController) {
     when (sideEffect) {
         else -> {}
     }
