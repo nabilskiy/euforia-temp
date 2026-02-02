@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.navigation
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -13,14 +14,12 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import digital.euforia.app.R
-import digital.euforia.app.domain.usecase.ParseDeepLinkUseCase
 import digital.euforia.app.ui.home.HomeScreen
 import digital.euforia.app.ui.howitworks.HowItWorksScreen
 import digital.euforia.app.ui.onboarding.OnboardingScreen
@@ -61,65 +60,10 @@ fun AppNavigation(
     isBottomBarShown: MutableState<Boolean>,
     deepLinkUri: String?
 ) {
-    val parseDeepLinkUseCase = ParseDeepLinkUseCase()
-
     LaunchedEffect(Unit) {
         navController.addOnDestinationChangedListener { _, destination, arguments ->
             Timber.tag("NAVIGATION")
                 .d("Destination changed: ${destination.route}, args: $arguments")
-        }
-    }
-
-    LaunchedEffect(deepLinkUri) {
-        deepLinkUri?.let { uriString ->
-            val currentDestination = navController.currentDestination
-            val currentRoute = currentDestination?.route
-            if (currentRoute != null && (currentRoute.contains("Splash") || currentRoute.contains("Splash?"))) {
-                // If we are on Splash, it will be handled by SplashViewModel
-                return@let
-            }
-            
-            // If we are already on the destination, don't navigate again (to avoid loops if URI state is not cleared)
-            val destination = parseDeepLinkUseCase.invoke(uriString.toUri())
-            
-            Timber.tag("NAVIGATION").d("Deep link received: $uriString -> $destination")
-
-            // If we are already on this destination with the same arguments, skip navigation
-            val currentBackStackEntry = navController.currentBackStackEntry
-            val destinationRoute = destination::class.qualifiedName ?: destination.toString()
-            if (currentBackStackEntry?.destination?.route == destinationRoute) {
-                // Check if it's the same publication ID for example
-                // This is a bit simplified, but helps avoid loops
-                Timber.tag("NAVIGATION").d("Already on destination $destinationRoute, skipping navigation")
-                return@let
-            }
-            
-            navController.navigate(destination) {
-                // If we are navigating to a HomeDestination from a deep link, 
-                // we want to ensure Home is the base.
-                if (destination is HomeDestination && destination !is HomeDestination.Plan) {
-                    try {
-                        // Check if Home is already in backstack
-                        val hasHome = try { navController.getBackStackEntry<Home>(); true } catch (e: Exception) { false }
-                        
-                        if (!hasHome) {
-                            // If no Home, navigate to it first
-                            navController.navigate(Home()) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
-                        
-                        popUpTo("digital.euforia.app.ui.navigation.Home") {
-                            saveState = true
-                            inclusive = false
-                        }
-                    } catch (e: Exception) {
-                        Timber.tag("NAVIGATION").e("Failed to ensure Home base: ${e.message}")
-                    }
-                }
-                launchSingleTop = true
-                restoreState = false 
-            }
         }
     }
 
@@ -128,7 +72,7 @@ fun AppNavigation(
             NavHost(
                 modifier = Modifier.fillMaxSize(),
                 navController = navController,
-                startDestination = Splash(),
+                startDestination = Splash(deepLinkUri),
                 enterTransition = {
                     // forward navigation
                     slideIntoContainer(
@@ -167,10 +111,7 @@ fun AppNavigation(
                     }
                 ) {
                     isBottomBarShown.value = false
-                    SplashScreen(
-                        navController = navController,
-                        viewModel = hiltViewModel()
-                    )
+                    SplashScreen(navController = navController, viewModel = hiltViewModel())
                 }
                 composable<Video>(
                     enterTransition = {
@@ -200,46 +141,15 @@ fun AppNavigation(
                 }
 
                 composable<Home> {
-                    val home = it.toRoute<Home>()
-                    isBottomBarShown.value = true
-                    // Only navigate to Plan if we are exactly on the Home route
-                    // and not on any of its sub-destinations.
-                    // This prevents overriding deep links.
-                    LaunchedEffect(home.deepLinkUri, deepLinkUri) {
-                        val route = navController.currentDestination?.route
-                        Timber.tag("NAVIGATION").d("Home route reached. Current destination route: $route, args: ${it.arguments}")
-                        
-                        val isExactHome = route == Home::class.qualifiedName || 
-                                         route == "digital.euforia.app.ui.navigation.Home" || 
-                                         route?.startsWith("digital.euforia.app.ui.navigation.Home?") == true ||
-                                         route == "digital.euforia.app.ui.navigation.HomeDestination.Plan"
-                        
-                        if (isExactHome) {
-                            if (!deepLinkUri.isNullOrBlank()) {
-                                val destination = parseDeepLinkUseCase.invoke(deepLinkUri.toUri())
-                                Timber.tag("NAVIGATION").d("Home redirecting to DeepLink: $deepLinkUri -> $destination")
-                                navController.navigate(destination) {
-                                    // We keep Home in backstack
-                                    popUpTo("digital.euforia.app.ui.navigation.Home") { inclusive = false }
-                                }
-                            } else if (!home.deepLinkUri.isNullOrBlank()) {
-                                val destination = parseDeepLinkUseCase.invoke(home.deepLinkUri.toUri())
-                                Timber.tag("NAVIGATION").d("Home redirecting to DeepLink (from route): ${home.deepLinkUri} -> $destination")
-                                navController.navigate(destination) {
-                                    // We keep Home in backstack
-                                    popUpTo("digital.euforia.app.ui.navigation.Home") { inclusive = false }
-                                }
-                            } else {
-                                Timber.tag("NAVIGATION").d("Redirecting to Plan from Home (no deep link)")
-                                navController.navigate(HomeDestination.Plan) {
-                                    popUpTo("digital.euforia.app.ui.navigation.Home") { inclusive = true }
-                                }
+//                    if (deepLinkUri != null) {
+                        LaunchedEffect(Unit) {
+                            navController.navigate(HomeDestination.Plan) {
+                                popUpTo(Home(deepLinkUri)) { inclusive = true }
                             }
-                        } else {
-                            Timber.tag("NAVIGATION").d("Not redirecting from Home. isExactHome: $isExactHome, route: $route")
                         }
-                    }
-                    Box(Modifier.fillMaxSize()) // Render an empty box to avoid black screen while navigating
+//                    } else {
+//                        HomeScreen(navController, hiltViewModel(), isBottomBarShown)
+//                    }
                 }
 
                 // Home Destinations moved here

@@ -12,9 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import digital.euforia.app.ui.navigation.HomeDestination
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -42,10 +40,7 @@ import digital.euforia.app.ui.util.setupEdgeToEdge
 import digital.euforia.app.ui.util.widget.FloatingOrbitingBalls
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import digital.euforia.app.ui.navigation.Onboarding
-import digital.euforia.app.ui.navigation.Splash
 import org.orbitmvi.orbit.compose.collectAsState
-import org.orbitmvi.orbit.compose.collectSideEffect
 import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
@@ -85,28 +80,9 @@ class MainActivity : ComponentActivity() {
             val state by viewModel.collectAsState()
             val spheresState = rememberSaveable { mutableStateOf(false) }
             val isBottomBarShown = rememberSaveable { mutableStateOf(false) }
-            val deeplinkUriState = rememberSaveable { mutableStateOf<String?>(null) }
-
             applyLocale(state.language)
             EuforiaTheme {
                 val navController: NavHostController = rememberNavController()
-
-                LaunchedEffect(intent.data) {
-                    intent.data?.let { uri ->
-                        val uriString = uri.toString()
-                        deeplinkUriState.value = uriString
-
-                        // If app started from deep link, navigate to Splash with skipSplash = true
-                        // if we are at the beginning of the navigation
-                        val currentDest = navController.currentDestination
-                        if (currentDest == null || currentDest.route?.contains("Splash") == true) {
-                            Timber.tag("NAVIGATION").d("MainActivity: Navigating to Splash with skipSplash=true for $uriString")
-                            navController.navigate(Splash(deepLinkUri = uriString, skipSplash = true)) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
-                    }
-                }
 
                 // Use the activity context directly for AppNavigation
                 Box {
@@ -124,21 +100,18 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    val deeplinkDestination = intent.data?.let { uri ->
+                        parseDeepLinkUseCase.invoke(uri)
+                    }
+
+                    val deepLink = intent.data
+
                     LocalizedScope(langTag = state.language) {
-                        viewModel.collectSideEffect { sideEffect ->
-                            when (sideEffect) {
-                                is MainSideEffect.NavigateOnboarding -> {
-                                    navController.navigate(Onboarding) {
-                                        popUpTo(0) { inclusive = true }
-                                    }
-                                }
-                            }
-                        }
                         AppNavigation(
                             navController = navController,
                             spheresState = spheresState,
                             isBottomBarShown = isBottomBarShown,
-                            deepLinkUri = deeplinkUriState.value
+                            deepLinkUri = deepLink.toString()
                         )
                     }
                 }
@@ -201,6 +174,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        setIntent(intent)
+        // warm start
+        val command = intent.data?.let { uri ->
+            parseDeepLinkUseCase.invoke(uri)
+        } // do smth with this
     }
 }

@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.programs.publication
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -62,6 +63,7 @@ import digital.euforia.app.R
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.NavBarlessScreen
+import digital.euforia.app.ui.navigation.Splash
 import digital.euforia.app.ui.programs.article.ArticleBottomSheet
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.PrimaryBackground
@@ -116,7 +118,7 @@ fun PublicationScreen(
                 similarItems = state.similarPublications,
                 onSimilarItemClick = viewModel::onPublicationClicked,
                 onShowSimilarClick = viewModel::onShowSimilarClicked,
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { onBackClick(navController) },
                 onPlayClick = {
                     if (state.publicationInfo?.isPremium == true && !state.isPremium) {
                         launchSubscriptionActivity()
@@ -128,6 +130,18 @@ fun PublicationScreen(
                 launchSubscriptionActivity = launchSubscriptionActivity,
             )
         }
+    }
+}
+
+private fun onBackClick(navController: NavHostController) {
+    val previousRoute = navController.previousBackStackEntry?.destination?.route
+    val isSplash = previousRoute?.contains(Splash::class.qualifiedName.toString()) == true
+    if (previousRoute == null || isSplash) {
+        navController.navigate(HomeDestination.Plan) {
+            popUpTo(0) { inclusive = true }
+        }
+    } else {
+        navController.popBackStack()
     }
 }
 
@@ -265,6 +279,9 @@ private fun PublicationContent(
         }
     }
 
+    BackHandler(enabled = true) {
+        onBackClick()
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(

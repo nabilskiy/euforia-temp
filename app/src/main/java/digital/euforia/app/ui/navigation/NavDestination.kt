@@ -1,20 +1,14 @@
 package digital.euforia.app.ui.navigation
 
 import androidx.annotation.Keep
-import android.net.Uri
-import android.os.Bundle
-import androidx.navigation.NavType
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.programs.publication.PublicationType
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 @Serializable
 @Keep
-data class Splash(val deepLinkUri: String? = null, val skipSplash: Boolean = false) : HomeDestination()
+data class Splash(val deepLinkUri: String? = null) : HomeDestination()
 
 @Serializable
 @Keep

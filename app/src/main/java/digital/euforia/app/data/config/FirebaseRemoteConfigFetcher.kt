@@ -7,7 +7,6 @@ import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import digital.euforia.app.R
-import timber.log.Timber
 import digital.euforia.app.domain.util.ResultWrapper
 import digital.euforia.app.domain.util.runCatchingWrapper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,37 +35,24 @@ abstract class FirebaseRemoteConfigFetcher(
         timeout: Long = INITIAL_MAX_DELAY,
         initListener: () -> Unit
     ) {
-        Timber.tag(TAG).d("initOnColdStartWithTimeout: timeout=$timeout")
         this.initListener = initListener
 
-        kotlinx.coroutines.withTimeoutOrNull(timeout) {
-            initOnColdStart()
-        }
-        if (this.initListener != null) {
-            Timber.tag(TAG).d("initOnColdStartWithTimeout: Timed out, notifying manually")
-            notifyAndForget()
-        }
+        // Start the actual fetch
+        initOnColdStart()
     }
 
     suspend fun initOnColdStart() {
-        Timber.tag(TAG).d("initOnColdStart: started")
         isFetchingOnColdStart = true
         runCatching { // Preventing failure when no internet: "The client had an error while calling the backend"
             with(remoteConfig) {
-                Timber.tag(TAG).d("initOnColdStart: fetching...")
                 fetch(0).await()
-                Timber.tag(TAG).d("initOnColdStart: activating...")
                 activate().await()
                 _fetchedAndActivatedFlow.value = true
-                Timber.tag(TAG).d("initOnColdStart: notifying...")
                 notifyAndForget()
                 isFetchingOnColdStart = false
                 setFetchTimeoutForHotStart()
                 onConfigsUpdated()
             }
-        }.onFailure {
-            Timber.tag(TAG).e(it, "initOnColdStart: failed")
-            notifyAndForget()
         }
     }
 

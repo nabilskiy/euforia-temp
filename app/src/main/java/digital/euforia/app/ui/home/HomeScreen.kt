@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import timber.log.Timber
 import digital.euforia.app.R
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.domain.model.home.NavBarItem
@@ -113,13 +112,10 @@ fun BoxScope.BottomNavigation(
             val dest = backStackEntry.destination
             // Find index of the nav item whose route matches current destination
             val route = dest.route?.substringBefore("?")
-            Timber.tag("NAVIGATION").d("BottomNavigation sync: route=$route")
             val newIndex = items.indexOfFirst { item ->
-                val itemRoute = item.destination::class.qualifiedName
-                route == itemRoute || (route != null && itemRoute != null && route.contains(itemRoute))
+                route == item.destination::class.qualifiedName
             }
             if (newIndex != -1 && newIndex != selectedIndex) {
-                Timber.tag("NAVIGATION").d("Syncing nav index to $newIndex for route $route")
                 onNavItemSelected(newIndex)
             }
         }

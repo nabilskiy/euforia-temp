@@ -1,6 +1,6 @@
 package digital.euforia.app.ui.splash
 
-import androidx.core.net.toUri
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,9 +12,9 @@ import digital.euforia.app.domain.usecase.network.CheckInternetConnectionUseCase
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.util.postEffect
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,80 +28,64 @@ class SplashViewModel @Inject constructor(
     ContainerHost<SplashState, SplashSideEffect> {
 
     private val deepLinkUri: String? =
-        savedStateHandle["deepLinkUri"]
-    private val skipSplash: Boolean =
-        savedStateHandle["skipSplash"] ?: false
-
-    init {
-        Timber.tag("NAVIGATION").d("SplashViewModel: init. skipSplash=$skipSplash, deepLinkUri=$deepLinkUri")
-    }
+        savedStateHandle.get<String>("deepLinkUri")
 
     override val container = container<SplashState, SplashSideEffect>(
-        initialState = SplashState(showContent = !skipSplash),
+        initialState = SplashState(),
         onCreate = { updateRemoteConfig() }
     )
 
     private fun updateRemoteConfig() {
-        Timber.tag("NAVIGATION").d("SplashViewModel: updateRemoteConfig. skipSplash=$skipSplash, deepLinkUri=$deepLinkUri")
-        viewModelScope.launch {
+        viewModelScope.launch() {
             val isOnboardingCompleted = appPreferences.isOnboardingCompleted()
             val firstLaunchDate = appPreferences.getFirstLaunchDate()
             if (firstLaunchDate == null) {
                 appPreferences.setFirstLaunchDate()
             }
-            
-            // Add a timeout for the whole initialization process
-            var finished = false
-            kotlinx.coroutines.withTimeoutOrNull(5000L) {
-                val networkAvailable = checkInternetConnectionUseCase.invoke()
+            val networkAvailable = checkInternetConnectionUseCase.invoke()
 
-                if (networkAvailable) {
-                    Timber.tag("NAVIGATION").d("SplashViewModel: Network available, updating remote config...")
-                    updateRemoteConfigUseCase {
-                        Timber.tag("NAVIGATION").d("SplashViewModel: Remote config updated. isOnboardingCompleted=$isOnboardingCompleted")
-                        if (!finished) {
-                            finished = true
-                            navigateToNext(isOnboardingCompleted)
+            if (networkAvailable) {
+                updateRemoteConfigUseCase {
+                    if (isOnboardingCompleted) {
+                        if (deepLinkUri != null) {
+                            val deepLinkDestination =
+                                parseDeepLinkUseCase.invoke(Uri.parse(deepLinkUri))
+                            // Here you can handle navigation to deep link destination if needed
+                            Timber.tag("NAVIGATION").d("Deep link URI found, navigating to destination $deepLinkDestination")
+                            postEffect(SplashSideEffect.NavigateDestination(deepLinkDestination))
+                        } else {
+                            Timber.tag("NAVIGATION").d("No deep link URI found, navigating to home")
+                            postEffect(SplashSideEffect.NavigateHome(deepLinkUri))
                         }
+                    } else {
+                        postEffect(SplashSideEffect.NavigateOnboarding)
+                    }
+                }
+            } else {
+                if (isOnboardingCompleted) {
+                    if (deepLinkUri != null) {
+                        val deepLinkDestination =
+                            parseDeepLinkUseCase.invoke(Uri.parse(deepLinkUri))
+                        // Here you can handle navigation to deep link destination if needed
+                        Timber.tag("NAVIGATION").d("Deep link URI found, navigating to destination $deepLinkDestination")
+                        postEffect(SplashSideEffect.NavigateDestination(deepLinkDestination))
+                    } else {
+                        Timber.tag("NAVIGATION").d("No deep link URI found, navigating to home")
+                        postEffect(SplashSideEffect.NavigateHome(deepLinkUri))
                     }
                 } else {
-                    Timber.tag("NAVIGATION").d("SplashViewModel: Network NOT available. isOnboardingCompleted=$isOnboardingCompleted")
-                    if (!finished) {
-                        finished = true
-                        navigateToNext(isOnboardingCompleted)
-                    }
-                }
-            } ?: run {
-                Timber.tag("NAVIGATION").w("SplashViewModel: Initialization timed out! Forcing navigation.")
-                if (!finished) {
-                    finished = true
-                    navigateToNext(isOnboardingCompleted)
+                    postEffect(SplashSideEffect.NavigateOnboarding)
                 }
             }
-        }
-    }
-
-    private fun navigateToNext(isOnboardingCompleted: Boolean) {
-        Timber.tag("NAVIGATION").d("SplashViewModel: navigateToNext. isOnboardingCompleted=$isOnboardingCompleted")
-        if (isOnboardingCompleted) {
-            if (deepLinkUri != null) {
-                Timber.tag("NAVIGATION").d("SplashViewModel: Posting NavigateDeepLink: $deepLinkUri")
-                postEffect(SplashSideEffect.NavigateDeepLink(deepLinkUri))
-            } else {
-                Timber.tag("NAVIGATION").d("SplashViewModel: Posting NavigateHome")
-                postEffect(SplashSideEffect.NavigateHome)
-            }
-        } else {
-            Timber.tag("NAVIGATION").d("SplashViewModel: Posting NavigateOnboarding")
-            postEffect(SplashSideEffect.NavigateOnboarding)
         }
     }
 }
 
-data class SplashState(val showContent: Boolean = true, val errorMessage: String? = null)
+data class SplashState(val errorMessage: String? = null)
 
 sealed class SplashSideEffect {
     object NavigateOnboarding : SplashSideEffect()
-    object NavigateHome : SplashSideEffect()
-    data class NavigateDeepLink(val deepLinkUri: String) : SplashSideEffect()
+    data class NavigateHome(val deepLinkUri: String?) : SplashSideEffect()
+    data class NavigateDestination(val destination: HomeDestination) : SplashSideEffect()
+//    data class NavigateDeepLink(val deepLinkDestination: HomeDestination) : SplashSideEffect()
 }
