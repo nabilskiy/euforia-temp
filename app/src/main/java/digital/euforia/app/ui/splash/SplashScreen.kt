@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import digital.euforia.app.R
+import timber.log.Timber
+import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.Home
 import digital.euforia.app.ui.navigation.Splash
 import digital.euforia.app.ui.navigation.Video
@@ -36,7 +38,12 @@ fun SplashScreen(navController: NavHostController, viewModel: SplashViewModel) {
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(navController, sideEffect)
     }
-    SplashScreenContent()
+    if (state.showContent) {
+        SplashScreenContent()
+    } else {
+        // Just a background to avoid flicker if skipSplash is true
+        Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground))
+    }
 }
 
 @Composable
@@ -61,16 +68,24 @@ private fun SplashScreenContent() {
 }
 
 private fun handleSideEffect(navController: NavHostController, sideEffect: SplashSideEffect) {
+    Timber.tag("NAVIGATION").d("SplashScreen: handleSideEffect $sideEffect")
     when (sideEffect) {
         is SplashSideEffect.NavigateOnboarding -> {
             navController.navigate(Video) {
-                popUpTo(Splash) { inclusive = true }
+                popUpTo<Splash> { inclusive = true }
             }
         }
 
         is SplashSideEffect.NavigateHome -> {
-            navController.navigate(Home) {
-                popUpTo(Splash) { inclusive = true }
+            navController.navigate(Home()) {
+                popUpTo<Splash> { inclusive = true }
+            }
+        }
+
+        is SplashSideEffect.NavigateDeepLink -> {
+            Timber.tag("NAVIGATION").d("Splash navigating to Home with DeepLink: ${sideEffect.deepLinkUri}")
+            navController.navigate(Home(deepLinkUri = sideEffect.deepLinkUri)) {
+                popUpTo<Splash> { inclusive = true }
             }
         }
 

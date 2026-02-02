@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,12 +34,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
+import timber.log.Timber
 import digital.euforia.app.R
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.domain.model.home.NavBarItem
 import digital.euforia.app.ui.navigation.HomeDestination
-import digital.euforia.app.ui.navigation.HomeNavigation
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.NavBarIcon
 import digital.euforia.app.ui.theme.White
@@ -51,9 +51,10 @@ val NavBarHeight = 50.dp
 
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel
+    navController: NavHostController,
+    viewModel: HomeViewModel,
+    isBottomBarShown: MutableState<Boolean>
 ) {
-    val navController = rememberNavController()
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(sideEffect, navController)
@@ -61,6 +62,7 @@ fun HomeScreen(
 
     HomeContent(
         navController = navController,
+        isBottomBarShown = isBottomBarShown,
         navItems = state.navBarItems,
         selectedIndex = state.selectedItemIndex,
         analyticSender = viewModel.analyticSender,
@@ -71,18 +73,20 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     navController: NavHostController,
+    isBottomBarShown: MutableState<Boolean>,
     navItems: List<NavBarItem>,
     selectedIndex: Int,
     analyticSender: AnalyticSender,
     onNavItemSelected: (Int) -> Unit
 ) {
-    val isBottomBarShown = remember { mutableStateOf(true) }
     Box(modifier = Modifier.fillMaxSize()) {
-        HomeNavigation(navController, isBottomBarShown)
+        // Shared NavHost handles the screens now.
+        // We only show the BottomNavigation here.
         AnimatedVisibility(
             visible = isBottomBarShown.value,
             enter = fadeIn(animationSpec = tween(durationMillis = 300)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300)),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             BottomNavigation(
                 navController = navController,
@@ -109,10 +113,13 @@ fun BoxScope.BottomNavigation(
             val dest = backStackEntry.destination
             // Find index of the nav item whose route matches current destination
             val route = dest.route?.substringBefore("?")
+            Timber.tag("NAVIGATION").d("BottomNavigation sync: route=$route")
             val newIndex = items.indexOfFirst { item ->
-                route == item.destination::class.qualifiedName
+                val itemRoute = item.destination::class.qualifiedName
+                route == itemRoute || (route != null && itemRoute != null && route.contains(itemRoute))
             }
             if (newIndex != -1 && newIndex != selectedIndex) {
+                Timber.tag("NAVIGATION").d("Syncing nav index to $newIndex for route $route")
                 onNavItemSelected(newIndex)
             }
         }
@@ -150,7 +157,7 @@ fun BoxScope.BottomNavigation(
                                 // Pop up to the start destination of the graph to
                                 // avoid building up a large stack of destinations
                                 // on the back stack as users select items
-                                popUpTo(navController.graph.startDestinationId) {
+                                popUpTo(HomeDestination.Plan::class.qualifiedName!!) {
                                     saveState = true
                                 }
                                 // Avoid multiple copies of the same destination when
