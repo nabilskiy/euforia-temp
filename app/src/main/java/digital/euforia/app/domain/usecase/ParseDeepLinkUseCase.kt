@@ -100,9 +100,39 @@ class ParseDeepLinkUseCase @Inject constructor() {
                 }
             }
 
-            "articles" -> {
+            "exercises" -> {
                 val id = segInt(0)
                 val idsParam = uri.getQueryParameter("ids")
+                val ids = idsParam
+                    ?.split(",")
+                    ?.mapNotNull { it.trim().toLongOrNull() }
+                    ?.takeIf { it.isNotEmpty() }
+
+                val pro = uri.getQueryParameter("pro")?.lowercase() == "pro"
+
+                when {
+                    id != null -> {
+                        HomeDestination.PublicationDetails(
+                            id = id,
+                            publicationType = PublicationType.EXERCISE,
+                            packageTitle = ""
+                        )
+                    }
+
+                    ids != null || pro -> {
+                        HomeDestination.Publications(
+                            type = PublicationType.EXERCISE,
+                            ids = ids?.joinToString(",").orEmpty()
+                        )
+                    }
+
+                    else -> HomeDestination.Plan
+                }
+            }
+
+            "articles" -> {
+                val id = segInt(0)
+                val idsParam = uri.getQueryParameter("category_id")
                 val ids = idsParam
                     ?.split(",")
                     ?.mapNotNull { it.trim().toLongOrNull() }
@@ -129,6 +159,7 @@ class ParseDeepLinkUseCase @Inject constructor() {
                     else -> HomeDestination.Plan
                 }
             }
+
 //            // Articles
 //            "articles" -> {
 //                val categoryId = uri.getQueryParameter("category_id")?.toLongOrNull()

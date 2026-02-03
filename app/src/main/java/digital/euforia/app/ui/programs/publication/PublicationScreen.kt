@@ -70,6 +70,7 @@ import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
+import digital.euforia.app.ui.util.onDeepLinkBackClick
 import digital.euforia.app.ui.util.shadow
 import digital.euforia.app.ui.util.sharePublication
 import digital.euforia.app.ui.util.toComposeColor
@@ -118,7 +119,7 @@ fun PublicationScreen(
                 similarItems = state.similarPublications,
                 onSimilarItemClick = viewModel::onPublicationClicked,
                 onShowSimilarClick = viewModel::onShowSimilarClicked,
-                onBackClick = { onBackClick(navController) },
+                onBackClick = { onDeepLinkBackClick(navController) },
                 onPlayClick = {
                     if (state.publicationInfo?.isPremium == true && !state.isPremium) {
                         launchSubscriptionActivity()
@@ -130,18 +131,6 @@ fun PublicationScreen(
                 launchSubscriptionActivity = launchSubscriptionActivity,
             )
         }
-    }
-}
-
-private fun onBackClick(navController: NavHostController) {
-    val previousRoute = navController.previousBackStackEntry?.destination?.route
-    val isSplash = previousRoute?.contains(Splash::class.qualifiedName.toString()) == true
-    if (previousRoute == null || isSplash) {
-        navController.navigate(HomeDestination.Plan) {
-            popUpTo(0) { inclusive = true }
-        }
-    } else {
-        navController.popBackStack()
     }
 }
 
@@ -279,9 +268,7 @@ private fun PublicationContent(
         }
     }
 
-    BackHandler(enabled = true) {
-        onBackClick()
-    }
+    BackHandler(enabled = true) { onBackClick() }
 
     Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(

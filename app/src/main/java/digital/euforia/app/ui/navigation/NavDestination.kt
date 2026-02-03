@@ -141,6 +141,7 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val id: Int,
         val publicationType: PublicationType,
         val packageTitle: String,
+        val categoryId: Int? = null,
     ) : HomeDestination()
 
     @Serializable

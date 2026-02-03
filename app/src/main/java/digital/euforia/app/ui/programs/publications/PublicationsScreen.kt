@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.programs.publications
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,6 +55,7 @@ import digital.euforia.app.ui.programs.publication.getIconRes
 import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.onDeepLinkBackClick
 import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
@@ -85,7 +87,7 @@ fun PublicationsScreen(
             publicationInfos = state.publicationInfos,
             onRetryClick = viewModel::onRetryClicked,
             onDownloadsClick = viewModel::onDownloadsClicked,
-            onBackClick = { navController.popBackStack() },
+            onBackClick = { onDeepLinkBackClick(navController) },
             onPublicationClick = viewModel::onPublicationClicked,
         )
     }
@@ -115,6 +117,8 @@ private fun PublicationsContent(
             firstIndex > 0 || firstOffset > thresholdPx
         }
     }
+
+    BackHandler(enabled = true) { onBackClick() }
 
     Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(

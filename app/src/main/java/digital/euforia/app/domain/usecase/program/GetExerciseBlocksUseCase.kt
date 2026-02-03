@@ -66,7 +66,8 @@ class GetExerciseBlocksUseCase @Inject constructor(
             return ExerciseUiBlock.Banner(
                 imageUrl = config.entity.imageUrl.orEmpty(),
                 ids = ids,
-                id = null
+                id = null,
+                actionUrl = config.entity.actionUrl
             )
         } else {
             val id = actionUrl
@@ -75,7 +76,8 @@ class GetExerciseBlocksUseCase @Inject constructor(
             return ExerciseUiBlock.Banner(
                 imageUrl = config.entity.imageUrl.orEmpty(),
                 ids = emptyList(),
-                id = id
+                id = id,
+                actionUrl = config.entity.actionUrl
             )
         }
     }
@@ -148,7 +150,8 @@ sealed class ExerciseUiBlock {
     data class Banner(
         val imageUrl: String,
         val ids: List<Int>,
-        val id: Int?
+        val id: Int?,
+        val actionUrl: String?
     ) : ExerciseUiBlock()
 
     data class Category(

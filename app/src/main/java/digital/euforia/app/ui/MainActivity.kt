@@ -100,10 +100,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    val deeplinkDestination = intent.data?.let { uri ->
-                        parseDeepLinkUseCase.invoke(uri)
-                    }
-
                     val deepLink = intent.data
 
                     LocalizedScope(langTag = state.language) {

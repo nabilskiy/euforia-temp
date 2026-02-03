@@ -11,6 +11,8 @@ import digital.euforia.app.domain.model.config.BlockType
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.domain.usecase.program.GetProgramsUseCase
 import digital.euforia.app.domain.usecase.program.GetProgramsWithChildrenUseCase
+import digital.euforia.app.domain.usecase.program.GetSearchResultsUseCase
+import digital.euforia.app.domain.usecase.program.SearchResults
 import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
@@ -28,6 +30,7 @@ class ProgramsViewModel @Inject constructor(
     private val getProgramsWithChildrenUseCase: GetProgramsWithChildrenUseCase,
     private val getProgramsUseCase: GetProgramsUseCase,
     private val configFetcher: EuforiaRemoteConfigFetcher,
+    private val getSearchResultsUseCase: GetSearchResultsUseCase,
 ) : ViewModel(),
     ContainerHost<ProgramsState, ProgramsSideEffect> {
     override val container = container<ProgramsState, ProgramsSideEffect>(
@@ -232,7 +235,9 @@ data class ProgramsState(
     val articles: List<PublicationInfo> = emptyList(),
     val exerciseTitle: String = "Exercises",
     val articleTitle: String = "Articles",
-    val programsConfig: List<ProgramsConfig> = emptyList()
+    val programsConfig: List<ProgramsConfig> = emptyList(),
+    val searchQuery: String? = null,
+    val searchResults: SearchResults? = null
 )
 
 sealed class ProgramsSideEffect {

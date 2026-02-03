@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.programs.exercises
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,7 +35,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
-import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
@@ -50,7 +50,6 @@ import digital.euforia.app.domain.usecase.program.ExerciseUiBlock
 import digital.euforia.app.domain.usecase.program.ExerciseUiBlock.ExerciseList
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
-import digital.euforia.app.ui.programs.ProgramsSideEffect
 import digital.euforia.app.ui.programs.publication.getIconRes
 import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
@@ -72,8 +71,9 @@ fun ExercisesScreen(
     viewModel: ExercisesViewModel
 ) {
     val state by viewModel.collectAsState()
+    val context = LocalContext.current
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect, navController)
+        handleSideEffect(sideEffect, navController, context)
     }
 
     ExercisesContent(
@@ -325,8 +325,7 @@ private fun LazyListScope.exerciseItem(
     }
 }
 
-
-private fun handleSideEffect(sideEffect: ExercisesSideEffect, navController: NavHostController) {
+private fun handleSideEffect(sideEffect: ExercisesSideEffect, navController: NavHostController, context: Context) {
     when (sideEffect) {
         is ExercisesSideEffect.NavigateToPublication -> navController.navigate(
             HomeDestination.PublicationDetails(
@@ -342,6 +341,9 @@ private fun handleSideEffect(sideEffect: ExercisesSideEffect, navController: Nav
                 ids = sideEffect.ids
             )
         )
+
+        is ExercisesSideEffect.NavigateToDeepLink -> navController.navigate(sideEffect.url)
+        is ExercisesSideEffect.NavigateToDestination -> navController.navigate(sideEffect.destination)
 
         is ExercisesSideEffect.NavigateToDownloads -> navController.navigate(HomeDestination.Downloads)
         else -> {}

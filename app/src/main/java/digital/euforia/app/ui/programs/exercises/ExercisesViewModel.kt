@@ -1,14 +1,15 @@
 package digital.euforia.app.ui.programs.exercises
 
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.PublicationInfo
+import digital.euforia.app.domain.usecase.ParseDeepLinkUseCase
 import digital.euforia.app.domain.usecase.program.ExerciseUiBlock
 import digital.euforia.app.domain.usecase.program.GetExerciseBlocksUseCase
-import digital.euforia.app.ui.programs.ProgramsSideEffect
+import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
@@ -23,7 +24,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ExercisesViewModel @Inject constructor(
     private val getExerciseExerciseBlocksUseCase: GetExerciseBlocksUseCase,
-    private val profilePreferences: ProfilePreferences
+    private val profilePreferences: ProfilePreferences,
+    private val parseDeepLinkUseCase: ParseDeepLinkUseCase
 ) : ViewModel(),
     ContainerHost<ExercisesState, ExercisesSideEffect> {
     override val container = container<ExercisesState, ExercisesSideEffect>(
@@ -87,18 +89,9 @@ class ExercisesViewModel @Inject constructor(
     }
 
     fun onBannerClicked(banner: ExerciseUiBlock.Banner) {
-        val sideEffect = if (banner.ids.isNotEmpty()) {
-            val ids = banner.ids.joinToString(",")
-            ExercisesSideEffect.NavigateToPublications(
-                publicationType = PublicationType.EXERCISE,
-                ids = ids
-            )
-        } else if (banner.id != null) {
-            ExercisesSideEffect.NavigateToPublication(
-                id = banner.id,
-                type = PublicationType.EXERCISE,
-                packageTitle = ""
-            )
+        val sideEffect = if (banner.actionUrl != null) {
+            val destination = parseDeepLinkUseCase.invoke(banner.actionUrl.toUri())
+            ExercisesSideEffect.NavigateToDestination(destination = destination)
         } else {
             return
         }
@@ -133,6 +126,10 @@ sealed class ExercisesSideEffect {
         val publicationType: PublicationType,
         val ids: String
     ) : ExercisesSideEffect()
+
+    data class NavigateToDeepLink(val url: String) : ExercisesSideEffect()
+
+    data class NavigateToDestination(val destination: HomeDestination) : ExercisesSideEffect()
 
     data object NavigateToDownloads : ExercisesSideEffect()
 }

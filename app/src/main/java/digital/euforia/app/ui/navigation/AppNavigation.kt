@@ -124,11 +124,7 @@ fun AppNavigation(
                     spheresState.value = true
                     VideoScreen(navController = navController, viewModel = hiltViewModel())
                 }
-                composable<Onboarding>(
-//            enterTransition = {
-//            fadeIn(animationSpec = tween(2500)) // 500 мс fade out
-//        }
-                ) {
+                composable<Onboarding>() {
                     isBottomBarShown.value = false
                     spheresState.value = true
                     OnboardingScreen(navController = navController, viewModel = hiltViewModel())
@@ -142,11 +138,11 @@ fun AppNavigation(
 
                 composable<Home> {
 //                    if (deepLinkUri != null) {
-                        LaunchedEffect(Unit) {
-                            navController.navigate(HomeDestination.Plan) {
-                                popUpTo(Home(deepLinkUri)) { inclusive = true }
-                            }
+                    LaunchedEffect(Unit) {
+                        navController.navigate(HomeDestination.Plan) {
+                            popUpTo(Home(deepLinkUri)) { inclusive = true }
                         }
+                    }
 //                    } else {
 //                        HomeScreen(navController, hiltViewModel(), isBottomBarShown)
 //                    }

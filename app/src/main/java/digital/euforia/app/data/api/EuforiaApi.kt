@@ -11,6 +11,7 @@ import digital.euforia.app.data.model.NetworkMeditation
 import digital.euforia.app.data.model.NetworkMusic
 import digital.euforia.app.data.model.NetworkPackage
 import digital.euforia.app.data.model.NetworkResource
+import digital.euforia.app.data.model.NetworkSearchResults
 import digital.euforia.app.data.model.NetworkSettings
 import digital.euforia.app.data.model.NetworkSound
 import digital.euforia.app.domain.util.ResultWrapper
@@ -153,4 +154,18 @@ interface EuforiaApi {
         @Path("type") type: String,
         @Path("id") id: Int
     ): ResultWrapper<NetworkCategory>
+
+    @GET("search")
+    suspend fun search(
+        @Query("q") query: String,
+        @Query("meditations") searchMeditations: Int = 1,
+        @Query("exercises") searchExercises: Int = 1,
+        @Query("articles") searchArticles: Int = 1,
+        @Query("scenes") searchScenes: Int = 0,
+        @Query("limit") limit: Int = 50,
+        @Query("author_id") authorId: Int? = null,
+        @Query("pro") pro: String = "all",
+        @Query("active") active: String = "active",
+    ): ResultWrapper<NetworkSearchResults>
+
 }
