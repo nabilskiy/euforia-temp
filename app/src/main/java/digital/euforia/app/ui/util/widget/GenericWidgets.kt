@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.font.FontWeight.Companion.Medium
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
@@ -47,26 +48,26 @@ fun <T> LazyListScope.genericRowItem(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         description?.let {
             Text(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 text = description.uppercase(),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = Medium),
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = Medium),
                 color = White.copy(alpha = 0.6f),
             )
         }
         Text(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
             text = title,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = SemiBold),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
             color = White,
         )
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             modifier = Modifier.fillMaxWidth().heightIn(min = 300.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             items.forEach { item ->
                 item(key = "item_${itemAlias(item)}_${itemId(item)}") {
@@ -82,7 +83,7 @@ fun <T> LazyListScope.genericRowItem(
                 }
 
             }
-            moreItem(onMoreClick)
+            if (items.size >= 5) moreItem(onMoreClick)
         }
     }
 }

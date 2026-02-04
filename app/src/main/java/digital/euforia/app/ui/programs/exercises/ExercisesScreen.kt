@@ -34,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.font.FontWeight.Companion.Medium
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -186,6 +188,8 @@ private fun ExercisesContent(
                             exerciseItem(
                                 index = index,
                                 publicationInfo = block.publicationInfo,
+                                title = block.title,
+                                description = block.description,
                                 isPremium = isPremium,
                                 hazeState = itemsHazeState,
                                 onClick = onExerciseClick
@@ -243,89 +247,113 @@ private fun LazyListScope.bannerItem(
 private fun LazyListScope.exerciseItem(
     index: Int,
     publicationInfo: PublicationInfo,
+    title: String?,
+    description: String?,
     isPremium: Boolean,
     hazeState: HazeState,
     onClick: (PublicationInfo) -> Unit,
 ) = item(key = "exercise_$index") {
 
-    Box(
-        modifier = Modifier.noRippleClickable { onClick(publicationInfo) }
-            .padding(horizontal = 16.dp).clip(RoundedCornerShape(32.dp))
-            .fillMaxWidth(),
-    ) {
-        AsyncImage(
-            modifier = Modifier.aspectRatio(1f)
-                .hazeSource(hazeState),
-            model = publicationInfo.imageUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop
-        )
-        if (!isPremium && publicationInfo.isPremium) {
-            MaxView(
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        description?.let {
+            Text(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                text = description.uppercase(),
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = Medium),
+                color = White.copy(alpha = 0.6f),
             )
         }
-
-        Row(
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeMaterials.ultraThin(AvatarBackground)
-                )
-                .zIndex(1f)
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Bottom
+        title?.let {
+            Text(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
+                color = White,
+            )
+        }
+        Box(
+            modifier = Modifier.noRippleClickable { onClick(publicationInfo) }
+                .padding(horizontal = 16.dp).clip(RoundedCornerShape(32.dp))
+                .fillMaxWidth(),
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = publicationInfo.title.orEmpty(),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
-                    color = White,
+            AsyncImage(
+                modifier = Modifier.aspectRatio(1f)
+                    .hazeSource(hazeState),
+                model = publicationInfo.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop
+            )
+            if (!isPremium && publicationInfo.isPremium) {
+                MaxView(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
                 )
-                Row() {
-                    Icon(
-                        modifier = Modifier.size(16.dp),
-                        painter = painterResource(publicationInfo.publicationType.getIconRes()),
-                        contentDescription = null,
-                        tint = White.copy(alpha = 0.6f)
-                    )
-
-                    Text(
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        text = "•",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontWeight = FontWeight.ExtraLight,
-                        ),
-                        color = White.copy(alpha = 0.6f),
-                    )
-                    Text(
-                        text = "${publicationInfo.durationMinutes} minutes",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontWeight = FontWeight.ExtraLight,
-                        ),
-                        color = White.copy(alpha = 0.6f),
-                    )
-                }
             }
 
-            Icon(
-                modifier = Modifier.background(
-                    color = White.copy(alpha = 0.1f),
-                    shape = CircleShape
-                ).padding(10.dp).size(14.dp),
-                painter = painterResource(id = R.drawable.ic_play),
-                contentDescription = null,
-                tint = White
-            )
+            Row(
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .hazeEffect(
+                        state = hazeState,
+                        style = HazeMaterials.ultraThin(AvatarBackground)
+                    )
+                    .zIndex(1f)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = publicationInfo.title.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
+                        color = White,
+                    )
+                    Row() {
+                        Icon(
+                            modifier = Modifier.size(16.dp),
+                            painter = painterResource(publicationInfo.publicationType.getIconRes()),
+                            contentDescription = null,
+                            tint = White.copy(alpha = 0.6f)
+                        )
+
+                        Text(
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                            text = "•",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.ExtraLight,
+                            ),
+                            color = White.copy(alpha = 0.6f),
+                        )
+                        Text(
+                            text = "${publicationInfo.durationMinutes} minutes",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.ExtraLight,
+                            ),
+                            color = White.copy(alpha = 0.6f),
+                        )
+                    }
+                }
+
+                Icon(
+                    modifier = Modifier.background(
+                        color = White.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    ).padding(10.dp).size(14.dp),
+                    painter = painterResource(id = R.drawable.ic_play),
+                    contentDescription = null,
+                    tint = White
+                )
+            }
         }
     }
 }
 
-private fun handleSideEffect(sideEffect: ExercisesSideEffect, navController: NavHostController, context: Context) {
+private fun handleSideEffect(
+    sideEffect: ExercisesSideEffect,
+    navController: NavHostController,
+    context: Context
+) {
     when (sideEffect) {
         is ExercisesSideEffect.NavigateToPublication -> navController.navigate(
             HomeDestination.PublicationDetails(

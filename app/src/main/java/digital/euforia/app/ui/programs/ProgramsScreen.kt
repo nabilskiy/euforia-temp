@@ -13,16 +13,13 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -35,13 +32,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.font.FontWeight.Companion.Medium
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -50,10 +51,9 @@ import dev.chrisbanes.haze.hazeSource
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.config.ProgramsConfig
+import digital.euforia.app.domain.usecase.program.SearchResults
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
-import digital.euforia.app.ui.programs.publication.PublicationType
-import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
@@ -64,6 +64,7 @@ import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.MaxView
 import digital.euforia.app.ui.util.widget.PremiumButtonState
 import digital.euforia.app.ui.util.widget.ProgressIndicator
+import digital.euforia.app.ui.util.widget.SearchTextField
 import digital.euforia.app.ui.util.widget.genericRowItem
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.titleItem
@@ -92,15 +93,19 @@ fun ProgramsScreen(
             exercises = state.exercises,
             exerciseDescription = state.exerciseTitle,
             articleDescription = state.articleTitle,
+            searchQuery = state.searchQuery,
+            searchResults = state.searchResults,
             onRetryClick = viewModel::onRetryClick,
             onDownloadsClick = viewModel::onDownloadsClicked,
             onBackClick = { navController.popBackStack() },
             onProgramClick = viewModel::onProgramClicked,
             onArticleClick = viewModel::onArticleClicked,
             onExerciseClick = viewModel::onExerciseClicked,
+            onMoreSearchedMeditationsClick = viewModel::onMoreSearchedMeditationsClicked,
             onMoreExercisesClick = viewModel::onMoreExercisesClicked,
             onMoreArticlesClick = viewModel::onMoreArticlesClicked,
             launchSubscriptionActivity = launchSubscriptionActivity,
+            onSearchQueryChanged = viewModel::onSearchQueryChanged
         )
     }
 }
@@ -117,15 +122,19 @@ private fun ProgramsContent(
     exercises: List<PublicationInfo>,
     exerciseDescription: String,
     articleDescription: String,
+    searchQuery: String?,
+    searchResults: SearchResults?,
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onBackClick: () -> Unit,
     onProgramClick: (ProgramUi) -> Unit,
     onArticleClick: (PublicationInfo) -> Unit,
     onExerciseClick: (PublicationInfo) -> Unit,
+    onMoreSearchedMeditationsClick: () -> Unit,
     onMoreExercisesClick: () -> Unit,
     onMoreArticlesClick: () -> Unit,
     launchSubscriptionActivity: () -> Unit,
+    onSearchQueryChanged: (String?) -> Unit
 ) {
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
@@ -141,6 +150,9 @@ private fun ProgramsContent(
             firstIndex > 0 || firstOffset > thresholdPx
         }
     }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
 
     Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
@@ -175,44 +187,112 @@ private fun ProgramsContent(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     titleRes = R.string.library_title
                 )
-                searchItem()
-                programsItem(
-                    programs = programs,
-                    isPremium = isPremium,
-                    onProgramClick = onProgramClick
+                searchItem(
+                    text = searchQuery,
+                    focusManager = focusManager,
+                    keyboardController = keyboardController,
+                    onTextChanged = onSearchQueryChanged,
+                    onCancelClick = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+                        onSearchQueryChanged(null)
+                    }
                 )
-                dividerItem()
-                genericRowItem(
-                    items = exercises,
-                    title = localizedRes.string(R.string.exercises_title),
-                    description = exerciseDescription,
-                    isPremium = isPremium,
-                    iconRes = R.drawable.ic_type_exercise,
-                    itemId = { it.id },
-                    itemAlias = { it.alias },
-                    itemTitle = { it.title },
-                    isPremiumContent = { it.isPremium },
-                    itemImageUrl = { it.imageUrl },
-                    itemDuration = { it.durationMinutes ?: 0 },
-                    onMoreClick = onMoreExercisesClick,
-                    onItemClick = { onExerciseClick(it) }
-                )
-                dividerItem()
-                genericRowItem(
-                    items = articles,
-                    title = localizedRes.string(R.string.articles_title),
-                    description = articleDescription,
-                    isPremium = isPremium,
-                    iconRes = R.drawable.ic_type_read,
-                    itemId = { it.id },
-                    itemAlias = { it.alias },
-                    itemTitle = { it.title },
-                    isPremiumContent = { it.isPremium },
-                    itemImageUrl = { it.imageUrl },
-                    itemDuration = { it.durationMinutes ?: 0 },
-                    onMoreClick = onMoreArticlesClick,
-                    onItemClick = { onArticleClick(it) }
-                )
+                if (searchResults != null) {
+                    if (searchQuery != null) {
+                        if (searchResults.meditations.isNotEmpty()) {
+                            genericRowItem(
+                                items = searchResults.meditations,
+                                title = localizedRes.string(R.string.meditations_title),
+                                description = localizedRes.string(R.string.search_result_section_see_more),
+                                isPremium = isPremium,
+                                iconRes = R.drawable.ic_type_audio,
+                                itemId = { it.id },
+                                itemAlias = { it.alias },
+                                itemTitle = { it.title },
+                                isPremiumContent = { it.isPremium },
+                                itemImageUrl = { it.imageUrl },
+                                itemDuration = { it.durationMinutes ?: 0 },
+                                onMoreClick = onMoreSearchedMeditationsClick,
+                                onItemClick = { onArticleClick(it) }
+                            )
+                        }
+                        if (searchResults.exercises.isNotEmpty()) {
+                            genericRowItem(
+                                items = searchResults.exercises,
+                                title = localizedRes.string(R.string.exercises_title),
+                                description = localizedRes.string(R.string.search_result_section_see_more),
+                                isPremium = isPremium,
+                                iconRes = R.drawable.ic_type_exercise,
+                                itemId = { it.id },
+                                itemAlias = { it.alias },
+                                itemTitle = { it.title },
+                                isPremiumContent = { it.isPremium },
+                                itemImageUrl = { it.imageUrl },
+                                itemDuration = { it.durationMinutes ?: 0 },
+                                onMoreClick = onMoreExercisesClick,
+                                onItemClick = { onExerciseClick(it) }
+                            )
+                        }
+                        if (searchResults.articles.isNotEmpty()) {
+                            genericRowItem(
+                                items = searchResults.articles,
+                                title = localizedRes.string(R.string.articles_title),
+                                description = localizedRes.string(R.string.search_result_section_see_more),
+                                isPremium = isPremium,
+                                iconRes = R.drawable.ic_type_read,
+                                itemId = { it.id },
+                                itemAlias = { it.alias },
+                                itemTitle = { it.title },
+                                isPremiumContent = { it.isPremium },
+                                itemImageUrl = { it.imageUrl },
+                                itemDuration = { it.durationMinutes ?: 0 },
+                                onMoreClick = onMoreArticlesClick,
+                                onItemClick = { onArticleClick(it) }
+                            )
+                        }
+                    } else {
+
+                    }
+                } else {
+                    programsItem(
+                        programs = programs,
+                        isPremium = isPremium,
+                        onProgramClick = onProgramClick
+                    )
+                    dividerItem()
+                    genericRowItem(
+                        items = exercises,
+                        title = localizedRes.string(R.string.exercises_title),
+                        description = exerciseDescription,
+                        isPremium = isPremium,
+                        iconRes = R.drawable.ic_type_exercise,
+                        itemId = { it.id },
+                        itemAlias = { it.alias },
+                        itemTitle = { it.title },
+                        isPremiumContent = { it.isPremium },
+                        itemImageUrl = { it.imageUrl },
+                        itemDuration = { it.durationMinutes ?: 0 },
+                        onMoreClick = onMoreExercisesClick,
+                        onItemClick = { onExerciseClick(it) }
+                    )
+                    dividerItem()
+                    genericRowItem(
+                        items = articles,
+                        title = localizedRes.string(R.string.articles_title),
+                        description = articleDescription,
+                        isPremium = isPremium,
+                        iconRes = R.drawable.ic_type_read,
+                        itemId = { it.id },
+                        itemAlias = { it.alias },
+                        itemTitle = { it.title },
+                        isPremiumContent = { it.isPremium },
+                        itemImageUrl = { it.imageUrl },
+                        itemDuration = { it.durationMinutes ?: 0 },
+                        onMoreClick = onMoreArticlesClick,
+                        onItemClick = { onArticleClick(it) }
+                    )
+                }
                 item {
                     Spacer(modifier = Modifier.height(160.dp).navigationBarsPadding())
                 }
@@ -244,7 +324,7 @@ fun HorizontalItemView(
     ) {
         Box() {
             AsyncImage(
-                modifier = Modifier.aspectRatio(1f).clip(RoundedCornerShape(24.dp)),
+                modifier = Modifier.aspectRatio(1f).clip(RoundedCornerShape(32.dp)),
                 model = imageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop
@@ -256,11 +336,17 @@ fun HorizontalItemView(
             }
         }
         Text(
+            modifier = Modifier.padding(horizontal = 8.dp),
             text = titleText,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
             color = White,
+            maxLines = 3,
+            overflow = Ellipsis
         )
-        Row() {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 modifier = Modifier.size(16.dp),
                 painter = painterResource(iconRes),
@@ -392,27 +478,22 @@ fun MoreView(modifier: Modifier = Modifier) {
     )
 }
 
-private fun LazyListScope.searchItem() = item(key = "programs_search_item") {
-    Row(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(color = NavBarBackground, shape = RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val localizedRes = LocalLocalizedRes.current
-        Text(
-            modifier = Modifier.weight(1f),
-            text = localizedRes.string(R.string.search_title),
-            color = White.copy(alpha = 0.2f)
-        )
-        Icon(
-            painter = painterResource(R.drawable.ic_search),
-            contentDescription = null,
-            tint = White.copy(alpha = 0.2f)
-        )
-    }
+private fun LazyListScope.searchItem(
+    text: String?,
+    focusManager: FocusManager,
+    keyboardController: SoftwareKeyboardController?,
+    onTextChanged: (String?) -> Unit,
+    onCancelClick: () -> Unit
+) = item(key = "search_item") {
+    SearchTextField(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        value = text.orEmpty(),
+        onValueChanged = { onTextChanged(it.text) },
+        focusManager = focusManager,
+        keyboardController = keyboardController,
+        onCancelClick = onCancelClick,
+        onClearClick = { onTextChanged(null) }
+    )
 }
 
 private fun handleSideEffect(sideEffect: ProgramsSideEffect, navController: NavHostController) {

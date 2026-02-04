@@ -14,14 +14,19 @@ import digital.euforia.app.domain.usecase.program.GetProgramsWithChildrenUseCase
 import digital.euforia.app.domain.usecase.program.GetSearchResultsUseCase
 import digital.euforia.app.domain.usecase.program.SearchResults
 import digital.euforia.app.ui.programs.publication.PublicationType
+import digital.euforia.app.ui.util.logTag
 import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -41,6 +46,49 @@ class ProgramsViewModel @Inject constructor(
             loadData()
         }
     )
+
+    private val searchQueryFlow = MutableStateFlow<String?>(null)
+
+    init {
+        viewModelScope.launch {
+            searchQueryFlow
+                .debounce(1000)
+                .distinctUntilChanged()
+                .collectLatest { query ->
+                    intent {
+                        reduceState { copy(searchQuery = query) }
+                        if (!query.isNullOrBlank()) {
+                            reduceState {
+                                copy(
+                                    isLoading = true,
+                                    isSearchLoading = true,
+                                    searchResults = null
+                                )
+                            }
+
+                            getSearchResultsUseCase.invoke(query)
+                                .onSuccess { results ->
+                                    reduceState { copy(searchResults = results) }
+                                }
+                                .onFailure { error ->
+                                    Timber.tag(logTag()).d(error)
+                                    reduceState { copy(searchResults = null) }
+                                }
+                                .onFinish {
+                                    reduceState {
+                                        copy(
+                                            isSearchLoading = false,
+                                            isLoading = false
+                                        )
+                                    }
+                                }
+                        } else {
+                            reduceState { copy(searchResults = null) }
+                        }
+                    }
+                }
+        }
+    }
 
     private fun loadData() {
         viewModelScope.launch {
@@ -124,6 +172,19 @@ class ProgramsViewModel @Inject constructor(
         postEffect(ProgramsSideEffect.NavigateToProgramDetail(programUi.id))
     }
 
+    fun onMoreSearchedMeditationsClicked() {
+        viewModelScope.launch {
+            val state = container.stateFlow.value
+            if (state.searchResults?.meditations.isNullOrEmpty()) return@launch
+            postEffect(
+                ProgramsSideEffect.NavigateToPublications(
+                    publicationType = PublicationType.MEDITATION,
+                    ids = state.searchResults.meditations.joinToString(",") { it.id.toString() }
+                )
+            )
+        }
+    }
+
     fun onMoreExercisesClicked() {
         postEffect(ProgramsSideEffect.NavigateToExercises)
     }
@@ -135,6 +196,10 @@ class ProgramsViewModel @Inject constructor(
                 ids = ""
             )
         )
+    }
+
+    fun onSearchQueryChanged(query: String?) {
+        searchQueryFlow.value = query
     }
 }
 
@@ -228,6 +293,7 @@ data class ExerciseUi(
 
 data class ProgramsState(
     val isLoading: Boolean = true,
+    val isSearchLoading: Boolean = false,
     val isPremium: Boolean = false,
     val errorState: ErrorViewState? = null,
     val programs: List<ProgramUi> = emptyList(),
@@ -237,7 +303,7 @@ data class ProgramsState(
     val articleTitle: String = "Articles",
     val programsConfig: List<ProgramsConfig> = emptyList(),
     val searchQuery: String? = null,
-    val searchResults: SearchResults? = null
+    val searchResults: SearchResults? = null,
 )
 
 sealed class ProgramsSideEffect {
