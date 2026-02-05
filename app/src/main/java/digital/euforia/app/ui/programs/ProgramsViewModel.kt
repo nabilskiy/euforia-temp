@@ -44,6 +44,7 @@ class ProgramsViewModel @Inject constructor(
             observePremium()
             loadConfig()
             loadData()
+            getSearchSuggestions()
         }
     )
 
@@ -52,7 +53,9 @@ class ProgramsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             searchQueryFlow
-                .debounce(1000)
+                .debounce { query ->
+                    if (query.isNullOrBlank()) 0L else 600L
+                }
                 .distinctUntilChanged()
                 .collectLatest { query ->
                     intent {
@@ -60,7 +63,6 @@ class ProgramsViewModel @Inject constructor(
                         if (!query.isNullOrBlank()) {
                             reduceState {
                                 copy(
-                                    isLoading = true,
                                     isSearchLoading = true,
                                     searchResults = null
                                 )
@@ -78,7 +80,6 @@ class ProgramsViewModel @Inject constructor(
                                     reduceState {
                                         copy(
                                             isSearchLoading = false,
-                                            isLoading = false
                                         )
                                     }
                                 }
@@ -111,6 +112,13 @@ class ProgramsViewModel @Inject constructor(
             }.onFinish {
                 reduceState { copy(isLoading = false) }
             }
+        }
+    }
+
+    private fun getSearchSuggestions() {
+        viewModelScope.launch {
+            val suggestions = configFetcher.getSearchSuggestions()
+            reduceState { copy(searchSuggestions = suggestions) }
         }
     }
 
@@ -200,6 +208,16 @@ class ProgramsViewModel @Inject constructor(
 
     fun onSearchQueryChanged(query: String?) {
         searchQueryFlow.value = query
+    }
+
+    fun onSuggestionClicked(index: Int) {
+        viewModelScope.launch {
+            intent {
+                val suggestion = state.searchSuggestions.getOrNull(index) ?: return@intent
+                reduce { state.copy(searchQuery = suggestion) }
+                searchQueryFlow.value = suggestion
+            }
+        }
     }
 }
 
@@ -304,6 +322,7 @@ data class ProgramsState(
     val programsConfig: List<ProgramsConfig> = emptyList(),
     val searchQuery: String? = null,
     val searchResults: SearchResults? = null,
+    val searchSuggestions: List<String> = emptyList()
 )
 
 sealed class ProgramsSideEffect {

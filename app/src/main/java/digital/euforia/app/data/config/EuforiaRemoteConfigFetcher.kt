@@ -163,7 +163,7 @@ class EuforiaRemoteConfigFetcher(
             }
         } catch (e: Throwable) {
             logError(TAG, e)
-           emptyList()
+            emptyList()
         }
     }
 
@@ -186,6 +186,10 @@ class EuforiaRemoteConfigFetcher(
             logError(TAG, e)
             emptyList()
         }
+    }
+
+    fun getSearchSuggestions(): List<String> {
+        return getListConfig(KEY_SEARCH_SUGGESTIONS).dataOrNull ?: emptyList()
     }
 
     companion object {
@@ -217,5 +221,6 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_LIBRARY_LIST_TEMPLATE = "library_list_template"
         private const val KEY_EXERCISES_LIST_TEMPLATE = "exercises_list_template"
         private const val DEFAULT_LIBRARY_TEMPLATE_KEY = "library_2_list_template"
+        private const val KEY_SEARCH_SUGGESTIONS = "search_suggestions"
     }
 }

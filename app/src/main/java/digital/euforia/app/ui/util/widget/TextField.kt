@@ -164,6 +164,7 @@ fun SearchTextField(
     keyboardController: SoftwareKeyboardController? = null,
     focusManager: FocusManager? = null,
     isCancelEnabled: Boolean = true,
+    isLoading: Boolean,
     onValueChanged: (TextFieldValue) -> Unit = {},
     onClearClick: () -> Unit,
     onCancelClick: () -> Unit = {},
@@ -238,7 +239,9 @@ fun SearchTextField(
                     innerTextField()
                 }
 
-                if (textValue.text.isNotEmpty()) {
+                if (isLoading) {
+                    ProgressIndicator(modifier = Modifier.size(20.dp))
+                } else if (textValue.text.isNotEmpty()) {
                     Icon(
                         modifier = Modifier
                             .noRippleClickable(onClearClick)
@@ -299,12 +302,14 @@ fun TextFieldPreview() {
                 SearchTextField(
                     value = text,
                     onValueChanged = { text = it.text },
-                    onClearClick = { text = "" }
+                    onClearClick = { text = "" },
+                    isLoading = false
                 )
                 SearchTextField(
                     value = "",
                     onValueChanged = { text = it.text },
-                    onClearClick = { text = "" }
+                    onClearClick = { text = "" },
+                    isLoading = true
                 )
             }
         }

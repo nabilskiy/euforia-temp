@@ -7,6 +7,7 @@ import digital.euforia.app.data.db.converter.AccompanimentTypeConverters
 import digital.euforia.app.data.db.converter.FeedbackTypeConverters
 import digital.euforia.app.data.db.converter.IntListConverter
 import digital.euforia.app.data.db.converter.PhraseListConverters
+import digital.euforia.app.data.db.converter.PublicationTypeConverter
 import digital.euforia.app.data.db.dao.AccompanimentDao
 import digital.euforia.app.data.db.dao.FileDao
 import digital.euforia.app.data.db.dao.SampleEntityDao
@@ -21,6 +22,7 @@ import digital.euforia.app.data.db.dao.PackageDao
 import digital.euforia.app.data.db.dao.ResourceDao
 import digital.euforia.app.data.db.dao.FaqCategoryDao
 import digital.euforia.app.data.db.dao.FaqItemDao
+import digital.euforia.app.data.db.dao.FavouritePublicationsDao
 import digital.euforia.app.data.db.dao.FeedbackFormDao
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.File
@@ -36,13 +38,14 @@ import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.db.entity.Resource
 import digital.euforia.app.data.db.entity.FaqCategory
 import digital.euforia.app.data.db.entity.FaqItem
+import digital.euforia.app.data.db.entity.FavouritePublication
 import digital.euforia.app.data.db.entity.FeedbackForm
 import digital.euforia.app.data.db.entity.FeedbackOption
 import digital.euforia.app.data.db.entity.FeedbackQuestion
 
-@TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class, IntListConverter::class])
+@TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class, IntListConverter::class, PublicationTypeConverter::class])
 @Database(
-    version = 9,
+    version = 10,
     entities = [
         SampleEntity::class,
         Accompaniment::class,
@@ -61,6 +64,7 @@ import digital.euforia.app.data.db.entity.FeedbackQuestion
         FeedbackForm::class,
         FeedbackQuestion::class,
         FeedbackOption::class,
+        FavouritePublication::class,
     ]
 )
 
@@ -80,4 +84,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun faqCategoryDao(): FaqCategoryDao
     abstract fun faqItemDao(): FaqItemDao
     abstract fun feedbackFormDao(): FeedbackFormDao
+    abstract fun favouritePublicationsDao(): FavouritePublicationsDao
 }

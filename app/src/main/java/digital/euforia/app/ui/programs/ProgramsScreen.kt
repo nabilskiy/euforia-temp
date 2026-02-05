@@ -1,10 +1,12 @@
 package digital.euforia.app.ui.programs
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -21,10 +23,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -54,6 +59,7 @@ import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.domain.usecase.program.SearchResults
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
@@ -86,6 +92,7 @@ fun ProgramsScreen(
             navController = navController,
             isPremium = state.isPremium,
             isLoading = state.isLoading,
+            isSearchLoading = state.isSearchLoading,
             errorState = state.errorState,
             programsConfig = state.programsConfig,
             programs = state.programs,
@@ -95,6 +102,7 @@ fun ProgramsScreen(
             articleDescription = state.articleTitle,
             searchQuery = state.searchQuery,
             searchResults = state.searchResults,
+            suggestions = state.searchSuggestions,
             onRetryClick = viewModel::onRetryClick,
             onDownloadsClick = viewModel::onDownloadsClicked,
             onBackClick = { navController.popBackStack() },
@@ -105,7 +113,8 @@ fun ProgramsScreen(
             onMoreExercisesClick = viewModel::onMoreExercisesClicked,
             onMoreArticlesClick = viewModel::onMoreArticlesClicked,
             launchSubscriptionActivity = launchSubscriptionActivity,
-            onSearchQueryChanged = viewModel::onSearchQueryChanged
+            onSearchQueryChanged = viewModel::onSearchQueryChanged,
+            onSuggestionClick = viewModel::onSuggestionClicked
         )
     }
 }
@@ -115,6 +124,7 @@ private fun ProgramsContent(
     navController: NavHostController,
     isPremium: Boolean,
     isLoading: Boolean,
+    isSearchLoading: Boolean,
     errorState: ErrorViewState?,
     programsConfig: List<ProgramsConfig>,
     programs: List<ProgramUi>,
@@ -124,6 +134,7 @@ private fun ProgramsContent(
     articleDescription: String,
     searchQuery: String?,
     searchResults: SearchResults?,
+    suggestions: List<String>,
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
     onBackClick: () -> Unit,
@@ -134,7 +145,8 @@ private fun ProgramsContent(
     onMoreExercisesClick: () -> Unit,
     onMoreArticlesClick: () -> Unit,
     launchSubscriptionActivity: () -> Unit,
-    onSearchQueryChanged: (String?) -> Unit
+    onSearchQueryChanged: (String?) -> Unit,
+    onSuggestionClick: (Int) -> Unit
 ) {
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
@@ -191,6 +203,7 @@ private fun ProgramsContent(
                     text = searchQuery,
                     focusManager = focusManager,
                     keyboardController = keyboardController,
+                    isLoading = isSearchLoading,
                     onTextChanged = onSearchQueryChanged,
                     onCancelClick = {
                         keyboardController?.hide()
@@ -198,8 +211,8 @@ private fun ProgramsContent(
                         onSearchQueryChanged(null)
                     }
                 )
-                if (searchResults != null) {
-                    if (searchQuery != null) {
+                if (searchQuery != null) {
+                    if (searchResults != null && searchResults.hasResults()) {
                         if (searchResults.meditations.isNotEmpty()) {
                             genericRowItem(
                                 items = searchResults.meditations,
@@ -252,7 +265,10 @@ private fun ProgramsContent(
                             )
                         }
                     } else {
-
+                        suggestionItem(
+                            suggestions = suggestions,
+                            onClick = onSuggestionClick
+                        )
                     }
                 } else {
                     programsItem(
@@ -482,6 +498,7 @@ private fun LazyListScope.searchItem(
     text: String?,
     focusManager: FocusManager,
     keyboardController: SoftwareKeyboardController?,
+    isLoading: Boolean,
     onTextChanged: (String?) -> Unit,
     onCancelClick: () -> Unit
 ) = item(key = "search_item") {
@@ -492,8 +509,77 @@ private fun LazyListScope.searchItem(
         focusManager = focusManager,
         keyboardController = keyboardController,
         onCancelClick = onCancelClick,
+        isLoading = isLoading,
         onClearClick = { onTextChanged(null) }
     )
+}
+
+private fun LazyListScope.suggestionItem(
+    suggestions: List<String>,
+    onClick: (Int) -> Unit
+) = item(key = "suggestions") {
+    val localizedRes = LocalLocalizedRes.current
+
+    Column(
+        modifier = Modifier.fillParentMaxWidth()
+            .padding(top = 96.dp, start = 16.dp, end = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            text = localizedRes.string(R.string.search_empty_not_found),
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = White,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            text = localizedRes.string(R.string.search_empty_not_found_details),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Normal
+            ),
+            color = White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            maxItemsInEachRow = 3
+        ) {
+            suggestions.forEachIndexed { index, suggestion ->
+                SuggestionChip(
+                    text = suggestion,
+                    index = index,
+                    onClick = { onClick(index) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionChip(text: String, index: Int, onClick: () -> Unit) {
+    TextButton(
+        modifier = Modifier.padding(horizontal = 4.dp),
+        border = BorderStroke(1.dp, White.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors().copy(
+            containerColor = NavBarBackground
+        ),
+        onClick = onClick,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = White,
+            modifier = Modifier.padding(8.dp)
+        )
+    }
 }
 
 private fun handleSideEffect(sideEffect: ProgramsSideEffect, navController: NavHostController) {

@@ -35,4 +35,9 @@ data class SearchResults(
     val articles: List<PublicationInfo>,
     val meditations: List<PublicationInfo>,
 //    val scenes: List<String>,
-)
+) {
+
+    fun hasResults(): Boolean {
+        return exercises.isNotEmpty() || articles.isNotEmpty() || meditations.isNotEmpty()
+    }
+}
