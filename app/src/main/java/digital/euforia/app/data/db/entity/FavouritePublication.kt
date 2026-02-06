@@ -7,7 +7,7 @@ import digital.euforia.app.ui.programs.publication.PublicationType
 
 @Entity(tableName = "favourite_publications")
 data class FavouritePublication(
-    @PrimaryKey(autoGenerate = true) val id: Int,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     @ColumnInfo(name = "publication_id") val publicationId: Int,
     @ColumnInfo(name = "publication_type") val publicationType: PublicationType,
 )

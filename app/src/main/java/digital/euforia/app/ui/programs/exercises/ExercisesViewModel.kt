@@ -38,9 +38,10 @@ class ExercisesViewModel @Inject constructor(
 
     private fun observePremium() {
         viewModelScope.launch {
-            profilePreferences.getIsPremiumFlow().collectLatest { isPremium -> }
-            reduceState {
-                copy(isPremium = isPremium)
+            profilePreferences.getIsPremiumFlow().collectLatest { isPremium ->
+                reduceState {
+                    copy(isPremium = isPremium)
+                }
             }
         }
     }

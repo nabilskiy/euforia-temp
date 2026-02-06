@@ -36,6 +36,7 @@ import digital.euforia.app.ui.programs.publications.PublicationsScreen
 import digital.euforia.app.ui.settings.SettingsScreen
 import digital.euforia.app.ui.settings.email.EmailScreen
 import digital.euforia.app.ui.settings.faq.FAQScreen
+import digital.euforia.app.ui.settings.favourites.FavouritesScreen
 import digital.euforia.app.ui.settings.language.LanguageScreen
 import digital.euforia.app.ui.settings.maxInfo.AboutPremiumScreen
 import digital.euforia.app.ui.settings.name.NameScreen
@@ -283,6 +284,14 @@ fun AppNavigation(
                     ExercisesScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
+                    )
+                }
+
+                composable<HomeDestination.Favourites> {
+                    FavouritesScreen(
+                        navController = navController,
+                        viewModel = hiltViewModel(),
+                        navBarVisibilityState = isBottomBarShown,
                     )
                 }
             }

@@ -62,6 +62,10 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
 
     @Serializable
     @Keep
+    data object Favourites : HomeDestination()
+
+    @Serializable
+    @Keep
     data object FAQ : HomeDestination()
 
     @Serializable
