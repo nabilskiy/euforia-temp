@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.R
+import digital.euforia.app.data.repository.FavouritesRepository
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.program.GetPublicationInfoUseCase
 import digital.euforia.app.domain.usecase.program.GetSimilarPublicationsUseCase
@@ -14,6 +15,7 @@ import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -24,7 +26,8 @@ class PublicationViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getPublicationInfoUseCase: GetPublicationInfoUseCase,
     private val getSimilarPublicationsUseCase: GetSimilarPublicationsUseCase,
-    private val updateFavouriteUseCase: UpdateFavouriteUseCase
+    private val updateFavouriteUseCase: UpdateFavouriteUseCase,
+    private val favouritesRepository: FavouritesRepository
 ) : ViewModel(), ContainerHost<PublicationState, PublicationSideEffect> {
 
     private val id: Int =
@@ -48,6 +51,7 @@ class PublicationViewModel @Inject constructor(
                 id = id
             ).onSuccess { publicationInfo ->
                 loadSimilarPublications(publicationInfo)
+                observeIsFavourite(publicationInfo)
                 reduceState {
                     copy(
                         publicationInfo = publicationInfo,
@@ -79,6 +83,25 @@ class PublicationViewModel @Inject constructor(
                     copy(
                         similarPublications = similarPublications
                     )
+                }
+            }
+        }
+    }
+
+    private fun observeIsFavourite(publicationInfo: PublicationInfo) {
+        viewModelScope.launch {
+            intent {
+                favouritesRepository.observeByIdAndType(
+                    publicationId = publicationInfo.id,
+                    publicationType = publicationInfo.publicationType
+                ).collectLatest { favourite ->
+                    reduceState {
+                        copy(
+                            publicationInfo = publicationInfo.copy(
+                                isFavourite = favourite != null
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -129,21 +152,11 @@ class PublicationViewModel @Inject constructor(
     fun onFavouriteClicked(publicationInfo: PublicationInfo) {
         viewModelScope.launch {
             val newIsFavourite = !publicationInfo.isFavourite
-
             updateFavouriteUseCase.invoke(
                 id = publicationInfo.id,
                 isFavourite = newIsFavourite,
                 type = publicationInfo.publicationType
             )
-            intent {
-                reduce {
-                    state.copy(
-                        publicationInfo = publicationInfo.copy(
-                            isFavourite = newIsFavourite
-                        )
-                    )
-                }
-            }
         }
     }
 }

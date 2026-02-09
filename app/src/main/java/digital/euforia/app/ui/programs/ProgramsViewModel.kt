@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.PublicationInfo
@@ -36,11 +37,13 @@ class ProgramsViewModel @Inject constructor(
     private val getProgramsUseCase: GetProgramsUseCase,
     private val configFetcher: EuforiaRemoteConfigFetcher,
     private val getSearchResultsUseCase: GetSearchResultsUseCase,
+    private val analyticSender: AnalyticSender
 ) : ViewModel(),
     ContainerHost<ProgramsState, ProgramsSideEffect> {
     override val container = container<ProgramsState, ProgramsSideEffect>(
         initialState = ProgramsState(),
         onCreate = {
+            analyticSender.libraryShow()
             observePremium()
             loadConfig()
             loadData()

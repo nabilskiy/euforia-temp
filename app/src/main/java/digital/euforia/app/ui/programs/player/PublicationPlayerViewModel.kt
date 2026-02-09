@@ -16,6 +16,7 @@ import androidx.media3.session.SessionToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.db.entity.Resource.Companion.CLASS_ALIAS_MEDITATION_BACKGROUND
 import digital.euforia.app.data.repository.ExerciseRepository
+import digital.euforia.app.data.repository.FavouritesRepository
 import digital.euforia.app.data.repository.ResourceRepository
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
@@ -33,6 +34,7 @@ import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.SoundEffectUi
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -56,7 +58,8 @@ class PublicationPlayerViewModel @Inject constructor(
     private val getPlaylistUseCase: GetPlaylistUseCase,
     private val appPreferences: AppPreferences,
     private val profilePreferences: ProfilePreferences,
-    private val updateFavouriteUseCase: UpdateFavouriteUseCase
+    private val updateFavouriteUseCase: UpdateFavouriteUseCase,
+    private val favouritesRepository: FavouritesRepository
 ) : ViewModel(), ContainerHost<PublicationPlayerState, PublicationPlayerSideEffect> {
 
     private val id: Int =
@@ -75,16 +78,14 @@ class PublicationPlayerViewModel @Inject constructor(
     private var mediaController: MediaController? = null
     private var currentUri: String? = null
 
+    private var favouriteObservationJob: Job? = null
+
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val publicationInfo = mediaItem?.localConfiguration?.tag as? PublicationInfo ?: return
             Timber.tag("PUBLICATION_PLAYBACK")
                 .d("onMediaItemTransition: publicationId=${publicationInfo.id}, reason=$reason")
-            intent {
-                reduce {
-                    state.copy(publicationInfo = publicationInfo)
-                }
-            }
+            observeIsFavourite(publicationInfo)
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -156,6 +157,34 @@ class PublicationPlayerViewModel @Inject constructor(
         viewModelScope.launch {
             profilePreferences.getIsPremiumFlow().collectLatest { isPremium ->
                 reduceState { copy(isPremium = isPremium) }
+            }
+        }
+    }
+    
+    private fun observeIsFavourite(publicationInfo: PublicationInfo) {
+        favouriteObservationJob?.cancel()
+        favouriteObservationJob = viewModelScope.launch {
+            favouritesRepository.observeByIdAndType(
+                publicationId = publicationInfo.id,
+                publicationType = publicationInfo.publicationType
+            ).collectLatest { favourite ->
+                val isFavourite = favourite != null
+                reduceState {
+                    copy(
+                        publicationInfo = publicationInfo.copy(
+                            isFavourite = isFavourite
+                        ),
+                        playlist = playlist?.let { playlist ->
+                            PublicationsPlaylist(
+                                publicationInfosList = playlist.publicationInfosList.map { info ->
+                                    if (info.id == publicationInfo.id) {
+                                        info.copy(isFavourite = isFavourite)
+                                    } else info
+                                }
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -261,7 +290,7 @@ class PublicationPlayerViewModel @Inject constructor(
                     }
                 }
             }.onSuccess { publicationInfo ->
-                reduceState { copy(publicationInfo = publicationInfo) }
+                observeIsFavourite(publicationInfo)
             }.onFailure { error ->
                 Timber.tag("PUBLICATION_PLAYBACK").e(error, "loadPublication: failed")
                 reduceState { copy(errorState = error.mapToErrorViewState()) }
@@ -318,22 +347,14 @@ class PublicationPlayerViewModel @Inject constructor(
                 if (index != -1) {
                     Timber.tag("PUBLICATION_PLAYBACK")
                         .d("onPublicationSelected: seeking to index $index")
-                    reduce {
-                        state.copy(
-                            publicationInfo = publicationInfo
-                        )
-                    }
+                    observeIsFavourite(publicationInfo)
                     withContext(Dispatchers.Main) {
                         ctrl.seekTo(index, 0L)
                         ctrl.play()
                     }
                 }
             } else {
-                reduce {
-                    state.copy(
-                        publicationInfo = publicationInfo
-                    )
-                }
+                observeIsFavourite(publicationInfo)
             }
         }
     }
@@ -347,24 +368,6 @@ class PublicationPlayerViewModel @Inject constructor(
                 isFavourite = newIsFavourite,
                 type = publicationInfo.publicationType
             )
-            intent {
-                reduce {
-                    state.copy(
-                        publicationInfo = publicationInfo.copy(
-                            isFavourite = newIsFavourite
-                        ),
-                        playlist = state.playlist?.let { playlist ->
-                            PublicationsPlaylist(
-                                publicationInfosList = playlist.publicationInfosList.map { info ->
-                                    if (info.id == publicationInfo.id) {
-                                        info.copy(isFavourite = newIsFavourite)
-                                    } else info
-                                }
-                            )
-                        }
-                    )
-                }
-            }
         }
     }
 }

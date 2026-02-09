@@ -717,5 +717,53 @@ class AnalyticSender @Inject constructor(
         logEvent(eventName = "faq_support_click")
     }
 
+    fun libraryShow() {
+        logEvent(eventName = "library_show")
+    }
+
+    fun librarySearchClick() {
+        logEvent(eventName = "library_search_click")
+    }
+
+    fun libraryItemTitleClick(type: String) {
+        val params = Bundle().apply {
+            putString("type", type)
+        }
+        logEvent(eventName = "library_item_title_click", params = params)
+    }
+
+    fun libraryItemClick(type: String) {
+        val params = Bundle().apply {
+            putString("type", type)
+        }
+        logEvent(eventName = "library_item_click", params = params)
+    }
+
+    fun libraryItemLongpress() {
+        logEvent(eventName = "library_item_longpress")
+    }
+
+    fun libraryBannerClick(bannerId: String) {
+        val params = Bundle().apply {
+            putString("banner_id", bannerId)
+        }
+        logEvent(eventName = "library_banner_click", params = params)
+    }
+
+    fun libraryLoaded(template: String) {
+        val params = Bundle().apply {
+            putString("template", template)
+        }
+        logEvent(eventName = "library_loaded", params = params)
+    }
+
+    fun libraryFailed(template: String, log: String) {
+        val params = Bundle().apply {
+            putString("template", template)
+            putString("log", log)
+        }
+        logEvent(eventName = "library_failed", params = params)
+    }
+
 
 }

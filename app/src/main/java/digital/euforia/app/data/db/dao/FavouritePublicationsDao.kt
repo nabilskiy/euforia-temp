@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import digital.euforia.app.data.db.entity.FavouritePublication
 import digital.euforia.app.ui.programs.publication.PublicationType
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FavouritePublicationsDao {
@@ -19,6 +20,9 @@ interface FavouritePublicationsDao {
 
     @Query("SELECT * FROM favourite_publications WHERE publication_id = :publicationId AND publication_type = :publicationType LIMIT 1")
     suspend fun getByIdAndType(publicationId: Int, publicationType: PublicationType): FavouritePublication?
+
+    @Query("SELECT * FROM favourite_publications WHERE publication_id = :publicationId AND publication_type = :publicationType LIMIT 1")
+    fun observeByIdAndType(publicationId: Int, publicationType: PublicationType): Flow<FavouritePublication?>
 
     @Delete
     suspend fun delete(favouritePublication: FavouritePublication)
