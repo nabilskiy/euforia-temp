@@ -2,6 +2,7 @@ package digital.euforia.app.ui.settings.name
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.store.ProfilePreferences
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -9,7 +10,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NameViewModel @Inject constructor(
-    private val profilePreferences: ProfilePreferences
+    private val profilePreferences: ProfilePreferences,
+    private val analyticSender: AnalyticSender
 ) : ViewModel(), ContainerHost<NameState, NameSideEffect> {
     override val container = container<NameState, NameSideEffect>(
         initialState = NameState(),
@@ -29,6 +31,7 @@ class NameViewModel @Inject constructor(
         intent {
             reduce { state.copy(name = name) }
             profilePreferences.setName(name)
+            analyticSender.setName(name)
         }
     }
 }

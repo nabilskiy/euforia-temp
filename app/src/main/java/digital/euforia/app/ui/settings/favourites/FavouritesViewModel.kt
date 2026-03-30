@@ -4,6 +4,7 @@ package digital.euforia.app.ui.settings.favourites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.program.GetFavouritePublicationsUseCase
@@ -23,6 +24,7 @@ import javax.inject.Inject
 class FavouritesViewModel @Inject constructor(
     private val getFavouritePublicationsUseCase: GetFavouritePublicationsUseCase,
     private val profilePreferences: ProfilePreferences,
+    private val analyticSender: AnalyticSender,
 ) : ViewModel(), ContainerHost<FavouritesState, FavouritesSideEffect> {
     override val container = container<FavouritesState, FavouritesSideEffect>(
         initialState = FavouritesState(),
@@ -78,6 +80,10 @@ class FavouritesViewModel @Inject constructor(
 
     fun onDownloadsClicked() {
         postEffect(FavouritesSideEffect.NavigateToDownloads)
+    }
+
+    fun onTitleClicked(type: String) {
+//        viewModelScope.launch { analyticSender. }
     }
 }
 

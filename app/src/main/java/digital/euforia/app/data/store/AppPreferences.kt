@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.google.firebase.datastorage.getOrDefault
 import digital.euforia.app.data.util.parseJsonToFlatMap
 import digital.euforia.app.domain.model.onboarding.Gender
 import kotlinx.coroutines.flow.Flow
@@ -40,8 +42,24 @@ class AppPreferences(
     private val keyMorningNotificationTime = intPreferencesKey("morning_notification_time")
     private val keyDayNotificationTime = intPreferencesKey("day_notification_time")
     private val keyEveningNotificationTime = intPreferencesKey("evening_notification_time")
+    private val keyIsTimeSensitiveKey = booleanPreferencesKey("isTimeSensitive")
     private val shouldSyncPackagesKey = booleanPreferencesKey("should_sync_packages")
     private val keyMeditationBackgroundIndex = intPreferencesKey("meditation_background_index")
+    private val keyDailyPlayedSeconds = longPreferencesKey("daily_played_seconds")
+    private val keyDailyCompletedAccompanimentsCount = intPreferencesKey("daily_completed_accompaniments_count")
+    private val keyLastPlaybackResetDate = stringPreferencesKey("last_playback_reset_date")
+    private val keyDeletedAvatarIds = stringSetPreferencesKey("deleted_avatar_ids")
+    private val keyCustomAvatarUris = stringSetPreferencesKey("custom_avatar_uris")
+
+    // Rating app preferences
+    private val keyRateAppLaunchCount = intPreferencesKey("rate_app_launch_count")
+    private val keyRateAppLastPromptAt = longPreferencesKey("rate_app_last_prompt_at")
+    private val keyRateAppRated = booleanPreferencesKey("rate_app_rated")
+    private val keyFeedbackFormLaunchCount = intPreferencesKey("feedback_form_launch_count")
+    private val keyFeedbackFormLastPromptAt = longPreferencesKey("feedback_form_last_prompt_at")
+    private val keyFeedbackFormCompleted = booleanPreferencesKey("feedback_form_completed")
+    private val keyEmailAlertLaunchCount = intPreferencesKey("email_alert_launch_count")
+    private val keyEmailAlertLastPromptAt = longPreferencesKey("email_alert_last_prompt_at")
 
     suspend fun getDeviceToken(): String {
         val existing = store.data.firstOrNull()?.get(keyDeviceToken)
@@ -117,7 +135,7 @@ class AppPreferences(
     }
 
     suspend fun getCompletedDays(): Int {
-        return store.data.firstOrNull()?.get(keyCompletedDays) ?: 0
+        return store.data.firstOrNull()?.getOrDefault(keyCompletedDays, 0) ?: 0
     }
 
     suspend fun setCompletedDays(day: Int) {
@@ -226,7 +244,7 @@ class AppPreferences(
     }
 
     suspend fun isMorningNotificationEnabled(): Boolean {
-        return store.data.firstOrNull()?.get(keyMorningNotificationEnabled) ?: false
+        return store.data.firstOrNull()?.get(keyMorningNotificationEnabled) ?: true
     }
 
     suspend fun setDayNotificationEnabled(enabled: Boolean) {
@@ -236,7 +254,7 @@ class AppPreferences(
     }
 
     suspend fun isDayNotificationEnabled(): Boolean {
-        return store.data.firstOrNull()?.get(keyDayNotificationEnabled) ?: false
+        return store.data.firstOrNull()?.get(keyDayNotificationEnabled) ?: true
     }
 
     suspend fun setEveningNotificationEnabled(enabled: Boolean) {
@@ -246,7 +264,7 @@ class AppPreferences(
     }
 
     suspend fun isEveningNotificationEnabled(): Boolean {
-        return store.data.firstOrNull()?.get(keyEveningNotificationEnabled) ?: false
+        return store.data.firstOrNull()?.get(keyEveningNotificationEnabled) ?: true
     }
 
     suspend fun setMorningNotificationTime(hours: Int, minutes: Int) {
@@ -282,6 +300,123 @@ class AppPreferences(
         return total / 60 to total % 60
     }
 
+    suspend fun setIsTimeSensitive(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[keyIsTimeSensitiveKey] = enabled
+        }
+    }
+
+    suspend fun getIsTimeSensitive(): Boolean {
+        return store.data.firstOrNull()?.get(keyIsTimeSensitiveKey) ?: true
+    }
+
+    // region Rate App
+    suspend fun getRateAppLaunchCount(): Int {
+        return store.data.firstOrNull()?.get(keyRateAppLaunchCount) ?: 0
+    }
+
+    suspend fun incrementRateAppLaunchCount() {
+        store.edit { preferences ->
+            val current = preferences[keyRateAppLaunchCount] ?: 0
+            preferences[keyRateAppLaunchCount] = current + 1
+        }
+    }
+
+    suspend fun setRateAppLaunchCount(count: Int) {
+        store.edit { preferences ->
+            preferences[keyRateAppLaunchCount] = count
+        }
+    }
+
+    suspend fun getRateAppLastPromptAt(): Long? {
+        return store.data.firstOrNull()?.get(keyRateAppLastPromptAt)
+    }
+
+    suspend fun setRateAppLastPromptNow() {
+        store.edit { preferences ->
+            preferences[keyRateAppLastPromptAt] = System.currentTimeMillis()
+        }
+    }
+
+    suspend fun isRateAppRated(): Boolean {
+        return store.data.firstOrNull()?.get(keyRateAppRated) ?: false
+    }
+
+    suspend fun setRateAppRated(rated: Boolean) {
+        store.edit { preferences ->
+            preferences[keyRateAppRated] = rated
+        }
+    }
+    // endregion Rate App
+
+    // region Feedback Form
+    suspend fun getFeedbackFormLaunchCount(): Int {
+        return store.data.firstOrNull()?.get(keyFeedbackFormLaunchCount) ?: 0
+    }
+
+    suspend fun incrementFeedbackFormLaunchCount() {
+        store.edit { preferences ->
+            val current = preferences[keyFeedbackFormLaunchCount] ?: 0
+            preferences[keyFeedbackFormLaunchCount] = current + 1
+        }
+    }
+
+    suspend fun setFeedbackFormLaunchCount(count: Int) {
+        store.edit { preferences ->
+            preferences[keyFeedbackFormLaunchCount] = count
+        }
+    }
+
+    suspend fun getFeedbackFormLastPromptAt(): Long? {
+        return store.data.firstOrNull()?.get(keyFeedbackFormLastPromptAt)
+    }
+
+    suspend fun setFeedbackFormLastPromptNow() {
+        store.edit { preferences ->
+            preferences[keyFeedbackFormLastPromptAt] = System.currentTimeMillis()
+        }
+    }
+
+    suspend fun isFeedbackFormCompleted(): Boolean {
+        return store.data.firstOrNull()?.get(keyFeedbackFormCompleted) ?: false
+    }
+
+    suspend fun setFeedbackFormCompleted(completed: Boolean) {
+        store.edit { preferences ->
+            preferences[keyFeedbackFormCompleted] = completed
+        }
+    }
+    // endregion Feedback Form
+
+    // region Email Alert
+    suspend fun getEmailAlertLaunchCount(): Int {
+        return store.data.firstOrNull()?.get(keyEmailAlertLaunchCount) ?: 0
+    }
+
+    suspend fun incrementEmailAlertLaunchCount() {
+        store.edit { preferences ->
+            val current = preferences[keyEmailAlertLaunchCount] ?: 0
+            preferences[keyEmailAlertLaunchCount] = current + 1
+        }
+    }
+
+    suspend fun setEmailAlertLaunchCount(count: Int) {
+        store.edit { preferences ->
+            preferences[keyEmailAlertLaunchCount] = count
+        }
+    }
+
+    suspend fun getEmailAlertLastPromptAt(): Long? {
+        return store.data.firstOrNull()?.get(keyEmailAlertLastPromptAt)
+    }
+
+    suspend fun setEmailAlertLastPromptNow() {
+        store.edit { preferences ->
+            preferences[keyEmailAlertLastPromptAt] = System.currentTimeMillis()
+        }
+    }
+    // endregion Email Alert
+
     suspend fun clearAll() {
         store.edit { preferences ->
             preferences.clear()
@@ -306,5 +441,80 @@ class AppPreferences(
 
     suspend fun getMeditationBackgroundIndex(): Int {
         return store.data.firstOrNull()?.get(keyMeditationBackgroundIndex) ?: -1
+    }
+
+    suspend fun getDailyPlayedSeconds(): Long {
+        checkDailyReset()
+        return store.data.firstOrNull()?.get(keyDailyPlayedSeconds) ?: 0L
+    }
+
+    suspend fun incrementDailyPlayedSeconds(seconds: Long) {
+        checkDailyReset()
+        store.edit { preferences ->
+            val current = preferences[keyDailyPlayedSeconds] ?: 0L
+            preferences[keyDailyPlayedSeconds] = current + seconds
+        }
+    }
+
+    fun getDailyPlayedSecondsFlow(): Flow<Long> {
+        return store.data.map { preferences ->
+            // Note: We don't call checkDailyReset() here to avoid side effects in a Flow.
+            // Reset should be triggered by explicit calls to getters/setters or periodically.
+            preferences[keyDailyPlayedSeconds] ?: 0L
+        }
+    }
+
+    suspend fun getDailyCompletedAccompanimentsCount(): Int {
+        checkDailyReset()
+        return store.data.firstOrNull()?.get(keyDailyCompletedAccompanimentsCount) ?: 0
+    }
+
+    suspend fun incrementDailyCompletedAccompanimentsCount() {
+        checkDailyReset()
+        store.edit { preferences ->
+            val current = preferences[keyDailyCompletedAccompanimentsCount] ?: 0
+            preferences[keyDailyCompletedAccompanimentsCount] = current + 1
+        }
+    }
+
+    suspend fun getDailyCompletedAccompanimentsCountFlow(): Flow<Int> {
+        return store.data.map { preferences ->
+            preferences[keyDailyCompletedAccompanimentsCount] ?: 0
+        }
+    }
+
+    suspend fun getDeletedAvatarIds(): Set<Int> {
+        return store.data.firstOrNull()?.get(keyDeletedAvatarIds)?.mapNotNull { it.toIntOrNull() }?.toSet()
+            ?: emptySet()
+    }
+
+    suspend fun addDeletedAvatarIds(ids: List<Int>) {
+        store.edit { preferences ->
+            val current = preferences[keyDeletedAvatarIds] ?: emptySet()
+            preferences[keyDeletedAvatarIds] = current + ids.map { it.toString() }.toSet()
+        }
+    }
+
+    suspend fun getCustomAvatarUris(): Set<String> {
+        return store.data.firstOrNull()?.get(keyCustomAvatarUris) ?: emptySet()
+    }
+
+    suspend fun addCustomAvatarUri(id: String, uri: String) {
+        store.edit { preferences ->
+            val current = preferences[keyCustomAvatarUris] ?: emptySet()
+            preferences[keyCustomAvatarUris] = current + "$id|$uri"
+        }
+    }
+
+    private suspend fun checkDailyReset() {
+        val today = java.time.LocalDate.now().toString()
+        val lastReset = store.data.firstOrNull()?.get(keyLastPlaybackResetDate)
+        if (lastReset != today) {
+            store.edit { preferences ->
+                preferences[keyDailyPlayedSeconds] = 0L
+                preferences[keyDailyCompletedAccompanimentsCount] = 0
+                preferences[keyLastPlaybackResetDate] = today
+            }
+        }
     }
 }

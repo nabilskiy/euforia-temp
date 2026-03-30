@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
@@ -21,6 +22,8 @@ import digital.euforia.app.service.AudioPlaybackService
 @Composable
 fun rememberMediaController(
     timeOfDayUrl: Uri?,
+    title: String? = null,
+    imageUrl: String? = null,
     playWhenReady: Boolean = true,
     onIsPlayingChanged: (Boolean) -> Unit = {},
     onEnded: () -> Unit = {},
@@ -40,7 +43,27 @@ fun rememberMediaController(
             future.addListener({
                 val c = future.get()
                 controllerState.value = c
-                c.setMediaItem(MediaItem.fromUri(timeOfDayUrl))
+                val mediaMetadata = MediaMetadata.Builder()
+                    .setTitle(title)
+                    .setArtworkUri(imageUrl?.let {
+                        if (it.startsWith("android.resource")) {
+                            val uri = Uri.parse(it)
+                            val path = uri.path?.removePrefix("/")
+                            if (path != null) {
+                                Uri.parse("android.resource://${context.packageName}/$path")
+                            } else {
+                                uri
+                            }
+                        } else {
+                            Uri.parse(it)
+                        }
+                    })
+                    .build()
+                val mediaItem = MediaItem.Builder()
+                    .setUri(timeOfDayUrl)
+                    .setMediaMetadata(mediaMetadata)
+                    .build()
+                c.setMediaItem(mediaItem)
                 c.prepare()
                 if (playWhenReady) c.playWhenReady = true
 //                c.play()

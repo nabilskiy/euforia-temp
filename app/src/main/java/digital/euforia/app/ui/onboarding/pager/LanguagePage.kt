@@ -10,10 +10,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.ScrollableDefaults
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,7 +34,9 @@ import androidx.compose.ui.unit.sp
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.onboarding.Language
 import digital.euforia.app.ui.onboarding.OnboardingViewModel
+import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.LabelText
+import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.AnimatedListCheckItem
 import digital.euforia.app.ui.util.widget.AudioEqualizerView
@@ -95,14 +106,28 @@ fun LanguageItemView(
             tint = Color.Unspecified,
             modifier = Modifier.size(50.dp)
         )
-        Text(
+        Column(
             modifier = Modifier.weight(1f),
-            text = localizedRes.string(language.titleRes),
-            color = titleColor,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-        )
+            verticalArrangement = spacedBy(8.dp)
+        ) {
+            Text(
+                text = localizedRes.string(language.titleRes),
+                color = titleColor,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+            )
+            if (language == Language.EN) {
+                Text(
+                    text = localizedRes.string(R.string.intro_language_preferred),
+                    color = White.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Light
+                    )
+                )
+            }
+        }
         if (isSelected && isPlaying && language.hasSample) {
-            AudioEqualizerView()
+            AudioEqualizerView(modifier = Modifier.height(24.dp))
         }
 
         if (language.isSupported) {

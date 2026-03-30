@@ -3,12 +3,17 @@ package digital.euforia.app.data.config
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types.newParameterizedType
 import digital.euforia.app.domain.model.config.BannerConfig
+import digital.euforia.app.domain.model.config.CriticalUpdateConfig
 import digital.euforia.app.domain.model.config.DemoUnlockDayConfig
 import digital.euforia.app.domain.model.config.ExerciseConfig
+import digital.euforia.app.domain.model.config.FeedbackFormConfig
 import digital.euforia.app.domain.model.config.ProgramsConfig
+import digital.euforia.app.domain.model.config.RateAppConfig
+import digital.euforia.app.domain.model.config.RateConfig
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
 import digital.euforia.app.domain.model.config.toDomain
+import digital.euforia.app.domain.model.config.EmailAlertConfig
 import digital.euforia.app.domain.model.plan.TodayPresentType
 import digital.euforia.app.domain.model.plan.toTodayPresentType
 import timber.log.Timber
@@ -114,6 +119,11 @@ class EuforiaRemoteConfigFetcher(
         return url.ifBlank { null }
     }
 
+    fun getShareMessage(): String? {
+        val url = remoteConfig.getString(KEY_SHARE_MESSAGE)
+        return url.ifBlank { null }
+    }
+
     fun getTodayIntroVideoCoverUrl(): String? {
         val url = remoteConfig.getString(KEY_TODAY_INTRO_VIDEO_COVER)
         return url.ifBlank { null }
@@ -188,8 +198,53 @@ class EuforiaRemoteConfigFetcher(
         }
     }
 
+    fun getNotificationSoundType(): String {
+        val type = remoteConfig.getString(KEY_NOTIFICATION_SOUND_TYPE)
+        return type.ifBlank { "default" }
+    }
+
     fun getSearchSuggestions(): List<String> {
         return getListConfig(KEY_SEARCH_SUGGESTIONS).dataOrNull ?: emptyList()
+    }
+
+    fun getFeedbackFormConfig(): FeedbackFormConfig {
+        return getConfig(
+            key = KEY_FEEDBACK_FORM_CONFIG,
+            moshiClazz = NetworkFeedbackFormConfig::class.java,
+            map = { it.toDomain() }
+        ).dataOrNull ?: FeedbackFormConfig()
+    }
+
+    fun getCriticalUpdateConfig(): CriticalUpdateConfig {
+        return getConfig(
+            key = KEY_CRITICAL_UPDATE_CONFIG,
+            moshiClazz = NetworkCriticalUpdateConfig::class.java,
+            map = { it.toDomain() }
+        ).dataOrNull ?: CriticalUpdateConfig()
+    }
+
+    fun getRateAppConfig(): RateAppConfig {
+        return getConfig(
+            key = KEY_RATE_APP_CONFIG,
+            moshiClazz = NetworkRateAppConfig::class.java,
+            map = { it.toDomain() }
+        ).dataOrNull ?: RateAppConfig()
+    }
+
+    fun getRateConfig(): RateConfig {
+        return getConfig(
+            key = KEY_RATE_CONFIG,
+            moshiClazz = NetworkRateConfig::class.java,
+            map = { it.toDomain() }
+        ).dataOrNull ?: RateConfig()
+    }
+
+    fun getEmailAlertConfig(): EmailAlertConfig {
+        return getConfig(
+            key = KEY_EMAIL_ALERT_CONFIG,
+            moshiClazz = NetworkEmailAlertConfig::class.java,
+            map = { it.toDomain() }
+        ).dataOrNull ?: EmailAlertConfig()
     }
 
     companion object {
@@ -222,5 +277,12 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_EXERCISES_LIST_TEMPLATE = "exercises_list_template"
         private const val DEFAULT_LIBRARY_TEMPLATE_KEY = "library_2_list_template"
         private const val KEY_SEARCH_SUGGESTIONS = "search_suggestions"
+        private const val KEY_SHARE_MESSAGE = "share_message"
+        private const val KEY_NOTIFICATION_SOUND_TYPE = "notification_sound_type"
+        private const val KEY_FEEDBACK_FORM_CONFIG = "feedback_form_config"
+        private const val KEY_CRITICAL_UPDATE_CONFIG = "critical_update_config"
+        private const val KEY_RATE_APP_CONFIG = "rate_app_config"
+        private const val KEY_RATE_CONFIG = "rate_config"
+        private const val KEY_EMAIL_ALERT_CONFIG = "email_alert_config"
     }
 }

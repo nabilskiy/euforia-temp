@@ -32,8 +32,30 @@ fun Modifier.fadeTop(height: Dp = 30.dp): Modifier = this
             brush = Brush.verticalGradient(
                 colorStops = arrayOf(
                     0f to Color.Transparent,  // 0% at very top (hide)
-                    stop to Color.Black,      // reach 100% alpha at 20.dp
+                    stop to Color.Black,      // reach 100% alpha at height
                     1f to Color.Black         // fully keep the rest
+                )
+            ),
+            blendMode = BlendMode.DstIn
+        )
+    }
+
+fun Modifier.fadeBottom(height: Dp = 48.dp): Modifier = this
+    // Force offscreen so blend mode works reliably
+    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+    .drawWithContent {
+        drawContent()
+
+        val h = height.toPx()
+        val stop = (1f - (h / size.height)).coerceIn(0f, 1f)
+
+        // DstIn keeps destination (your content) where this rect is opaque
+        drawRect(
+            brush = Brush.verticalGradient(
+                colorStops = arrayOf(
+                    0f to Color.Black,        // fully keep the top part
+                    stop to Color.Black,      // start fading at this point
+                    1f to Color.Transparent   // 0% at very bottom (hide)
                 )
             ),
             blendMode = BlendMode.DstIn

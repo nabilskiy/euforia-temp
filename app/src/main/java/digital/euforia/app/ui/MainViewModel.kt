@@ -7,8 +7,12 @@ import androidx.lifecycle.viewModelScope
 import com.android.billingclient.api.Purchase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.domain.usecase.UpdateNotificationsUseCase
 import digital.euforia.app.domain.usecase.app_settings.SyncAppSettingsUseCase
 import digital.euforia.app.domain.usecase.subscription.SyncPurchaseUseCase
+import digital.euforia.app.domain.usecase.ParseDeepLinkUseCase
+import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.util.postEffect
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -21,11 +25,14 @@ class MainViewModel @Inject constructor(
     private val appPreferences: AppPreferences,
     private val syncAppSettingsUseCase: SyncAppSettingsUseCase,
     private val syncPurchaseUseCase: SyncPurchaseUseCase,
+    private val updateNotificationsUseCase: UpdateNotificationsUseCase,
+    private val parseDeepLinkUseCase: ParseDeepLinkUseCase
 ) : ViewModel(), ContainerHost<MainState, MainSideEffect> {
     override val container = container<MainState, MainSideEffect>(
         initialState = MainState(),
         onCreate = {
             observeLanguageChanges()
+            viewModelScope.launch { updateNotificationsUseCase.invoke() }
         }
     )
 
@@ -39,14 +46,26 @@ class MainViewModel @Inject constructor(
         }
     }
 
-     fun syncPurchase(purchaseJson: String) {
+    fun syncPurchase(purchaseJson: String) {
         viewModelScope.launch {
 
             syncPurchaseUseCase.invoke(purchaseJson)
         }
     }
+
+    fun handleDeepLink(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val destination = parseDeepLinkUseCase.invoke(uri)
+            postEffect(MainSideEffect.NavigateDeepLink(destination))
+        }
+    }
 }
 
-data class MainState(val language: String = "en")
+data class MainState(
+    val language: String = "en",
+    val deepLinkUri: String? = null
+)
 
-sealed class MainSideEffect {}
+sealed class MainSideEffect {
+    data class NavigateDeepLink(val destination: HomeDestination) : MainSideEffect()
+}

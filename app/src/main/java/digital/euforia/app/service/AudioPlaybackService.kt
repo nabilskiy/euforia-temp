@@ -1,5 +1,6 @@
 package digital.euforia.app.service
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
@@ -18,6 +19,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.R
+import digital.euforia.app.ui.MainActivity
 
 /**
  * MediaSessionService hosting a main ExoPlayer instance and exposing a MediaSession
@@ -75,8 +77,19 @@ class AudioPlaybackService : MediaSessionService() {
             .build()
         setMediaNotificationProvider(notificationProvider)
 
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         mediaSession = MediaSession.Builder(this, exo)
             .setId("audio_playback_session")
+            .setSessionActivity(pendingIntent)
             .setCallback(object : MediaSession.Callback {
                 override fun onConnect(
                     session: MediaSession,

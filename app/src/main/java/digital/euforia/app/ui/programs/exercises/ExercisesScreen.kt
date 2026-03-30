@@ -52,6 +52,7 @@ import digital.euforia.app.domain.usecase.program.ExerciseUiBlock
 import digital.euforia.app.domain.usecase.program.ExerciseUiBlock.ExerciseList
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.programs.publication.getIconRes
 import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
@@ -91,7 +92,8 @@ fun ExercisesScreen(
         onMoreClick = viewModel::onMoreClicked,
         onBannerClick = viewModel::onBannerClicked,
         onRetryClick = viewModel::onRetryClick,
-        onDownloadsClick = viewModel::onDownloadsClicked
+        onDownloadsClick = viewModel::onDownloadsClicked,
+        onTitleClick = viewModel::onTitleClicked
     )
 }
 
@@ -107,7 +109,8 @@ private fun ExercisesContent(
     onMoreClick: (List<PublicationInfo>) -> Unit,
     onBannerClick: (ExerciseUiBlock.Banner) -> Unit,
     onRetryClick: () -> Unit,
-    onDownloadsClick: () -> Unit
+    onDownloadsClick: () -> Unit,
+    onTitleClick: (String) -> Unit,
 ) {
     val listState = rememberLazyListState()
     val hazeState = rememberHazeState()
@@ -174,7 +177,8 @@ private fun ExercisesContent(
                             itemImageUrl = { it.imageUrl },
                             itemDuration = { it.durationMinutes ?: 0 },
                             onMoreClick = { onMoreClick(block.publicationInfoList) },
-                            onItemClick = { onExerciseClick(it) }
+                            onItemClick = { onExerciseClick(it) },
+                            onTitleClick = { onTitleClick(PublicationType.EXERCISE.value) }
                         )
 
                         is ExerciseUiBlock.Banner -> {
@@ -211,7 +215,8 @@ private fun ExercisesContent(
                                 itemImageUrl = { it.imageUrl },
                                 itemDuration = { it.durationMinutes ?: 0 },
                                 onMoreClick = { onMoreClick(block.publicationInfoList) },
-                                onItemClick = { onExerciseClick(it) }
+                                onItemClick = { onExerciseClick(it) },
+                                onTitleClick = { onTitleClick(PublicationType.EXERCISE.value) }
                             )
                         }
 

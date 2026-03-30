@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.PublicationInfo
@@ -34,19 +35,24 @@ import kotlin.collections.map
 class ProgramDetailsViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val configFetcher: EuforiaRemoteConfigFetcher,
-//    private val getProgramWithChildrenUseCase: GetProgramWithChildrenUseCase,
     private val getProgramDetailsUseCase: GetProgramDetailsUseCase,
     private val profilePreferences: ProfilePreferences,
+    private val analyticSender: AnalyticSender
 ) : ViewModel(), ContainerHost<ProgramDetailsState, ProgramDetailsSideEffect> {
     private val programId: Int = requireNotNull(savedStateHandle.get<Int>("programId"))
     override val container = container<ProgramDetailsState, ProgramDetailsSideEffect>(
         initialState = ProgramDetailsState(),
         onCreate = {
+            logShow()
             observePremium()
             loadConfig()
             loadData()
         }
     )
+
+    private fun logShow() {
+        viewModelScope.launch { analyticSender.packageShow(programId.toString()) }
+    }
 
     private fun loadConfig() {
         viewModelScope.launch {
@@ -97,13 +103,21 @@ class ProgramDetailsViewModel @Inject constructor(
     }
 
     fun onPageSelected(page: Int) {
-        reduceState {
-            copy(currentPage = page)
+        when (page) {
+            0 -> onMeditationsClicked()
+            1 -> onArticlesClicked()
+            2 -> onExercisesClicked()
         }
+        reduceState { copy(currentPage = page) }
     }
 
     fun onPublicationClicked(publicationInfo: PublicationInfo) {
         val state = container.stateFlow.value
+        when(publicationInfo.publicationType) {
+            PublicationType.ARTICLE -> viewModelScope.launch { analyticSender.packageArticleItemClick() }
+            PublicationType.EXERCISE -> viewModelScope.launch { analyticSender.packageExerciseItemClick() }
+            PublicationType.MEDITATION -> viewModelScope.launch { analyticSender.packageMeditationItemClick() }
+        }
         postEffect(
             ProgramDetailsSideEffect.NavigateToPublication(
                 id = publicationInfo.id,
@@ -111,6 +125,26 @@ class ProgramDetailsViewModel @Inject constructor(
                 packageTitle = state.program?.name.orEmpty()
             )
         )
+    }
+
+    fun onShareClicked() {
+        viewModelScope.launch { analyticSender.packageMenuShareClick() }
+    }
+
+    fun onAboutClicked() {
+        viewModelScope.launch { analyticSender.packageMenuAboutClick() }
+    }
+
+    fun onMeditationsClicked() {
+        viewModelScope.launch { analyticSender.packageMeditationsClick() }
+    }
+
+    fun onExercisesClicked() {
+        viewModelScope.launch { analyticSender.packageExercisesClick() }
+    }
+
+    fun onArticlesClicked() {
+        viewModelScope.launch { analyticSender.packageArticlesClick() }
     }
 }
 

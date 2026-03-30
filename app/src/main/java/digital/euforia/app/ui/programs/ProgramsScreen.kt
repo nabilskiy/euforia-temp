@@ -1,7 +1,10 @@
 package digital.euforia.app.ui.programs
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,12 +36,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -48,17 +59,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.domain.usecase.program.SearchResults
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
@@ -114,7 +130,9 @@ fun ProgramsScreen(
             onMoreArticlesClick = viewModel::onMoreArticlesClicked,
             launchSubscriptionActivity = launchSubscriptionActivity,
             onSearchQueryChanged = viewModel::onSearchQueryChanged,
-            onSuggestionClick = viewModel::onSuggestionClicked
+            onSuggestionClick = viewModel::onSuggestionClicked,
+            onSearchClick = viewModel::onSearchClicked,
+            onTitleClick = viewModel::onTitleClicked
         )
     }
 }
@@ -146,7 +164,9 @@ private fun ProgramsContent(
     onMoreArticlesClick: () -> Unit,
     launchSubscriptionActivity: () -> Unit,
     onSearchQueryChanged: (String?) -> Unit,
-    onSuggestionClick: (Int) -> Unit
+    onSuggestionClick: (Int) -> Unit,
+    onSearchClick: () -> Unit,
+    onTitleClick: (String) -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
@@ -165,6 +185,16 @@ private fun ProgramsContent(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    // Overlay state for currently long-pressed program item
+    data class ProgramOverlay(
+        val left: Int,
+        val top: Int,
+        val width: Int,
+        val height: Int,
+        val program: ProgramUi
+    )
+
+    var programOverlay by remember { mutableStateOf<ProgramOverlay?>(null) }
 
     Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
@@ -175,6 +205,66 @@ private fun ProgramsContent(
             premiumButtonState = if (isPremium) PremiumButtonState.NONE else PremiumButtonState.UPGRADE,
             onUpgradeClick = launchSubscriptionActivity
         )
+
+        // Fullscreen blur overlay and floating pressed item replica (drawn above content when active)
+        val overlay = programOverlay
+        if (overlay != null) {
+            // Blur everything behind
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeEffect(
+                        state = hazeState,
+                        style = HazeMaterials.regular(NavBarBackground)
+                    )
+                    .zIndex(2f)
+            )
+            // Draw the pressed program card above the blur at its original position
+            val widthDp = with(LocalDensity.current) { overlay.width.toDp() }
+            val heightDp = with(LocalDensity.current) { overlay.height.toDp() }
+            val leftDp = with(LocalDensity.current) { overlay.left.toDp() }
+            val topDp = with(LocalDensity.current) { overlay.top.toDp() }
+            Box(
+                modifier = Modifier
+                    .zIndex(3f)
+                    .offset(x = leftDp, y = topDp)
+                    .size(widthDp, heightDp)
+                    .shadow(8.dp, RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(24.dp))
+                    .graphicsLayer {
+                        scaleX = 1.05f
+                        scaleY = 1.05f
+                    }
+            ) {
+                AsyncImage(
+                    modifier = Modifier.fillMaxSize().align(Alignment.Center),
+                    model = overlay.program.imageUrl,
+                    contentDescription = null,
+                )
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        modifier = Modifier,
+                        text = "${overlay.program.resourceCount} resources",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraLight),
+                        color = White.copy(alpha = 0.6f),
+                    )
+                    Text(
+                        modifier = Modifier,
+                        text = overlay.program.name,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = White,
+                    )
+                }
+                if (!isPremium && overlay.program.isPremium) {
+                    MaxView(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp))
+                } else {
+                    MoreView(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp))
+                }
+            }
+        }
 
         if (isLoading) {
             ProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -209,7 +299,8 @@ private fun ProgramsContent(
                         keyboardController?.hide()
                         focusManager.clearFocus()
                         onSearchQueryChanged(null)
-                    }
+                    },
+                    onSearchClick = onSearchClick
                 )
                 if (searchQuery != null) {
                     if (searchResults != null && searchResults.hasResults()) {
@@ -227,7 +318,8 @@ private fun ProgramsContent(
                                 itemImageUrl = { it.imageUrl },
                                 itemDuration = { it.durationMinutes ?: 0 },
                                 onMoreClick = onMoreSearchedMeditationsClick,
-                                onItemClick = { onArticleClick(it) }
+                                onItemClick = { onArticleClick(it) },
+                                onTitleClick = { onTitleClick(PublicationType.MEDITATION.value) }
                             )
                         }
                         if (searchResults.exercises.isNotEmpty()) {
@@ -244,7 +336,9 @@ private fun ProgramsContent(
                                 itemImageUrl = { it.imageUrl },
                                 itemDuration = { it.durationMinutes ?: 0 },
                                 onMoreClick = onMoreExercisesClick,
-                                onItemClick = { onExerciseClick(it) }
+                                onItemClick = { onExerciseClick(it) },
+                                onTitleClick = { onTitleClick(PublicationType.EXERCISE.value) }
+
                             )
                         }
                         if (searchResults.articles.isNotEmpty()) {
@@ -261,7 +355,8 @@ private fun ProgramsContent(
                                 itemImageUrl = { it.imageUrl },
                                 itemDuration = { it.durationMinutes ?: 0 },
                                 onMoreClick = onMoreArticlesClick,
-                                onItemClick = { onArticleClick(it) }
+                                onItemClick = { onArticleClick(it) },
+                                onTitleClick = { onTitleClick(PublicationType.ARTICLE.value) }
                             )
                         }
                     } else {
@@ -274,7 +369,14 @@ private fun ProgramsContent(
                     programsItem(
                         programs = programs,
                         isPremium = isPremium,
-                        onProgramClick = onProgramClick
+                        onProgramClick = onProgramClick,
+                        onProgramLongPressStart = { program, left, top, width, height ->
+                            programOverlay = ProgramOverlay(left, top, width, height, program)
+                        },
+                        onProgramLongPressEnd = {
+                            programOverlay = null
+                        },
+                        activeOverlayProgramId = programOverlay?.program?.id
                     )
                     dividerItem()
                     genericRowItem(
@@ -290,7 +392,8 @@ private fun ProgramsContent(
                         itemImageUrl = { it.imageUrl },
                         itemDuration = { it.durationMinutes ?: 0 },
                         onMoreClick = onMoreExercisesClick,
-                        onItemClick = { onExerciseClick(it) }
+                        onItemClick = { onExerciseClick(it) },
+                        onTitleClick = { onTitleClick(PublicationType.EXERCISE.value) }
                     )
                     dividerItem()
                     genericRowItem(
@@ -306,7 +409,8 @@ private fun ProgramsContent(
                         itemImageUrl = { it.imageUrl },
                         itemDuration = { it.durationMinutes ?: 0 },
                         onMoreClick = onMoreArticlesClick,
-                        onItemClick = { onArticleClick(it) }
+                        onItemClick = { onArticleClick(it) },
+                        onTitleClick = { onTitleClick(PublicationType.ARTICLE.value) }
                     )
                 }
                 item {
@@ -334,8 +438,34 @@ fun HorizontalItemView(
     iconRes: Int,
     onClick: () -> Unit
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(targetValue = if (isPressed) 1.05f else 1f, label = "scale")
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 8.dp else 0.dp,
+        label = "elevation"
+    )
+
     Column(
-        modifier = Modifier.noRippleClickable(onClick).width(196.dp),
+        modifier = Modifier
+            .width(196.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .shadow(elevation, RoundedCornerShape(32.dp))
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { isPressed = true },
+                    onPress = {
+                        try {
+                            awaitRelease()
+                        } finally {
+                            isPressed = false
+                        }
+                    },
+                    onTap = { onClick() }
+                )
+            },
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Box() {
@@ -392,7 +522,10 @@ fun HorizontalItemView(
 private fun LazyListScope.programsItem(
     programs: List<ProgramUi>,
     isPremium: Boolean,
-    onProgramClick: (ProgramUi) -> Unit
+    onProgramClick: (ProgramUi) -> Unit,
+    onProgramLongPressStart: (ProgramUi, left: Int, top: Int, width: Int, height: Int) -> Unit,
+    onProgramLongPressEnd: () -> Unit,
+    activeOverlayProgramId: Int?
 ) =
     item(key = "programs_list_item") {
         Column(
@@ -403,7 +536,10 @@ private fun LazyListScope.programsItem(
                 ProgramsView(
                     programs = programsPair,
                     isPremium = isPremium,
-                    onProgramClick = onProgramClick
+                    onProgramClick = onProgramClick,
+                    onProgramLongPressStart = onProgramLongPressStart,
+                    onProgramLongPressEnd = onProgramLongPressEnd,
+                    activeOverlayProgramId = activeOverlayProgramId
                 )
             }
         }
@@ -413,7 +549,10 @@ private fun LazyListScope.programsItem(
 private fun ColumnScope.ProgramsView(
     programs: List<ProgramUi>,
     isPremium: Boolean,
-    onProgramClick: (ProgramUi) -> Unit
+    onProgramClick: (ProgramUi) -> Unit,
+    onProgramLongPressStart: (ProgramUi, left: Int, top: Int, width: Int, height: Int) -> Unit,
+    onProgramLongPressEnd: () -> Unit,
+    activeOverlayProgramId: Int?
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -422,6 +561,9 @@ private fun ColumnScope.ProgramsView(
             ProgramItemView(
                 programUi = programUi,
                 isPremium = isPremium,
+                activeOverlayProgramId = activeOverlayProgramId,
+                onProgramLongPressStart = onProgramLongPressStart,
+                onProgramLongPressEnd = onProgramLongPressEnd,
                 onProgramClick = { onProgramClick(programUi) })
         }
         if (programs.size == 1) {
@@ -436,13 +578,59 @@ private fun ColumnScope.ProgramsView(
 private fun RowScope.ProgramItemView(
     programUi: ProgramUi,
     isPremium: Boolean,
+    activeOverlayProgramId: Int?,
+    onProgramLongPressStart: (ProgramUi, left: Int, top: Int, width: Int, height: Int) -> Unit,
+    onProgramLongPressEnd: () -> Unit,
     onProgramClick: () -> Unit
 ) {
     val localizedRes = LocalLocalizedRes.current
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(targetValue = if (isPressed) 1.05f else 1f, label = "scale")
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 8.dp else 0.dp,
+        label = "elevation"
+    )
+    var lastBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+
     Box(
-        modifier = Modifier.noRippleClickable(onClick = { onProgramClick() }).aspectRatio(1f)
+        modifier = Modifier
+            .aspectRatio(1f)
             .weight(1f)
+            .onGloballyPositioned { coords ->
+                lastBounds = coords.boundsInRoot()
+            }
+            .graphicsLayer {
+                // Hide the original when overlay is active for this item
+                alpha = if (activeOverlayProgramId == programUi.id) 0f else 1f
+                scaleX = scale
+                scaleY = scale
+            }
+            .shadow(elevation, RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = {
+                        isPressed = true
+                        val rect = lastBounds
+                        onProgramLongPressStart(
+                            programUi,
+                            rect.left.toInt(),
+                            rect.top.toInt(),
+                            rect.width.toInt(),
+                            rect.height.toInt()
+                        )
+                    },
+                    onPress = {
+                        try {
+                            awaitRelease()
+                        } finally {
+                            isPressed = false
+                            onProgramLongPressEnd()
+                        }
+                    },
+                    onTap = { onProgramClick() }
+                )
+            }
     ) {
         AsyncImage(
             modifier = Modifier.fillMaxSize().align(Alignment.Center),
@@ -500,7 +688,8 @@ private fun LazyListScope.searchItem(
     keyboardController: SoftwareKeyboardController?,
     isLoading: Boolean,
     onTextChanged: (String?) -> Unit,
-    onCancelClick: () -> Unit
+    onCancelClick: () -> Unit,
+    onSearchClick: () -> Unit
 ) = item(key = "search_item") {
     SearchTextField(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -510,7 +699,8 @@ private fun LazyListScope.searchItem(
         keyboardController = keyboardController,
         onCancelClick = onCancelClick,
         isLoading = isLoading,
-        onClearClick = { onTextChanged(null) }
+        onClearClick = { onTextChanged(null) },
+        onClick = onSearchClick
     )
 }
 

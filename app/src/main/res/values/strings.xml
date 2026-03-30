@@ -55,6 +55,7 @@
     <string name="support_email_subject">Support Euforia %1$s</string>
     <string name="text_link_not_created">Failed to create link. Please check the connection.</string>
     <string name="text_support_not_created">Failed to send a request. Please review the message and try again.</string>
+    <string name="app_critical_update_alert_title">New Update Available</string>
     <string name="app_critical_update_alert_message">Exciting updates await in Euforia! For the best experience and to continue enjoying our services, please upgrade to the latest version of the app.</string>
     <string name="app_critical_update_alert_update">Update</string>
     <string name="request_permissions_notifications_title">Turn on notifications</string>
@@ -755,4 +756,9 @@
     <string name="lang_soon_de">in Kürze</string>
     <string name="plan_banner_title">Unlock full therapy with</string>
     <string name="plan_banner_max">Euforia MAX</string>
+    <string name="plan_banner_button">Unlock Now</string>
+
+    <string name="splash_step_wait">Please wait...</string>
+    <string name="splash_step_purchases">Checking purchases...</string>
+    <string name="splash_step_updating">Updating user information...</string>
 </resources>

@@ -719,4 +719,8 @@
     <string name="goal_esteem">Mejorar la autoestima</string>
     <string name="goal_inspired">Sentirme inspirado y con energía</string>
     <string name="goal_other">Todo lo anterior</string>
+
+    <string name="splash_step_wait">Por favor espera...</string>
+    <string name="splash_step_purchases">Verificando compras...</string>
+    <string name="splash_step_updating">Actualizando información del usuario...</string>
 </resources>

@@ -78,15 +78,16 @@ fun OptionsMenu(
 
 @Composable
 fun PublicationOptionMenu(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     isFavourite: Boolean = false,
     onAddFavouriteClick: () -> Unit,
     onShareClick: () -> Unit,
     onReportErrorClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    var expanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = !expanded }) {
+        IconButton(onClick = { onExpandedChange(!expanded) }) {
             Icon(
                 painter = painterResource(R.drawable.ic_menu),
                 contentDescription = "Menu",
@@ -96,7 +97,7 @@ fun PublicationOptionMenu(
 
         OptionsMenu(
             expanded = expanded,
-            onExpandedChange = { expanded = it },
+            onExpandedChange = onExpandedChange,
             menuItems = listOfNotNull(
                 MenuItem(
                     titleRes = R.string.add_to_favorites,

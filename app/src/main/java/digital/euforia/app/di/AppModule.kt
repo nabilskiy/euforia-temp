@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.db.AppDatabase
+import digital.euforia.app.data.network.TokensProvider
 import javax.inject.Singleton
 
 @Module
@@ -28,8 +29,8 @@ class AppModule {
 
     @Singleton
     @Provides
-    fun provideAnalyticSender(@ApplicationContext applicationContext: Context): AnalyticSender {
-        val analyticSender = AnalyticSender(applicationContext)
+    fun provideAnalyticSender(@ApplicationContext applicationContext: Context, tokensProvider: TokensProvider): AnalyticSender {
+        val analyticSender = AnalyticSender(applicationContext, tokensProvider)
         return analyticSender
     }
 

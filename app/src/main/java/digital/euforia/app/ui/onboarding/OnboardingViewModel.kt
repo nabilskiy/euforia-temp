@@ -22,11 +22,10 @@ import digital.euforia.app.domain.usecase.onboarding.GetInterestsUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetLanguageOptionsUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetOnboardingPagesUseCase
 import digital.euforia.app.domain.usecase.onboarding.ValidateEmailUseCase
+import digital.euforia.app.ui.util.openWebLink
 import digital.euforia.app.ui.util.BackgroundPlayerHelper
 import digital.euforia.app.ui.util.MediaPlayerHelper
 import digital.euforia.app.ui.util.reduceState
-import android.content.Intent
-import android.net.Uri
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -63,6 +62,7 @@ class OnboardingViewModel @Inject constructor(
 //                context = context,
 //                soundRes = R.raw.bgm_intro
 //            )
+            BackgroundPlayerHelper.playLooping(context, R.raw.bgm_intro)
             analyticSender.introShow()
         }
     )
@@ -89,14 +89,7 @@ class OnboardingViewModel @Inject constructor(
     }
 
     private fun openUrl(url: String) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (t: Throwable) {
-            Timber.w(t, "Failed to open url: $url")
-        }
+        openWebLink(context, url)
     }
 
     private fun observerNotificationPermission() = viewModelScope.launch {
@@ -136,6 +129,9 @@ class OnboardingViewModel @Inject constructor(
 
     fun onSkipPage() {
         intent {
+            if (state.currentPage.pageType == OnboardingPage.SamplesPage) {
+                MediaPlayerHelper.stopWithFade(1000L)
+            }
             logSkipPage(state.currentPage)
             val nextPagePosition = state.currentPage.position + 1
 
@@ -153,7 +149,11 @@ class OnboardingViewModel @Inject constructor(
                 reduce { state.copy(currentPage = newCurrentPage) }
             } else {
                 // Onboarding finished
-                profilePreferences.setName(state.name.orEmpty())
+                val name = state.name.orEmpty()
+                profilePreferences.setName(name)
+                if (name.isNotEmpty()) {
+                    analyticSender.setName(name)
+                }
                 validateEmailUseCase.invoke(state.email.orEmpty()).let { isEmailValid ->
                     if (isEmailValid) profilePreferences.setEmail(state.email.orEmpty())
                 }
@@ -168,6 +168,9 @@ class OnboardingViewModel @Inject constructor(
         isNextPageAllowed(
             onAllowed = {
                 intent {
+                    if (state.currentPage.pageType == OnboardingPage.SamplesPage) {
+                        MediaPlayerHelper.stopWithFade(1000L)
+                    }
                     logNextPage(state.currentPage)
                     val nextPagePosition =
                         if (!skipPage) state.currentPage.position + 1 else state.currentPage.position + 2
@@ -186,7 +189,11 @@ class OnboardingViewModel @Inject constructor(
                         reduce { state.copy(currentPage = newCurrentPage) }
                     } else {
                         // Onboarding finished
-                        profilePreferences.setName(state.name.orEmpty())
+                        val name = state.name.orEmpty()
+                        profilePreferences.setName(name)
+                        if (name.isNotEmpty()) {
+                            analyticSender.setName(name)
+                        }
                         profilePreferences.setEmail(state.email.orEmpty())
                         profilePreferences.setGender(state.selectedGender)
                         appPreferences.setOnboardingCompleted(true)
@@ -205,15 +212,19 @@ class OnboardingViewModel @Inject constructor(
     ) {
         intent {
             if (state.currentPage.pageType is OnboardingPage.EmailPage) {
-                state.email?.let { email ->
-                    val isEmailValid = validateEmailUseCase.invoke(email)
-                    reduce { state.copy(isNextEnabled = isEmailValid) }
-                    if (isEmailValid) {
-                        onAllowed()
-                    } else onBlocked()
-                } ?: run {
-                    reduce { state.copy(isNextEnabled = false) }
-                    onBlocked()
+                if (state.email.isNullOrEmpty()) {
+                    onAllowed()
+                } else {
+                    state.email?.let { email ->
+                        val isEmailValid = validateEmailUseCase.invoke(email)
+                        reduce { state.copy(isNextEnabled = isEmailValid) }
+                        if (isEmailValid) {
+                            onAllowed()
+                        } else onBlocked()
+                    } ?: run {
+                        reduce { state.copy(isNextEnabled = false) }
+                        onBlocked()
+                    }
                 }
             } else {
                 onAllowed()
@@ -223,6 +234,9 @@ class OnboardingViewModel @Inject constructor(
 
     fun onPreviousPage() {
         intent {
+            if (state.currentPage.pageType == OnboardingPage.SamplesPage) {
+                MediaPlayerHelper.stopWithFade(1000L)
+            }
 //            val currentState = container.stateFlow.value
             val previousPagePosition = state.currentPage.position - 1
 
@@ -231,6 +245,11 @@ class OnboardingViewModel @Inject constructor(
                     position = previousPagePosition,
                     pageType = state.pages[previousPagePosition]
                 )
+                if (newCurrentPage.pageType == OnboardingPage.LanguagePage) {
+                    playVoiceSample()
+                } else if (newCurrentPage.pageType == OnboardingPage.SamplesPage) {
+                    playSoundSamples()
+                }
                 applyNextButtonVisibility(newCurrentPage)
                 reduce { state.copy(currentPage = newCurrentPage) }
 //                updateCurrentPage(newCurrentPage)
@@ -330,45 +349,69 @@ class OnboardingViewModel @Inject constructor(
     private fun playVoiceSample() {
         val state = container.stateFlow.value
         state.selectedLanguage.getVoiceRes(state.selectedGender)?.let {
+            BackgroundPlayerHelper.pauseWithFade()
             reduceState { copy(isPlayingVoiceSample = true) }
             MediaPlayerHelper.play(
                 context = context,
                 soundRes = it,
-                onCompletion = { reduceState { copy(isPlayingVoiceSample = false) } })
+                onCompletion = {
+                    reduceState { copy(isPlayingVoiceSample = false) }
+                    BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
+                })
         } ?: run {
             reduceState { copy(isPlayingVoiceSample = false) }
             MediaPlayerHelper.release()
+            BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
         }
     }
 
     fun onSampleSelected(soundRes: Int) {
+        BackgroundPlayerHelper.pauseWithFade()
         MediaPlayerHelper.release()
         reduceState { copy(isPlayingVoiceSample = true) }
         MediaPlayerHelper.play(
             context = context,
             soundRes = soundRes,
-            onCompletion = { reduceState { copy(isPlayingVoiceSample = false) } })
+            onCompletion = {
+                reduceState { copy(isPlayingVoiceSample = false) }
+                BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
+            })
     }
 
     fun playSoundSamples() {
         samplesPlaybackJob?.cancel()
+        BackgroundPlayerHelper.pauseWithFade()
         updateSamplePlaybackState(SamplePlaybackState(isPlaying = true, currentSampleIndex = 0))
         var soundResIndex = 0
         samplesPlaybackJob = viewModelScope.launch {
             while (isActive) {
-                MediaPlayerHelper.release()
-                MediaPlayerHelper.play(
-                    context = context,
-                    soundRes = audioResList[soundResIndex],
-                    onCompletion = {
-                        updateSamplePlaybackState(SamplePlaybackState())
-                        samplesPlaybackJob?.cancel()
-                        samplesPlaybackJob = null
-                    })
-                delay(5000L)
+                if (!MediaPlayerHelper.isPlaying()) {
+                    MediaPlayerHelper.release()
+                    MediaPlayerHelper.play(
+                        context = context,
+                        soundRes = audioResList[soundResIndex],
+                        onCompletion = {
+                            updateSamplePlaybackState(SamplePlaybackState())
+                            samplesPlaybackJob?.cancel()
+                            samplesPlaybackJob = null
+                            BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
+                        })
+                }
+                
+                var elapsed = 0L
+                while (elapsed < 5000L && isActive) {
+                    if (MediaPlayerHelper.isPlaying()) {
+                        elapsed += 100L
+                    }
+                    delay(100L)
+                }
+                
+                if (!isActive) break
+
                 val state = container.stateFlow.value
                 if (state.currentPage.pageType != OnboardingPage.SamplesPage) {
-                    MediaPlayerHelper.release()
+                    MediaPlayerHelper.stopWithFade(1000L)
+                    BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
                     cancel()
                 } else {
                     if (soundResIndex == audioResList.lastIndex) {
@@ -378,7 +421,6 @@ class OnboardingViewModel @Inject constructor(
                 updateSamplePlaybackState(SamplePlaybackState(true, soundResIndex))
             }
         }
-
     }
 
 //    fun updateCurrentPage(currentPage: CurrentPage) {
@@ -387,6 +429,19 @@ class OnboardingViewModel @Inject constructor(
 
     fun updateSamplePlaybackState(playbackState: SamplePlaybackState) {
         reduceState { copy(samplePlaybackState = playbackState) }
+    }
+
+    fun onPause() {
+        MediaPlayerHelper.pause()
+        BackgroundPlayerHelper.pauseWithFade()
+    }
+
+    fun onResume() {
+        val state = container.stateFlow.value
+        if (state.currentPage.pageType == OnboardingPage.SamplesPage) {
+            MediaPlayerHelper.resume()
+        }
+        BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
     }
 
     override fun onCleared() {

@@ -53,6 +53,7 @@ fun SharedTransitionScope.BlurredAppBar(
     premiumButtonState: PremiumButtonState = PremiumButtonState.NONE,
     onUpgradeClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
+    actionButton: @Composable () -> Unit? = {}
 ) {
     val localizedRes = LocalLocalizedRes.current
     val appBarModifier = if (shouldBlur && hazeState != null) {
@@ -107,6 +108,9 @@ fun SharedTransitionScope.BlurredAppBar(
                         style = appbarMedium.copy(fontWeight = FontWeight.Medium)
                     )
                 }
+            }
+            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+                actionButton()
             }
         }
         if (shouldBlur) {
@@ -190,10 +194,7 @@ fun BlurredAppBar(
                 )
             }
         }
-        Box(
-            modifier = Modifier.align(Alignment.CenterEnd),
-
-            ) {
+        Box(modifier = Modifier.align(Alignment.CenterEnd)) {
             actionButton()
         }
         if (shouldBlur) {
@@ -225,7 +226,7 @@ fun BlurredAppBar(
     }
 }
 
-fun LazyListScope.titleItem(titleRes: Int,modifier: Modifier = Modifier) = item {
+fun LazyListScope.titleItem(titleRes: Int, modifier: Modifier = Modifier) = item {
     val localizedRes = LocalLocalizedRes.current
     Text(
         modifier = modifier.fillMaxWidth().padding(vertical = 16.dp),

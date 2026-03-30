@@ -26,7 +26,7 @@ android {
         applicationId = "digital.euforia.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 5
+        versionCode = 7
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -226,6 +226,8 @@ dependencies {
 //    debugImplementation(libs.ui.tooling)
     implementation(libs.play.app.update)
     implementation(libs.play.app.update.ktx)
+    implementation(libs.play.review)
+    implementation(libs.play.review.ktx)
     implementation(libs.haze)
     implementation(libs.haze.materials)
     implementation(libs.appsflyer)

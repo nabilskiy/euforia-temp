@@ -159,7 +159,7 @@ val subtitleSmall = TextStyle(
 
 val dialogTitle = TextStyle(
     fontFamily = Inter,
-    fontSize = 16.sp,
+    fontSize = 18.sp,
     fontWeight = FontWeight.SemiBold,
     lineHeight = 20.sp,
     color = White
@@ -167,7 +167,7 @@ val dialogTitle = TextStyle(
 
 val dialogMessage = TextStyle(
     fontFamily = Inter,
-    fontWeight = FontWeight.Normal,
+    fontWeight = FontWeight.Light,
     fontSize = 14.sp,
     lineHeight = 18.sp,
     letterSpacing = 0.25.sp,

@@ -33,6 +33,7 @@ import digital.euforia.app.ui.onboarding.OnboardingViewModel
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.painterForImageName
 import digital.euforia.app.ui.util.widget.AnimatedListCheckItem
+import digital.euforia.app.ui.util.widget.fadeBottom
 import digital.euforia.app.ui.util.widget.fadeTop
 
 @Composable
@@ -57,7 +58,8 @@ private fun InterestsPageContent(
     LazyVerticalGrid(
         columns = GridCells.Fixed(2), // 2 columns
         modifier = Modifier.fillMaxSize()
-            .fadeTop(),
+            .fadeTop()
+            .fadeBottom(),
         horizontalArrangement = spacedBy(16.dp),
         verticalArrangement = spacedBy(16.dp),
         contentPadding = PaddingValues(

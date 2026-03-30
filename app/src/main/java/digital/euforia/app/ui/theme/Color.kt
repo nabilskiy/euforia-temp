@@ -33,7 +33,7 @@ val DialogButton = Color(0xFF275ECE)
 val Error = Color(0xFFDC4446)
 val ButtonDisabled = Color(0xFF3A3B3E)
 val PlayButtonDarkBackground = Color(0xFF202328)
-val PlayButtonBackground = Color(0x4DFFFFFF)
+val PlayButtonBackground = Color(0x80FFFFFF)
 val NavBarBackground = Color(0xFF2B2C2F)
 val NavBarIcon = Color(0xFFC5C5C5)
 val CircleButtonBackground = Color(0x0AFFFFFF)
@@ -61,6 +61,7 @@ val AvatarBackground = Color(0xFF2F3034)
 val AppBarBackground = Color(0xFF1C1C1E)
 val DayBlue = Color(0xFF4375F5)
 val Red = Color(0xFFC22B22)
+val YellowConfirm = Color(0xFFFFC107)
 val SoundscapeColors = listOf(
     Color(0xFFEA6464),
     Color(0xFF64BBEA),
@@ -100,12 +101,14 @@ val TasksGradient = Brush.verticalGradient(
     )
 )
 
+val PremiumColors = listOf(
+    Color(0x80204FC0), // Dark Blue
+    Color(0x80FF5589), // Dark Pink
+    Color(0x80E29B31)  // Brown
+)
+
 val PremiumGradient = Brush.horizontalGradient(
-    colors = listOf(
-        Color(0x80204FC0), // Dark Blue
-        Color(0x80FF5589), // Dark Pink
-        Color(0x80E29B31)  // Brown
-    )
+    colors = PremiumColors
 )
 
 val CalendarGradient = Brush.horizontalGradient(

@@ -7,15 +7,19 @@ import com.appsflyer.AFInAppEventType
 import com.appsflyer.AppsFlyerLib
 import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.qualifiers.ApplicationContext
+import digital.euforia.app.R
+import digital.euforia.app.data.network.TokensProvider
 import javax.inject.Inject
 
 class AnalyticSender @Inject constructor(
     @ApplicationContext val context: Context,
+    private val tokensProvider: TokensProvider,
 ) {
     private var firebaseAnalytics: FirebaseAnalytics? = null
 
     init {
         initFirebaseAnalytics()
+        initAppsFlyer()
     }
 
     fun initFirebaseAnalytics(userId: String? = null) {
@@ -24,13 +28,30 @@ class AnalyticSender @Inject constructor(
         if (userId != null && !userId.isEmpty()) firebaseAnalytics?.setUserId(userId)
     }
 
+    fun initAppsFlyer() {
+        val key = context.getString(R.string.appsflyer_dev_key)
+        val af = AppsFlyerLib.getInstance()
+        af.init(key, null, context)
+        val deviceToken = tokensProvider.deviceToken
+        af.setCustomerUserId(deviceToken)
+        af.start(context)
+    }
+
     private fun logEvent(eventName: String, params: Bundle? = null) {
-//        firebaseAnalytics?.logEvent(eventName, params)
-//        val afParams = mutableMapOf<String, Any>()
-//        params?.keySet()?.forEach { key ->
-//            params.get(key)?.let { afParams[key] = it }
-//        }
-//        AppsFlyerLib.getInstance().logEvent(context, eventName, afParams)
+        firebaseAnalytics?.logEvent(eventName, params)
+        val afParams = mutableMapOf<String, Any>()
+        params?.keySet()?.forEach { key ->
+            params.get(key)?.let { afParams[key] = it }
+        }
+        AppsFlyerLib.getInstance().logEvent(context, eventName, afParams)
+    }
+
+    private fun setProperty(propertyName: String, value: String) {
+        firebaseAnalytics?.setUserProperty(propertyName, value)
+    }
+
+    fun setName(name: String) {
+        setProperty("name", name)
     }
 
     fun introShow() {
@@ -177,7 +198,8 @@ class AnalyticSender @Inject constructor(
 
         val afParams = mutableMapOf<String, Any>()
         afParams[AFInAppEventParameterName.CONTENT_ID] = productId
-        afParams[AFInAppEventParameterName.REVENUE] = 0 // In a real app, you would pass actual revenue
+        afParams[AFInAppEventParameterName.REVENUE] =
+            0 // In a real app, you would pass actual revenue
         afParams[AFInAppEventParameterName.CURRENCY] = "USD"
         AppsFlyerLib.getInstance().logEvent(context, AFInAppEventType.PURCHASE, afParams)
     }
@@ -750,7 +772,7 @@ class AnalyticSender @Inject constructor(
         logEvent(eventName = "library_banner_click", params = params)
     }
 
-    fun libraryLoaded(template: String) {
+    fun libraryLoaded(template: String = "") {
         val params = Bundle().apply {
             putString("template", template)
         }
@@ -763,6 +785,244 @@ class AnalyticSender @Inject constructor(
             putString("log", log)
         }
         logEvent(eventName = "library_failed", params = params)
+    }
+
+    fun exercisesLibraryShow() {
+        logEvent(eventName = "exercises_library_show")
+    }
+
+    fun exercisesLibraryItemTitleClick(type: String) {
+        val params = Bundle().apply {
+            putString("type", type)
+        }
+        logEvent(eventName = "exercises_library_item_title_click", params = params)
+    }
+
+    fun exercisesLibraryItemClick(type: String) {
+        val params = Bundle().apply {
+            putString("type", type)
+        }
+        logEvent(eventName = "exercises_library_item_click", params = params)
+    }
+
+    fun exercisesLibraryItemLongpress() {
+        logEvent(eventName = "exercises_library_item_longpress")
+    }
+
+    fun meditationsListShow() {
+        logEvent(eventName = "mediatations_list_show")
+    }
+
+    fun meditationsItemClick() {
+        logEvent(eventName = "mediatations_item_click")
+    }
+
+    fun meditationsItemLongpress() {
+        logEvent(eventName = "mediatations_item_longpress")
+    }
+
+    fun articlesListShow() {
+        logEvent(eventName = "articles_list_show")
+    }
+
+    fun articlesItemClick() {
+        logEvent(eventName = "articles_item_click")
+    }
+
+    fun articlesItemLongpress() {
+        logEvent(eventName = "articles_item_longpress")
+    }
+
+    fun exercisesListShow() {
+        logEvent(eventName = "exercises_list_show")
+    }
+
+    fun exercisesItemClick() {
+        logEvent(eventName = "exercises_item_click")
+    }
+
+    fun exercisesItemLongpress() {
+        logEvent(eventName = "exercises_item_longpress")
+    }
+
+    fun scenesListShow() {
+        logEvent(eventName = "scenes_list_show")
+    }
+
+    fun scenesItemClick() {
+        logEvent(eventName = "scenes_item_click")
+    }
+
+    fun scenesItemLongpress() {
+        logEvent(eventName = "scenes_item_longpress")
+    }
+
+    fun packagesListShow() {
+        logEvent(eventName = "packages_list_show")
+    }
+
+    fun packagesItemClick() {
+        logEvent(eventName = "packages_item_click")
+    }
+
+    fun packagesItemLongpress() {
+        logEvent(eventName = "packages_item_longpress")
+    }
+
+    fun resourcesListShow() {
+        logEvent(eventName = "resources_list_show")
+    }
+
+    fun resourcesItemClick() {
+        logEvent(eventName = "resources_item_click")
+    }
+
+    fun resourcesItemLongpress() {
+        logEvent(eventName = "resources_item_longpress")
+    }
+
+    fun entityShow(entity: String, entityId: String) {
+        val params = Bundle().apply {
+            putString("entity_id", entityId)
+        }
+        logEvent(eventName = "${entity}_show", params = params)
+    }
+
+    fun entityHeaderClick(entity: String) {
+        logEvent(eventName = "${entity}_header_click")
+    }
+
+    fun entityPackageClick(entity: String) {
+        logEvent(eventName = "${entity}_package_click")
+    }
+
+    fun entityDownloadClick(entity: String) {
+        logEvent(eventName = "${entity}_download_click")
+    }
+
+    fun entitySimilarClick(entity: String) {
+        logEvent(eventName = "${entity}_similar_click")
+    }
+
+    fun entitySimilarItemClick(entity: String) {
+        logEvent(eventName = "${entity}_similar_item_click")
+    }
+
+    fun entityActionClick(entity: String) {
+        logEvent(eventName = "${entity}_action_click")
+    }
+
+    fun entityAddToFavoritesClick(entity: String) {
+        logEvent(eventName = "${entity}_add_to_favorites_click")
+    }
+
+    fun entityRemoveFromFavoritesClick(entity: String) {
+        logEvent(eventName = "${entity}_remove_from_favorites_click")
+    }
+
+    fun entityMenuShareClick(entity: String) {
+        logEvent(eventName = "${entity}_menu_share_click")
+    }
+
+    fun packageShow(packageId: String) {
+        val params = Bundle().apply {
+            putString("package_id", packageId)
+        }
+        logEvent(eventName = "package_show", params = params)
+    }
+
+    fun packageMenuAboutClick() {
+        logEvent(eventName = "package_menu_about_click")
+    }
+
+    fun packageMenuShareClick() {
+        logEvent(eventName = "package_menu_share_click")
+    }
+
+    fun packageMeditationsClick() {
+        logEvent(eventName = "package_meditations_click")
+    }
+
+    fun packageArticlesClick() {
+        logEvent(eventName = "package_articles_click")
+    }
+
+    fun packageExercisesClick() {
+        logEvent(eventName = "package_exercises_click")
+    }
+
+    fun packageMeditationItemClick() {
+        logEvent(eventName = "package_meditation_item_click")
+    }
+
+    fun packageArticleItemClick() {
+        logEvent(eventName = "package_article_item_click")
+    }
+
+    fun packageExerciseItemClick() {
+        logEvent(eventName = "package_exercise_item_click")
+    }
+
+    fun articleReaderShow(entityId: String) {
+        val params = Bundle().apply {
+            putString("entity_id", entityId)
+        }
+        logEvent(eventName = "article_reader_show", params = params)
+    }
+
+    fun articleReaderCloseClick() {
+        logEvent(eventName = "article_reader_close_click")
+    }
+
+    fun articleReaderShareClick() {
+        logEvent(eventName = "article_reader_share_click")
+    }
+
+    fun articleReaderAddToFavoritesClick() {
+        logEvent(eventName = "article_reader_add_to_favorites_click")
+    }
+
+    fun articleReaderRemoveFromFavoritesClick() {
+        logEvent(eventName = "article_reader_remove_from_favorites_click")
+    }
+
+    fun playerShow(entityId: String, entity: String) {
+        val params = Bundle().apply {
+            putString("entity_id", entityId)
+            putString("entity", entity)
+        }
+        logEvent(eventName = "player_show", params = params)
+    }
+
+    fun playerSeek() {
+        logEvent(eventName = "player_seek")
+    }
+
+    fun playerCloseClick() {
+        logEvent(eventName = "player_close_click")
+    }
+
+    fun playerPlaylistClick() {
+        logEvent(eventName = "player_playlist_click")
+    }
+
+    fun playerPlaylistShow(packageId: String) {
+        val params = Bundle().apply {
+            putString("package_id", packageId)
+        }
+        logEvent(eventName = "player_playlist_show", params = params)
+    }
+
+    fun playerPlaylistCloseClick() {
+        logEvent(eventName = "player_playlist_close_click")
+    }
+
+    fun playerPlaylistSelect(entityId: String, entity: String) {
+        val params = Bundle().apply {
+            putString("entity_id", entityId)
+            putString("entity", entity)
+        }
+        logEvent(eventName = "player_playlist_select", params = params)
     }
 
 

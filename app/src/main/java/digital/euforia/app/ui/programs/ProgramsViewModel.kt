@@ -160,6 +160,7 @@ class ProgramsViewModel @Inject constructor(
 
     private fun onPublicationClicked(id: Int, packageId: Int?, publicationType: PublicationType) {
         intent {
+            viewModelScope.launch { analyticSender.libraryItemClick(publicationType.value) }
             val packageTitle = state.programs.firstOrNull { it.id == packageId }?.name
             postSideEffect(
                 ProgramsSideEffect.NavigateToPublication(
@@ -180,6 +181,7 @@ class ProgramsViewModel @Inject constructor(
     }
 
     fun onProgramClicked(programUi: ProgramUi) {
+        viewModelScope.launch { analyticSender.libraryItemClick("program") }
         postEffect(ProgramsSideEffect.NavigateToProgramDetail(programUi.id))
     }
 
@@ -201,12 +203,13 @@ class ProgramsViewModel @Inject constructor(
     }
 
     fun onMoreArticlesClicked() {
-        postEffect(
-            ProgramsSideEffect.NavigateToPublications(
-                publicationType = PublicationType.ARTICLE,
-                ids = ""
+        intent {
+            postSideEffect(
+                ProgramsSideEffect.NavigateToPublications(
+                    publicationType = PublicationType.ARTICLE,
+                    ids = state.articles.joinToString(",") { it.id.toString() } ?: "1")
             )
-        )
+        }
     }
 
     fun onSearchQueryChanged(query: String?) {
@@ -221,6 +224,14 @@ class ProgramsViewModel @Inject constructor(
                 searchQueryFlow.value = suggestion
             }
         }
+    }
+
+    fun onSearchClicked() {
+        viewModelScope.launch { analyticSender.librarySearchClick() }
+    }
+
+    fun onTitleClicked(type: String) {
+        viewModelScope.launch { analyticSender.libraryItemTitleClick(type) }
     }
 }
 

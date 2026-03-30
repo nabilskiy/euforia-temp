@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
@@ -32,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +51,7 @@ import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.theme.AppBarBackground
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.theme.subtitleSmall
@@ -56,6 +60,7 @@ import digital.euforia.app.ui.util.widget.CorporateTextField
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.titleItem
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.SettingsTextField
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -105,7 +110,7 @@ private fun SharedTransitionScope.NameContent(
         }
     }
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             backTitleRes = R.string.profile_title,
             titleRes = R.string.change_name_title,
@@ -142,13 +147,17 @@ fun LazyListScope.nameItem(name: String?, onNameChanged: (String) -> Unit) = ite
     val localizedRes = LocalLocalizedRes.current
 
     val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    CorporateTextField(
+    SettingsTextField(
         modifier = Modifier.fillMaxWidth(),
         value = name.orEmpty(),
         placeholder = localizedRes.string(R.string.name_placeholder),
         onValueChanged = { onNameChanged(it.text) },
-        maxLength = 150,
+        keyboardController = keyboardController,
+        focusManager = focusManager,
+        onClearClick = { onNameChanged("") },
     )
 
     Text(

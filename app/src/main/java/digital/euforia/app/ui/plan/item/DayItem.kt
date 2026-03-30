@@ -2,6 +2,7 @@
 
 package digital.euforia.app.ui.plan.item
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -9,6 +10,8 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
@@ -81,6 +84,7 @@ import digital.euforia.app.ui.util.widget.ActionButton
 import digital.euforia.app.ui.util.widget.AccompanimentButtonColors
 import digital.euforia.app.ui.util.widget.AccompanimentButtonDimensions
 import digital.euforia.app.ui.util.widget.MaxTextView
+import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -88,6 +92,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SharedTransitionScope.dayItem(
+    modifier: Modifier,
+    isLoading: Boolean,
     days: List<DayUi>,
     completedDays: Int,
     freeDemoDays: Int,
@@ -105,55 +111,75 @@ fun SharedTransitionScope.dayItem(
 ) {
     val day = days.getOrNull(selectedDayIndex)
 
-    Column(modifier = Modifier.timeOfDayBackgroundAnimation(timeOfDay)) {
-        day?.let {
-            Column {
-                HeaderView(
-                    day = day,
-                    dayIndex = selectedDayIndex,
-                    completedDays = completedDays,
-                    isDemo = isDemo,
-                    isPremium = isPremium,
-                    todayOffset = todayOffset,
-                    isNextEnabled = days.lastIndex > selectedDayIndex,
-                    isPrevEnabled = selectedDayIndex > 0,
-                    onPrevClick = {
-                        analyticSender.todayPrevDayClick()
-                        onDaySelected(selectedDayIndex - 1)
-                    },
-                    onNextClick = {
-                        analyticSender.todayNextDayClick()
-                        onDaySelected(selectedDayIndex + 1)
-                    }
-                )
+    Box(modifier = Modifier.timeOfDayBackgroundAnimation(timeOfDay)) {
+        AnimatedContent(
+            targetState = isLoading,
+            transitionSpec = {
+                fadeIn() togetherWith fadeOut()
             }
-        }
+        ) { state ->
+            if (!state) {
+                Column() {
+                    day?.let {
+                        Column {
+                            HeaderView(
+                                day = day,
+                                dayIndex = selectedDayIndex,
+                                completedDays = completedDays,
+                                isDemo = isDemo,
+                                isPremium = isPremium,
+                                todayOffset = todayOffset,
+                                isNextEnabled = days.lastIndex > selectedDayIndex,
+                                isPrevEnabled = selectedDayIndex > 0,
+                                onPrevClick = {
+                                    analyticSender.todayPrevDayClick()
+                                    onDaySelected(selectedDayIndex - 1)
+                                },
+                                onNextClick = {
+                                    analyticSender.todayNextDayClick()
+                                    onDaySelected(selectedDayIndex + 1)
+                                }
+                            )
+                        }
+                    }
 
-        val pagerState = rememberPagerState { days.size }
-        subscribeToPagerUpdates(
-            coroutineScope = rememberCoroutineScope(),
-            pagerState = pagerState,
-            page = selectedDayIndex
-        )
-        LaunchedEffect(pagerState) {
-            snapshotFlow { pagerState.currentPage }
-                .collect { page -> onDaySelected(page) }
-        }
-        HorizontalPager(
-            modifier = Modifier.fillMaxWidth(1f).heightIn(min = 260.dp),
-            state = pagerState,
-            userScrollEnabled = true
-        ) { position ->
-            days.getOrNull(position)?.let { pageDay ->
-                if (!pageDay.isSubscriptionDay) {
-                    AccompanimentPagerPage(
-                        day = pageDay,
-                        timeOfDayConfig = timeOfDayConfig,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        onDayTimeItemClick = onDayTimeItemClick
+                    val pagerState = rememberPagerState { days.size }
+                    subscribeToPagerUpdates(
+                        coroutineScope = rememberCoroutineScope(),
+                        pagerState = pagerState,
+                        page = selectedDayIndex
                     )
-                } else {
-                    PremiumDayPage(onClick = onPremiumClick)
+                    LaunchedEffect(pagerState) {
+                        snapshotFlow { pagerState.currentPage }
+                            .collect { page -> onDaySelected(page) }
+                    }
+                    HorizontalPager(
+                        modifier = Modifier.fillMaxWidth(1f).heightIn(min = 260.dp),
+                        state = pagerState,
+                        userScrollEnabled = true
+                    ) { position ->
+                        days.getOrNull(position)?.let { pageDay ->
+                            if (!pageDay.isSubscriptionDay) {
+                                AccompanimentPagerPage(
+                                    day = pageDay,
+                                    timeOfDayConfig = timeOfDayConfig,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    onDayTimeItemClick = onDayTimeItemClick
+                                )
+                            } else {
+                                PremiumDayPage(onClick = onPremiumClick)
+                            }
+                        }
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding()
+                        .heightIn(min = 260.dp + 106.dp)
+                ) {
+                    ProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                    )
                 }
             }
         }
@@ -283,11 +309,11 @@ fun AccompanimentButton(
     buttonDimensions: AccompanimentButtonDimensions = AccompanimentButtonDimensions.SECONDARY,
     onClick: (DayTimeItemUi) -> Unit
 ) {
-    Box(modifier = modifier.noRippleClickable(onClick = {
-        if (item.state == DayTimeItemUi.State.AVAILABLE || item.state == DayTimeItemUi.State.COMPLETED) {
+    Box(
+        modifier = modifier.noRippleClickable(onClick = {
             onClick(item)
-        }
-    })) {
+        })
+    ) {
         DayTimeBackground(item, buttonDimensions)
 
         when (item.state) {

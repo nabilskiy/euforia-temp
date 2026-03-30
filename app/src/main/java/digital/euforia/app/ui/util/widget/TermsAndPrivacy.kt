@@ -1,11 +1,20 @@
 package digital.euforia.app.ui.util.widget
 
-import androidx.compose.foundation.text.ClickableText
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -20,7 +29,22 @@ fun TermsAndPrivacyText(
     onTermsClick: () -> Unit,
     onPrivacyClick: () -> Unit
 ) {
-    val accentColor = White.copy(0.8f)
+    val baseColor = White.copy(0.7f)
+    val pressedColor = White
+
+    var pressedTag by remember { mutableStateOf<String?>(null) }
+
+    val privacyColor by animateColorAsState(
+        targetValue = if (pressedTag == "PRIVACY") pressedColor else baseColor,
+        animationSpec = tween(durationMillis = 100),
+        label = "privacyColor"
+    )
+    val termsColor by animateColorAsState(
+        targetValue = if (pressedTag == "TERMS") pressedColor else baseColor,
+        animationSpec = tween(durationMillis = 100),
+        label = "termsColor"
+    )
+
     val localizedRes = LocalLocalizedRes.current
 
     val text: AnnotatedString = buildAnnotatedString {
@@ -31,7 +55,7 @@ fun TermsAndPrivacyText(
         pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
         withStyle(
             SpanStyle(
-                color = accentColor,
+                color = privacyColor,
                 textDecoration = TextDecoration.Underline
             )
         ) { append(privacyText) }
@@ -44,7 +68,7 @@ fun TermsAndPrivacyText(
         pushStringAnnotation(tag = "TERMS", annotation = "terms")
         withStyle(
             SpanStyle(
-                color = accentColor,
+                color = termsColor,
                 textDecoration = TextDecoration.Underline
             )
         ) { append(termsText) }
@@ -52,17 +76,42 @@ fun TermsAndPrivacyText(
         append(".")
     }
 
-    ClickableText(
-        modifier = modifier,
-        text = text,
-        style = MaterialTheme.typography.labelMedium.copy(color = White.copy(0.7f), textAlign = TextAlign.Center),
-        onClick = { offset ->
-            text.getStringAnnotations(start = offset, end = offset).firstOrNull()?.let { ann ->
-                when (ann.tag) {
-                    "TERMS" -> onTermsClick()
-                    "PRIVACY" -> onPrivacyClick()
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    BasicText(
+        modifier = modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onPress = { offset ->
+                    val layoutResult = textLayoutResult ?: return@detectTapGestures
+                    val position = layoutResult.getOffsetForPosition(offset)
+
+                    val terms = text.getStringAnnotations(tag = "TERMS", start = position, end = position).firstOrNull()
+                    val privacy = text.getStringAnnotations(tag = "PRIVACY", start = position, end = position).firstOrNull()
+
+                    if (terms != null) {
+                        pressedTag = "TERMS"
+                    } else if (privacy != null) {
+                        pressedTag = "PRIVACY"
+                    }
+
+                    tryAwaitRelease()
+                    pressedTag = null
+                },
+                onTap = { offset ->
+                    val layoutResult = textLayoutResult ?: return@detectTapGestures
+                    val position = layoutResult.getOffsetForPosition(offset)
+
+                    text.getStringAnnotations(tag = "TERMS", start = position, end = position).firstOrNull()?.let {
+                        onTermsClick()
+                    }
+                    text.getStringAnnotations(tag = "PRIVACY", start = position, end = position).firstOrNull()?.let {
+                        onPrivacyClick()
+                    }
                 }
-            }
-        }
+            )
+        },
+        text = text,
+        style = MaterialTheme.typography.labelMedium.copy(color = baseColor, textAlign = TextAlign.Center),
+        onTextLayout = { textLayoutResult = it }
     )
 }

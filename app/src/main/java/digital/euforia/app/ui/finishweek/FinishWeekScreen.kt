@@ -121,7 +121,7 @@ private fun FinishWeekContent(
             progressItem()
             calendarItem()
             item {
-                Spacer(modifier = Modifier.height(320.dp).fillMaxWidth())
+                Spacer(modifier = Modifier.height(24.dp).fillMaxWidth().navigationBarsPadding())
             }
         }
 

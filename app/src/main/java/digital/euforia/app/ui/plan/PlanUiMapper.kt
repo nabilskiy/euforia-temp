@@ -21,7 +21,11 @@ internal fun AccompanimentWithItems.toDayUi(
     val mapped = items.map { item ->
         val state =
             if (forceUnlock) {
-                DayTimeItemUi.State.AVAILABLE
+                if (item.isCompleted) {
+                    DayTimeItemUi.State.COMPLETED
+                } else {
+                    DayTimeItemUi.State.AVAILABLE
+                }
             } else if (lockState != DayUi.LockState.UNLOCKED) {
                 DayTimeItemUi.State.LOCKED
             } else if (isToday) {

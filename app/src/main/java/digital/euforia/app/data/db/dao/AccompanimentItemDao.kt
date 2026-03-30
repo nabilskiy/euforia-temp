@@ -19,6 +19,9 @@ interface AccompanimentItemDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(item: AccompanimentItem)
 
+    @Query("UPDATE accompaniment_item SET is_rated =:isRated, rating =:rating WHERE id = :id")
+    suspend fun updateRatingById(id: Int, isRated: Boolean, rating: Int)
+
     @Query("SELECT * FROM accompaniment_item WHERE id = :id")
     suspend fun getById(id: Int): AccompanimentItem?
 

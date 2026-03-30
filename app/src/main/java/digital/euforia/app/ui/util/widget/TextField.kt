@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
@@ -49,6 +51,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
+import digital.euforia.app.ui.theme.Error
 import digital.euforia.app.ui.theme.EuforiaTheme
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.White
@@ -68,6 +71,7 @@ fun CorporateTextField(
     heightDp: Dp = 56.dp,
     keyboardController: SoftwareKeyboardController? = null,
     focusManager: FocusManager? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
     onValueChanged: (TextFieldValue) -> Unit = {},
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -109,16 +113,15 @@ fun CorporateTextField(
             fontWeight = Bold
         ),
         singleLine = isSingleLine,
-
         modifier = modifier
             .height(heightDp)
             .fillMaxWidth()
             .border(
                 width = borderWidth,
                 color = borderColor,
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(24.dp)
             )
-            .background(shape = RoundedCornerShape(8.dp), color = Color.White.copy(alpha = 0.05f))
+            .background(shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = 0.05f))
             .onFocusChanged { isFocused = it.hasFocus },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = {
@@ -168,6 +171,7 @@ fun SearchTextField(
     onValueChanged: (TextFieldValue) -> Unit = {},
     onClearClick: () -> Unit,
     onCancelClick: () -> Unit = {},
+    onClick: () -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     var isFocused by remember { mutableStateOf(false) }
@@ -192,7 +196,8 @@ fun SearchTextField(
     val animationSpec = spring<IntSize>()
 
     Row(
-        modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec),
+        modifier = Modifier
+            .noRippleClickable(onClick).fillMaxWidth().animateContentSize(animationSpec),
         verticalAlignment = Alignment.CenterVertically
     ) {
         BasicTextField(
@@ -303,15 +308,239 @@ fun TextFieldPreview() {
                     value = text,
                     onValueChanged = { text = it.text },
                     onClearClick = { text = "" },
-                    isLoading = false
+                    isLoading = false,
+                    onClick = {}
                 )
                 SearchTextField(
                     value = "",
                     onValueChanged = { text = it.text },
                     onClearClick = { text = "" },
-                    isLoading = true
+                    isLoading = true,
+                    onClick = {}
+                )
+
+                SettingsTextField(
+                    value = text,
+                    placeholder = "Email",
+                    onValueChanged = { text = it.text },
+                    onClearClick = { text = "" },
+                    isError = true,
+                    errorMessage = "Invalid email",
+                    isLoading = false,
+                )
+                SettingsTextField(
+                    value = "",
+                    placeholder = "Email",
+                    onValueChanged = { text = it.text },
+                    onClearClick = { text = "" },
+                    isLoading = false,
                 )
             }
         }
     }
 }
+
+@Composable
+fun RateTextField(
+    modifier: Modifier = Modifier,
+    value: String,
+    placeholder: String,
+    heightDp: Dp = 156.dp,
+    keyboardController: SoftwareKeyboardController? = null,
+    focusManager: FocusManager? = null,
+    onValueChanged: (TextFieldValue) -> Unit = {},
+    onClick: () -> Unit,
+) {
+    val localizedRes = LocalLocalizedRes.current
+    var isFocused by remember { mutableStateOf(false) }
+    var textValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = value,
+                selection = TextRange(value.length)
+            )
+        )
+    }
+
+    LaunchedEffect(value) {
+        if (textValue.text != value) {
+            textValue = TextFieldValue(
+                text = value,
+                selection = TextRange(value.length)
+            )
+        }
+    }
+    val interactionSource = remember { MutableInteractionSource() }
+    val animationSpec = spring<IntSize>()
+
+    BasicTextField(
+        value = textValue,
+        onValueChange = { textValue = it; onValueChanged(textValue) },
+        interactionSource = interactionSource,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = White),
+        singleLine = false,
+        modifier = modifier
+            .height(heightDp)
+            .background(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White.copy(alpha = 0.1f)
+            )
+            .onFocusChanged { isFocused = it.hasFocus },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = {
+            focusManager?.clearFocus()
+            keyboardController?.hide()
+        }),
+        cursorBrush = SolidColor(White),
+    ) { innerTextField ->
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.TopStart
+            ) {
+                if (textValue.text.isEmpty()) {
+                    Text(
+                        modifier = Modifier
+                            .padding(bottom = 0.dp),
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = White.copy(
+                                alpha = 0.4f
+                            ),
+                            fontWeight = FontWeight.Light
+                        )
+                    )
+                }
+                innerTextField()
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsTextField(
+    modifier: Modifier = Modifier,
+    value: String,
+    placeholder: String,
+    heightDp: Dp = 48.dp,
+    keyboardController: SoftwareKeyboardController? = null,
+    focusManager: FocusManager? = null,
+    errorMessage: String? = null,
+    isError: Boolean = false,
+    isLoading: Boolean = false,
+    isSingleLine: Boolean = true,
+    maxLength: Int = 60,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+    onValueChanged: (TextFieldValue) -> Unit = {},
+    onClearClick: () -> Unit = {},
+) {
+    val localizedRes = LocalLocalizedRes.current
+    var isFocused by remember { mutableStateOf(false) }
+    var textValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = value,
+                selection = TextRange(value.length)
+            )
+        )
+    }
+
+    LaunchedEffect(value) {
+        if (textValue.text != value) {
+            textValue = TextFieldValue(
+                text = value,
+                selection = TextRange(value.length)
+            )
+        }
+    }
+    val interactionSource = remember { MutableInteractionSource() }
+    val animationSpec = spring<IntSize>()
+
+
+    Column {
+        BasicTextField(
+            value = textValue,
+            onValueChange = {
+                if (it.text.length <= maxLength) {
+                    textValue = it; onValueChanged(textValue)
+                }
+            },
+            interactionSource = interactionSource,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = White),
+            singleLine = isSingleLine,
+            modifier = modifier
+                .height(heightDp)
+                .background(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.05f)
+                )
+                .border(
+                    width = if (isError) 1.dp else 0.dp,
+                    color = if (isError) Error else Color.Transparent,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .onFocusChanged { isFocused = it.hasFocus },
+            keyboardOptions = keyboardOptions,
+            keyboardActions = KeyboardActions(onDone = {
+                focusManager?.clearFocus()
+                keyboardController?.hide()
+            }),
+            cursorBrush = SolidColor(White),
+        ) { innerTextField ->
+            Row(
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp)
+                    .applyIf(!isSingleLine) { padding(vertical = 12.dp) },
+                verticalAlignment = if (isSingleLine) Alignment.CenterVertically else Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = if (isSingleLine) Alignment.CenterStart else Alignment.TopStart
+                ) {
+                    if (textValue.text.isEmpty()) {
+                        Text(
+                            modifier = Modifier
+                                .padding(bottom = 0.dp),
+                            text = placeholder,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = White.copy(
+                                    alpha = 0.4f
+                                )
+                            )
+                        )
+                    }
+                    innerTextField()
+                }
+
+                if (isLoading) {
+                    ProgressIndicator(modifier = Modifier.size(20.dp))
+                } else if (textValue.text.isNotEmpty() && isFocused) {
+                    Icon(
+                        modifier = Modifier
+                            .noRippleClickable(onClearClick)
+                            .size(20.dp)
+                            .background(color = White.copy(alpha = 0.4f), shape = CircleShape)
+                            .padding(4.dp),
+                        painter = painterResource(R.drawable.ic_close),
+                        contentDescription = null,
+                        tint = NavBarBackground
+                    )
+                }
+            }
+        }
+
+        if (errorMessage != null) {
+            Text(
+                modifier = Modifier.padding(top = 8.dp, start = 8.dp),
+                text = errorMessage,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Error,
+                    fontWeight = FontWeight.Normal
+                )
+            )
+        }
+    }
+}
+

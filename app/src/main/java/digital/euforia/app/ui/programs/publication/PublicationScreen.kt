@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.programs.publication
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,12 +98,18 @@ fun PublicationScreen(
     navBarVisibilityState: MutableState<Boolean>,
 ) {
     val state by viewModel.collectAsState()
+    val context = LocalContext.current
     var isArticleSheetVisible = remember { mutableStateOf(false) }
 
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect = sideEffect, navController = navController, openArticle = {
-            isArticleSheetVisible.value = true
-        })
+        handleSideEffect(
+            sideEffect = sideEffect,
+            navController = navController,
+            context = context,
+            openArticle = {
+                viewModel.onArticleReaderShow()
+                isArticleSheetVisible.value = true
+            })
     }
 
     NavBarlessScreen(navBarVisibilityState) {
@@ -129,6 +137,8 @@ fun PublicationScreen(
                 },
                 onFavouriteClick = viewModel::onFavouriteClicked,
                 launchSubscriptionActivity = launchSubscriptionActivity,
+                onPackageClick = viewModel::onPackageClicked,
+                onShareClick = viewModel::onShareClicked
             )
         }
     }
@@ -152,6 +162,8 @@ private fun PublicationContent(
     onPlayClick: () -> Unit,
     onFavouriteClick: (PublicationInfo) -> Unit,
     launchSubscriptionActivity: () -> Unit,
+    onPackageClick: () -> Unit,
+    onShareClick: () -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     val scope = rememberCoroutineScope()
@@ -284,6 +296,7 @@ private fun PublicationContent(
                         isPremium = isPremium,
                         isFavourite = publicationInfo.isFavourite,
                         onFavouriteClick = onFavouriteClick,
+                        onShareClick = onShareClick,
                         launchSubscriptionActivity = launchSubscriptionActivity
                     )
                 }
@@ -322,7 +335,8 @@ private fun PublicationContent(
 
                         infoItem(
                             publicationInfo = it,
-                            programTitle = programTitle
+                            programTitle = programTitle,
+                            onPackageClick = onPackageClick
                         )
                     }
 
@@ -372,12 +386,6 @@ fun LazyListScope.playItem(modifier: Modifier = Modifier, imageUrl: String, onCl
             Icon(
                 modifier = Modifier.align(Alignment.Center)
                     .noRippleClickable(onClick)
-                    .shadow(
-                        color = White,
-                        blurRadius = 16.dp,
-                        borderRadius = 30.dp,
-                        spread = 2.dp
-                    )
                     .background(color = White.copy(alpha = 0.95f), shape = CircleShape)
                     .padding(20.dp)
                     .size(20.dp),
@@ -389,9 +397,10 @@ fun LazyListScope.playItem(modifier: Modifier = Modifier, imageUrl: String, onCl
     }
 
 fun LazyListScope.infoItem(
+    modifier: Modifier = Modifier,
     publicationInfo: PublicationInfo,
     programTitle: String,
-    modifier: Modifier = Modifier
+    onPackageClick: () -> Unit
 ) = item(key = "info") {
     val localizedRes = LocalLocalizedRes.current
     val color = publicationInfo.color1?.toComposeColor() ?: White
@@ -408,6 +417,7 @@ fun LazyListScope.infoItem(
         if (programTitle.isNotEmpty() && publicationInfo.publicationType == PublicationType.MEDITATION) {
             Text(
                 modifier = Modifier
+                    .noRippleClickable(onPackageClick)
                     .background(
                         color = color.copy(alpha = 0.2f),
                         shape = RoundedCornerShape(8.dp)
@@ -676,9 +686,12 @@ private fun ActionsView(
     isPremium: Boolean,
     isFavourite: Boolean,
     onFavouriteClick: (PublicationInfo) -> Unit,
+    onShareClick: () -> Unit,
     launchSubscriptionActivity: () -> Unit,
 ) {
     val context = LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -692,15 +705,11 @@ private fun ActionsView(
             )
         }
         PublicationOptionMenu(
+            expanded = expanded,
             isFavourite = isFavourite,
             onAddFavouriteClick = { onFavouriteClick(publicationInfo) },
-            onShareClick = {
-                sharePublication(
-                    context = context,
-                    publicationType = publicationInfo.publicationType,
-                    id = publicationInfo.id,
-                )
-            },
+            onExpandedChange = { expanded = !expanded },
+            onShareClick = onShareClick,
         )
     }
 }
@@ -708,6 +717,7 @@ private fun ActionsView(
 private fun handleSideEffect(
     sideEffect: PublicationSideEffect,
     navController: NavHostController,
+    context: Context,
     openArticle: () -> Unit
 ) {
     when (sideEffect) {
@@ -746,6 +756,22 @@ private fun handleSideEffect(
                     id = sideEffect.id,
                     publicationType = PublicationType.MEDITATION
                 )
+            )
+        }
+
+        is PublicationSideEffect.NavigateToPackage -> {
+            navController.navigate(
+                HomeDestination.ProgramDetails(
+                    programId = sideEffect.packageId
+                )
+            )
+        }
+
+        is PublicationSideEffect.Share -> {
+            sharePublication(
+                context = context,
+                publicationType = sideEffect.type,
+                id = sideEffect.id,
             )
         }
 

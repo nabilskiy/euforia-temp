@@ -16,6 +16,7 @@ import timber.log.Timber
 fun SubscriptionActivityLauncher(
     screenId: Int? = null,
     onSuccess: () -> Unit = {},
+    onClose: () -> Unit = {},
     content: @Composable (launch: () -> Unit) -> Unit
 ) {
     val context = LocalContext.current
@@ -28,6 +29,8 @@ fun SubscriptionActivityLauncher(
         if (result.resultCode == PURCHASE_SUCCESS) {
             isCongratsVisible.value = true
             onSuccess()
+        } else {
+            onClose()
         }
     }
 

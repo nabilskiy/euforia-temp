@@ -1,8 +1,12 @@
 package digital.euforia.app.data.api
 
+import digital.euforia.app.data.model.EmailRequest
+import digital.euforia.app.data.model.FeedbackRequest
+import digital.euforia.app.data.model.FormAnswerRequest
 import digital.euforia.app.data.model.NetworkAccompaniment
 import digital.euforia.app.data.model.NetworkArticle
 import digital.euforia.app.data.model.NetworkCategory
+import digital.euforia.app.data.model.NetworkCompose
 import digital.euforia.app.data.model.NetworkExercise
 import digital.euforia.app.data.model.NetworkFaqCategory
 import digital.euforia.app.data.model.NetworkFaqItem
@@ -19,6 +23,8 @@ import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -39,7 +45,7 @@ interface EuforiaApi {
 
     @GET("accompaniments/week")
     suspend fun getAccompanimentsPerWeek(
-        @Query("demo") demo: Boolean
+        @Query("demo") demo: Int
     ): ResultWrapper<List<NetworkAccompaniment>>
 
     @GET("accompaniments/today")
@@ -87,13 +93,15 @@ interface EuforiaApi {
         @Query("id") id: String? = null,
     ): ResultWrapper<NetworkFeedbackForm?>
 
+    @POST("forms/{id}")
+    suspend fun submitForm(
+        @Path("id") id: String,
+        @Body body: List<FormAnswerRequest>
+    ): ResultWrapper<Unit>
+
     @POST("feedback/create")
     suspend fun submitFeedback(
-        @Query("type") type: String,
-        @Query("name") name: String,
-        @Query("email") email: String,
-        @Query("message") message: String,
-        @Query("details") details: String,
+        @Body body: FeedbackRequest
     ): ResultWrapper<Unit>
 
     @POST("subscription")
@@ -168,4 +176,24 @@ interface EuforiaApi {
         @Query("active") active: String = "active",
     ): ResultWrapper<NetworkSearchResults>
 
+    @POST("compose")
+    suspend fun compose(
+        @Body body: RequestBody,
+    ): ResultWrapper<List<NetworkCompose>>
+
+    @POST("feedback")
+    suspend fun sendFeedback(
+        @Body body: FeedbackRequest
+    ): ResultWrapper<Unit>
+
+    @POST("email/create")
+    suspend fun email(
+        @Body body: EmailRequest
+    ): ResultWrapper<Unit>
+
+    @FormUrlEncoded
+    @POST("email/create")
+    suspend fun sendEmail(
+        @Field("email") email: String
+    ): ResultWrapper<Unit>
 }

@@ -2,6 +2,9 @@
 
 package digital.euforia.app.ui.player.audio
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -14,7 +17,6 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import androidx.media3.session.MediaController
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -29,7 +31,6 @@ import androidx.media3.session.SessionCommand
 import digital.euforia.app.ui.navigation.Home
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
-import timber.log.Timber
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -42,19 +43,28 @@ fun SharedTransitionScope.AudioPlayerScreen(
     val context = LocalContext.current
     var showSheet by remember { mutableStateOf(false) }
     var volume by remember { mutableFloatStateOf(0.35f) } // 0f..1f
-    val shared =
-        rememberSharedContentState(key = "${state.accompanimentWithItems?.accompaniment?.id}+${state.timeOfDay.name}")
-    val url = viewModel.getMusicUrlForTimeOfDay()
+//    val shared =
+//        rememberSharedContentState(key = "${state.accompanimentWithItems?.accompaniment?.id}+${state.timeOfDay.name}")
+    val shared = rememberSharedContentState(key = "${viewModel.accompanimentId}+${state.timeOfDay.name}")
+    val isRateShown = remember { mutableStateOf(false) }
+    val url = remember(state.accompanimentWithItems) {
+        viewModel.getMusicUrlForTimeOfDay()
+    }
 
     val controller = rememberMediaController(
         timeOfDayUrl = url,
+        title = state.title,
+        imageUrl = state.imageUrl,
         playWhenReady = state.entryPoint == AudioPlayerEntryPoint.DAY,
         onIsPlayingChanged = { isPlaying ->
             viewModel.onPlayStateChanged(if (isPlaying) PlayState.PLAYING else PlayState.PAUSED)
         },
         onEnded = {
             //todo show paywall
-            viewModel.savePlaybackProgress(1f)
+            viewModel.savePlaybackProgress(1f, isRateShown.value)
+            if (state.entryPoint == AudioPlayerEntryPoint.DAY && !state.isRated) {
+                isRateShown.value = true
+            }
         },
         onSeek = {
             viewModel.logOnSeek()
@@ -62,14 +72,27 @@ fun SharedTransitionScope.AudioPlayerScreen(
     )
     SubscriptionActivityLauncher(
         screenId = 18,
-        onSuccess = { viewModel.onNavigateHome() }
+        onSuccess = { viewModel.onNavigateHome() },
+        onClose = { viewModel.onNavigateHome() }
     ) { launchSubscriptionActivity ->
         val wrappedLaunch = {
             controller?.pause()
             launchSubscriptionActivity()
         }
+
+        val launcher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent()
+        ) { uri: Uri? ->
+            uri?.let {
+                viewModel.onImageSelected(it)
+            }
+        }
+
         viewModel.collectSideEffect { sideEffect ->
-            handleSideEffect(sideEffect, navController, wrappedLaunch)
+            when (sideEffect) {
+                AudioPlayerSideEffect.PickImageFromGallery -> launcher.launch("image/*")
+                else -> handleSideEffect(sideEffect, navController, wrappedLaunch)
+            }
         }
 
 
@@ -105,6 +128,7 @@ fun SharedTransitionScope.AudioPlayerScreen(
             avatarPreviewIds = state.avatarPreviewIds,
             avatarUi = state.selectedAvatar,
             soundsEffects = state.soundEffectsList,
+            isRated = state.isRated,
             sharedElementKey = sharedKey
         )
         VolumeBottomSheet(
@@ -124,19 +148,26 @@ fun SharedTransitionScope.AudioPlayerScreen(
 
         AudioPlayerScaffold(
             modifier = Modifier.sharedElement(shared, animatedVisibilityScope),
+            isPremium = state.isPremium,
+            isEditMode = state.isEditMode,
             ui = ui,
             currentTimeMs = currentMs,
             durationMs = durationMs,
+            isRateShown = isRateShown,
             shared = shared,
             animatedVisibilityScope = animatedVisibilityScope,
             isNetworkAvailable = state.isNetworkAvailable,
             errorState = state.errorState,
+            shareText = state.shareText,
+            rating = state.rating,
+            selectedAvatarIds = state.selectedAvatarsIds,
             logListenLaterEvent = viewModel::onListenLaterClicked,
+            onSubmitClick = viewModel::submitFeedback,
             onBack = {
                 if (state.pages.getOrNull(state.currentPageIndex) == PlayerPage.Avatars) {
                     viewModel.onNavigateToPlayer()
                 } else {
-                    viewModel.savePlaybackProgress(currentMs / durationMs)
+                    viewModel.savePlaybackProgress(currentMs / durationMs, isRateShown.value)
                     navController.popBackStack()
                 }
             },
@@ -164,9 +195,23 @@ fun SharedTransitionScope.AudioPlayerScreen(
             onAvatarClick = viewModel::onAvatarSelected,
             navigateAvatars = viewModel::onNavigateToAvatars,
             navigatePlayer = viewModel::onNavigateToPlayer,
-            saveProgress = { viewModel.savePlaybackProgress(currentMs / durationMs) },
+            saveProgress = { viewModel.savePlaybackProgress(currentMs / durationMs, isRateShown.value) },
             onRetryClick = viewModel::onRetryClicked,
-            onDownloadsClick = viewModel::onDownloadsClicked
+            onDownloadsClick = viewModel::onDownloadsClicked,
+            onRatingUpdated = viewModel::updateRating,
+            onEditClick = viewModel::onEditClicked,
+            onSelectAllClick = viewModel::onSelectAllClicked,
+            onSelect = viewModel::onAvatarSelectedEdit,
+            onDeleteSelectedClick = viewModel::onDeleteSelectedClicked,
+            onDeleteClick = viewModel::onDeleteClicked,
+            onDoneClick = viewModel::onDoneClicked,
+            onAddAvatarClick = viewModel::onAddAvatarClicked,
+            isCropping = state.isCropping,
+            croppingImageUri = state.croppingImageUri,
+            onCropDone = viewModel::onCropDone,
+            onCropCancel = viewModel::onCropCancel,
+            showAvatarChangedToast = state.showAvatarChangedToast,
+            onDismissAvatarChangedToast = viewModel::onDismissAvatarChangedToast
         )
     }
 }
@@ -200,15 +245,12 @@ private fun handleSideEffect(
 ) {
     when (sideEffect) {
         AudioPlayerSideEffect.NavigateBack -> navController.popBackStack()
-        AudioPlayerSideEffect.NavigateHome -> navController.navigate(Home) {
-            popUpTo(Home) { inclusive = false }
+        AudioPlayerSideEffect.NavigateHome -> navController.navigate(Home()) {
+            popUpTo(Home()) { inclusive = true }
         }
 
         AudioPlayerSideEffect.NavigatePaywall -> {
             launchSubscriptionActivity()
-            navController.navigate(Home) {
-                popUpTo(Home) { inclusive = false }
-            }
         }
 
         else -> {}

@@ -51,6 +51,7 @@ import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.theme.AppBarBackground
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.NavBarBackground
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.theme.subtitleSmall
@@ -107,7 +108,7 @@ private fun SharedTransitionScope.VoiceContent(
         }
     }
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             backTitleRes = R.string.profile_title,
             titleRes = R.string.change_voice_title,

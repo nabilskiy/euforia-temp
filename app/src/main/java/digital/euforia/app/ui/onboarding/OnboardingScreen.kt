@@ -1,16 +1,24 @@
 package digital.euforia.app.ui.onboarding
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -29,9 +37,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -39,13 +49,18 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -80,6 +95,22 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel
 ) {
     val state by viewModel.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> viewModel.onPause()
+                Lifecycle.Event.ON_RESUME -> viewModel.onResume()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(navController, sideEffect)
     }
@@ -230,25 +261,98 @@ private fun AppBar(
             modifier = Modifier.fillMaxWidth().height(44.dp),
         ) {
             if (page.isBackAllowed) {
+                var isPressed by remember { mutableStateOf(false) }
+
+                val color by animateColorAsState(
+                    targetValue = if (isPressed) White.copy(alpha = 0.3f) else White.copy(alpha =1f),
+                    animationSpec = tween(durationMillis = 200),
+                    label = "colorAnimation"
+                )
                 Icon(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .size(24.dp)
-                        .clickable(onClick = onBackClick),
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    isPressed = true
+                                    tryAwaitRelease()
+                                    isPressed = false
+                                },
+                                onTap = { onBackClick() }
+                            )
+                        },
                     painter = painterResource(R.drawable.ic_arrow_back),
                     contentDescription = null,
-                    tint = Color.Unspecified
+                    tint = color
                 )
             }
             if (page.isSkippable) {
+                var isPressed by remember { mutableStateOf(false) }
+                val color by animateColorAsState(
+                    targetValue = if (isPressed) White.copy(alpha = 0.3f) else White.copy(alpha = 0.6f),
+                    animationSpec = tween(durationMillis = 200),
+                    label = "colorAnimation"
+                )
+
                 Text(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .clickable(onClick = onSkipClick),
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    isPressed = true
+                                    tryAwaitRelease()
+                                    isPressed = false
+                                },
+                                onTap = { onSkipClick() }
+                            )
+                        },
                     text = localizedRes.string(R.string.skip),
-                    color = White.copy(alpha = 0.5f),
+                    color = color,
                     style = MaterialTheme.typography.bodyMedium
                 )
+            } else {
+                val context = LocalContext.current
+                val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+                var systemVolume by remember {
+                    mutableStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
+                }
+                // Listen for system volume changes
+                DisposableEffect(context) {
+                    val receiver = object : BroadcastReceiver() {
+                        override fun onReceive(context: Context?, intent: Intent?) {
+                            systemVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                        }
+                    }
+                    context.registerReceiver(
+                        receiver,
+                        IntentFilter("android.media.VOLUME_CHANGED_ACTION")
+                    )
+                    onDispose { context.unregisterReceiver(receiver) }
+                }
+
+                if (systemVolume == 0) {
+                    Icon(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(32.dp)
+                            .background(color = White.copy(alpha = 0.2f), shape = androidx.compose.foundation.shape.CircleShape)
+                            .noRippleClickable(onClick = {
+                                val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                                val target = (max * 0.2f).toInt().coerceAtLeast(1)
+                                audioManager.setStreamVolume(
+                                    AudioManager.STREAM_MUSIC,
+                                    target,
+                                    AudioManager.FLAG_SHOW_UI
+                                )
+                            })
+                            .padding(6.dp),
+                        painter = painterResource(id = R.drawable.ic_muted),
+                        contentDescription = null,
+                        tint = Color.Unspecified
+                    )
+                }
             }
         }
         page.titleRes?.let {

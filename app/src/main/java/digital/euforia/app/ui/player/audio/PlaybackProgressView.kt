@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -82,103 +83,104 @@ fun PlaybackProgressView(
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 8.dp)
+                .height(60.dp) // Set a fixed height to prevent vertical jumps
         ) {
-            Column(modifier = Modifier.align(Alignment.TopStart)) {
-                if (showTimeTooltip) {
-                    // Position the tooltip horizontally by using weighted spacers
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        val p = currentProgress.coerceIn(0f, 1f)
-                        // Compose RowScope.weight requires weight > 0f, clamp extremes to a tiny epsilon
-                        val epsilon = 0.0001f
-                        val leftWeight = if (p <= 0f) epsilon else p
-                        val rightWeight = if ((1f - p) <= 0f) epsilon else (1f - p)
-                        // Left spacer takes 'p' width of the row (with epsilon at 0)
-                        Spacer(modifier = Modifier.weight(leftWeight))
-                        // Tooltip text
-                        Box {
-                            Text(
-                                text = formatMsToTime(sliderState.value),
-                                color = White,
-                                fontSize = 12.sp,
-                            )
-                        }
-                        // Right spacer fills the rest
-                        Spacer(modifier = Modifier.weight(rightWeight))
+            if (showTimeTooltip) {
+                // Position the tooltip horizontally by using weighted spacers
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopStart)
+                ) {
+                    val p = currentProgress.coerceIn(0f, 1f)
+                    // Compose RowScope.weight requires weight > 0f, clamp extremes to a tiny epsilon
+                    val epsilon = 0.0001f
+                    val leftWeight = if (p <= 0f) epsilon else p
+                    val rightWeight = if ((1f - p) <= 0f) epsilon else (1f - p)
+                    // Left spacer takes 'p' width of the row (with epsilon at 0)
+                    Spacer(modifier = Modifier.weight(leftWeight))
+                    // Tooltip text
+                    Box {
+                        Text(
+                            text = formatMsToTime(sliderState.value),
+                            color = White,
+                            fontSize = 12.sp,
+                        )
                     }
+                    // Right spacer fills the rest
+                    Spacer(modifier = Modifier.weight(rightWeight))
                 }
-                // Space between tooltip and slider
-//                if (showTimeTooltip) {
-//                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(6.dp))
-//                }
-                Slider(
-                    value = sliderState.value,
-                    onValueChange = { v ->
-                        isSeekingState.value = true
-                        showTimeTooltip = true
-                        hideTooltipJob?.cancel()
-                        sliderState.value = min(v, safeDuration)
-                    },
-                    onValueChangeFinished = {
-                        val target = sliderState.value
-                        onSeek(target)
-                        // Hide tooltip after 3 seconds, but allow slider to sync after 300ms
-                        hideTooltipJob?.cancel()
-                        hideTooltipJob = scope.launch {
-                            delay(3000)
-                            showTimeTooltip = false
-                        }
-                        scope.launch {
-                            delay(300)
-                            isSeekingState.value = false
-                        }
-                    },
-                    valueRange = 0f..safeDuration,
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color.Transparent,
-                        activeTrackColor = Color.Transparent,
-                        inactiveTrackColor = DarkGray
-                    ),
-                    thumb = {
+            }
+
+            Slider(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                value = sliderState.value,
+                onValueChange = { v ->
+                    isSeekingState.value = true
+                    showTimeTooltip = true
+                    hideTooltipJob?.cancel()
+                    sliderState.value = min(v, safeDuration)
+                },
+                onValueChangeFinished = {
+                    val target = sliderState.value
+                    onSeek(target)
+                    // Hide tooltip after 3 seconds, but allow slider to sync after 300ms
+                    hideTooltipJob?.cancel()
+                    hideTooltipJob = scope.launch {
+                        delay(3000)
+                        showTimeTooltip = false
+                    }
+                    scope.launch {
+                        delay(300)
+                        isSeekingState.value = false
+                    }
+                },
+                valueRange = 0f..safeDuration,
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.Transparent,
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = DarkGray
+                ),
+                thumb = {
+                    Box(
+                        modifier = Modifier.background(
+                            color = White.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
+                    ) {
                         Box(
-                            modifier = Modifier.background(
-                                color = White.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            )
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(5.dp).align(Alignment.Center)
-                                    .background(White, CircleShape)
-                                    .size(12.dp)
-                                    .clip(CircleShape)
-                            )
-                        }
-                    },
-                    track = {
-                        // Full track container with rounded corners
+                            modifier = Modifier.padding(5.dp).align(Alignment.Center)
+                                .background(White, CircleShape)
+                                .size(12.dp)
+                                .clip(CircleShape)
+                        )
+                    }
+                },
+                track = {
+                    // Full track container with rounded corners
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(DarkGray) // Base inactive background
+                    ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(DarkGray) // Base inactive background
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Brush.horizontalGradient(colors))
-                            )
-                            // Right-side mask that hides the unplayed portion
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(1f - currentProgress)
-                                    .align(Alignment.CenterEnd)
-                                    .background(DarkGray)
-                            )
-                        }
+                                .fillMaxSize()
+                                .background(Brush.horizontalGradient(colors))
+                        )
+                        // Right-side mask that hides the unplayed portion
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(1f - currentProgress)
+                                .align(Alignment.CenterEnd)
+                                .background(DarkGray)
+                        )
                     }
-                )
-            }
+                }
+            )
         }
     }
 }

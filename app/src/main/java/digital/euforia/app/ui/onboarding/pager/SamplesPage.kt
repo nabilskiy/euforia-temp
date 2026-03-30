@@ -120,7 +120,8 @@ private fun SamplesPageContent(
                 text = localizedRes.string(R.string.intro_scenes_step_text),
                 style = MaterialTheme.typography.bodyMedium.copy(color = White.copy(alpha = 0.4f)),
                 isVisible = isVisible,
-                delay = 300
+                delay = 300,
+                textColor = White.copy(alpha = 0.4f)
             )
             //            SubtitleText(isVisible, localizedRes)
             SamplesView(450, isVisible, playbackState)
@@ -279,7 +280,8 @@ fun AnimatedTextAdvanced(
     text: String,
     style: TextStyle,
     isVisible: Boolean,
-    delay: Long = 0
+    delay: Long = 0,
+    textColor: Color = White
 ) {
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.9f) }
@@ -333,7 +335,7 @@ fun AnimatedTextAdvanced(
         text = text,
         style = style,
         textAlign = TextAlign.Center,
-        color = White
+        color = textColor
     )
 }
 

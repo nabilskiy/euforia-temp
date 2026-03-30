@@ -1,16 +1,22 @@
 package digital.euforia.app.domain.usecase
 
 import android.net.Uri
+import digital.euforia.app.data.repository.AccompanimentRepository
+import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.deeplink.DeepLinkCommand
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.programs.publication.PublicationType
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 
-class ParseDeepLinkUseCase @Inject constructor() {
+class ParseDeepLinkUseCase @Inject constructor(
+    private val accompanimentRepository: AccompanimentRepository,
+    private val profilePreferences: ProfilePreferences
+) {
 
-    operator fun invoke(uri: Uri): HomeDestination {
+    suspend operator fun invoke(uri: Uri): HomeDestination {
         if (uri.scheme != "euforia") return HomeDestination.Plan
 
         val host = uri.host.orEmpty()           // meditations part
@@ -26,24 +32,33 @@ class ParseDeepLinkUseCase @Inject constructor() {
 
         return when (host) {
             // Session
-            "session" -> when (segments.firstOrNull()) {
-                null, "morning" -> HomeDestination.AudioPlayer(
-                    accompanimentId = 1,
-                    timeOfDay = TimeOfDay.MORNING,
-                    entryPoint = AudioPlayerEntryPoint.DAY
-                )
+            "session" -> {
+                val isDemo = profilePreferences.getIsDemo()
+                val completedDays = accompanimentRepository.getCompletedAccompanimentsCount()
+                val accompaniments = accompanimentRepository.getAllWithItemsFlow(isDemo).firstOrNull() ?: emptyList()
+                
+                val currentAcc = accompaniments.getOrNull(completedDays)?.accompaniment
+                val accId = currentAcc?.id ?: 1
 
-                "daytime" -> HomeDestination.AudioPlayer(
-                    accompanimentId = 1,
-                    timeOfDay = TimeOfDay.DAYTIME,
-                    entryPoint = AudioPlayerEntryPoint.DAY
-                )
+                when (segments.firstOrNull()) {
+                    null, "morning" -> HomeDestination.AudioPlayer(
+                        accompanimentId = accId,
+                        timeOfDay = TimeOfDay.MORNING,
+                        entryPoint = AudioPlayerEntryPoint.DAY
+                    )
 
-                else -> HomeDestination.AudioPlayer(
-                    accompanimentId = 1,
-                    timeOfDay = TimeOfDay.EVENING,
-                    entryPoint = AudioPlayerEntryPoint.DAY
-                )
+                    "daytime" -> HomeDestination.AudioPlayer(
+                        accompanimentId = accId,
+                        timeOfDay = TimeOfDay.DAYTIME,
+                        entryPoint = AudioPlayerEntryPoint.DAY
+                    )
+
+                    else -> HomeDestination.AudioPlayer(
+                        accompanimentId = accId,
+                        timeOfDay = TimeOfDay.EVENING,
+                        entryPoint = AudioPlayerEntryPoint.DAY
+                    )
+                }
             }
 
             // Audio scenes (audioscene://... + scenes://...)

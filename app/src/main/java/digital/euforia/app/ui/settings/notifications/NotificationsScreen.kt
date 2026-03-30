@@ -31,6 +31,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
@@ -44,11 +46,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import dev.chrisbanes.haze.hazeSource
 import digital.euforia.app.R
@@ -57,13 +65,17 @@ import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.DayBlue
+import digital.euforia.app.ui.theme.DialogButton
 import digital.euforia.app.ui.theme.NavBarBackground
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.titleItem
 import digital.euforia.app.ui.util.widget.TimePickerView
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.openSystemSettings
+import digital.euforia.app.ui.util.widget.AnimatedSizeBox
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -75,6 +87,23 @@ fun SharedTransitionScope.NotificationsScreen(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val state by viewModel.collectAsState()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val isPermissionGranted =
+                    NotificationManagerCompat.from(context).areNotificationsEnabled()
+                viewModel.updateNotificationPermission(isPermissionGranted)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(sideEffect, navController)
     }
@@ -84,18 +113,21 @@ fun SharedTransitionScope.NotificationsScreen(
     NavBarlessScreen(navBarVisibilityState) {
         NotificationsContent(
             navController = navController,
+            isNotificationsEnabled = state.isNotificationEnabled,
             morningTime = state.morningTime,
             daytimeTime = state.dayTime,
             eveningTime = state.eveningTime,
             isMorningEnabled = state.isMorningNotificationEnabled,
             isDaytimeEnabled = state.isDayNotificationEnabled,
             isEveningEnabled = state.isEveningNotificationEnabled,
+            isSensitiveEnabled = state.isTimeSensitiveEnabled,
             onMorningToggleChanged = viewModel::onMorningNotificationToggled,
             onDaytimeToggleChanged = viewModel::onDayNotificationToggled,
             onEveningToggleChanged = viewModel::onEveningNotificationToggled,
             onMorningTimeChanged = viewModel::onMorningTimeChanged,
             onDaytimeTimeChanged = viewModel::onDayTimeChanged,
             onEveningTimeChanged = viewModel::onEveningTimeChanged,
+            onSensitiveChanged = viewModel::onTimeSensitiveToggled,
             onBackClick = viewModel::saveSettings,
             animatedVisibilityScope = animatedVisibilityScope
         )
@@ -105,18 +137,21 @@ fun SharedTransitionScope.NotificationsScreen(
 @Composable
 private fun SharedTransitionScope.NotificationsContent(
     navController: NavHostController,
+    isNotificationsEnabled: Boolean,
     morningTime: Pair<Int, Int>,
     daytimeTime: Pair<Int, Int>,
     eveningTime: Pair<Int, Int>,
     isMorningEnabled: Boolean = false,
     isDaytimeEnabled: Boolean = false,
     isEveningEnabled: Boolean = false,
+    isSensitiveEnabled: Boolean = false,
     onMorningToggleChanged: (Boolean) -> Unit = {},
     onDaytimeToggleChanged: (Boolean) -> Unit = {},
     onEveningToggleChanged: (Boolean) -> Unit = {},
     onMorningTimeChanged: (Pair<Int, Int>) -> Unit = {},
     onDaytimeTimeChanged: (Pair<Int, Int>) -> Unit = {},
     onEveningTimeChanged: (Pair<Int, Int>) -> Unit = {},
+    onSensitiveChanged: (Boolean) -> Unit = {},
     onBackClick: () -> Unit = {},
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -134,8 +169,9 @@ private fun SharedTransitionScope.NotificationsContent(
             firstIndex > 0 || firstOffset > thresholdPx
         }
     }
+    val context = LocalContext.current
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             backTitleRes = R.string.profile_title,
             titleRes = R.string.notifications_settings_title,
@@ -161,8 +197,14 @@ private fun SharedTransitionScope.NotificationsContent(
             titleItem(
                 titleRes = R.string.notifications_settings_title
             )
+            if (!isNotificationsEnabled) {
+                permissionItem {
+                    openSystemSettings(context)
+                }
+            }
             notificationSettingsItem(
                 isEnabled = isMorningEnabled,
+                isEditable = isNotificationsEnabled,
                 timeOfDay = TimeOfDay.MORNING,
                 hoursAndMinutes = morningTime,
                 onToggleChanged = onMorningToggleChanged,
@@ -170,6 +212,7 @@ private fun SharedTransitionScope.NotificationsContent(
             )
             notificationSettingsItem(
                 isEnabled = isDaytimeEnabled,
+                isEditable = isNotificationsEnabled,
                 timeOfDay = TimeOfDay.DAYTIME,
                 hoursAndMinutes = daytimeTime,
                 onToggleChanged = onDaytimeToggleChanged,
@@ -177,22 +220,78 @@ private fun SharedTransitionScope.NotificationsContent(
             )
             notificationSettingsItem(
                 isEnabled = isEveningEnabled,
+                isEditable = isNotificationsEnabled,
                 timeOfDay = TimeOfDay.EVENING,
                 hoursAndMinutes = eveningTime,
                 onToggleChanged = onEveningToggleChanged,
                 onTimeChanged = onEveningTimeChanged
             )
+            sensitiveItem(
+                isEnabled = isSensitiveEnabled,
+                isEditable = isNotificationsEnabled,
+                onToggleChanged = onSensitiveChanged
+            )
+
+            settingsButtonItem(
+                isEditable = isNotificationsEnabled
+            ) {
+                openSystemSettings(context)
+            }
             item {
                 Spacer(
-                    modifier = Modifier.height(1008.dp).fillMaxWidth()
+                    modifier = Modifier.height(24.dp).fillMaxWidth().navigationBarsPadding()
                 )
             }
         }
     }
 }
 
+
+fun LazyListScope.permissionItem(
+    onClick: () -> Unit,
+) = item(key = "permission") {
+    val localizedRes = LocalLocalizedRes.current
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .background(color = NavBarBackground, shape = RoundedCornerShape(16.dp))
+            .padding(16.dp)
+            .animateContentSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            text = localizedRes.string(R.string.notifications_settings_permission_denied_text),
+            style = MaterialTheme.typography.bodyMedium,
+            color = White.copy(alpha = 0.7f)
+        )
+
+        OutlinedButton(
+            modifier = Modifier,
+            onClick = onClick,
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                contentColor = White,
+                containerColor = DayBlue
+            ),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+            border = null,
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                modifier = Modifier,
+                text = localizedRes.string(R.string.request_permissions_notifications_title),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = White,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
 fun LazyListScope.notificationSettingsItem(
     isEnabled: Boolean,
+    isEditable: Boolean,
     timeOfDay: TimeOfDay,
     hoursAndMinutes: Pair<Int, Int>,
     onToggleChanged: (Boolean) -> Unit,
@@ -207,12 +306,16 @@ fun LazyListScope.notificationSettingsItem(
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
             text = LocalLocalizedRes.current.string(timeOfDay.getTitleRes()).uppercase(),
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Light),
-            color = White.copy(alpha = 0.7f)
+            color = if (isEditable) White.copy(alpha = 0.7f) else White.copy(alpha = 0.3f)
         )
         Column(
             modifier = Modifier.fillMaxWidth()
                 .padding(bottom = 8.dp)
-                .background(color = NavBarBackground, shape = RoundedCornerShape(16.dp))
+                .background(
+                    color = if (isEditable) NavBarBackground else NavBarBackground.copy(
+                        alpha = 0.5f
+                    ), shape = RoundedCornerShape(16.dp)
+                )
                 .padding(16.dp)
                 .animateContentSize()
         ) {
@@ -225,11 +328,12 @@ fun LazyListScope.notificationSettingsItem(
                     modifier = Modifier.weight(1f),
                     text = LocalLocalizedRes.current.string(R.string.notifications_settings_accompaniment_enabled),
                     style = MaterialTheme.typography.titleMedium,
-                    color = White
+                    color = if (isEditable) White else White.copy(alpha = 0.5f)
                 )
 
                 CustomSwitch(
                     checked = isEnabled,
+                    isEditable = isEditable,
                     onCheckedChange = { onToggleChanged(it) },
                 )
             }
@@ -250,10 +354,11 @@ fun LazyListScope.notificationSettingsItem(
                         modifier = Modifier.weight(1f),
                         text = LocalLocalizedRes.current.string(R.string.notifications_settings_accompaniment_time),
                         style = MaterialTheme.typography.titleMedium,
-                        color = White
+                        color = if (isEditable) White else White.copy(alpha = 0.5f)
                     )
 
                     TimeView(
+                        isEditable = isEditable,
                         hoursAndMinutes = hoursAndMinutes,
                         onTimeChanged = onTimeChanged
                     )
@@ -270,23 +375,105 @@ fun LazyListScope.notificationSettingsItem(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 text = LocalLocalizedRes.current.string(timeOfDay.getDescriptionRes()),
                 style = MaterialTheme.typography.bodyMedium,
-                color = White.copy(alpha = 0.7f)
+                color = if (isEditable) White.copy(alpha = 0.7f) else White.copy(0.4f)
             )
         }
     }
 }
 
+fun LazyListScope.sensitiveItem(
+    isEnabled: Boolean,
+    isEditable: Boolean,
+    onToggleChanged: (Boolean) -> Unit,
+) = item(key = "sensitive") {
+    val localizedRes = LocalLocalizedRes.current
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .background(
+                color = if (isEditable) NavBarBackground else NavBarBackground.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp)
+            .animateContentSize()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                modifier = Modifier.weight(1f),
+                text = LocalLocalizedRes.current.string(R.string.notifications_settings_time_sensitive),
+                style = MaterialTheme.typography.titleMedium,
+                color = if (isEditable) White else White.copy(alpha = 0.5f)
+            )
+
+            CustomSwitch(
+                checked = isEnabled,
+                isEditable = isEditable,
+                onCheckedChange = { onToggleChanged(it) },
+            )
+        }
+    }
+    Text(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        text = localizedRes.string(R.string.notifications_settings_time_sensitive_details),
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (isEnabled) White.copy(alpha = 0.7f) else White.copy(alpha = 0.4f)
+    )
+}
+
+fun LazyListScope.settingsButtonItem(
+    isEditable: Boolean,
+    onClick: () -> Unit,
+) = item(key = "system settings") {
+    val localizedRes = LocalLocalizedRes.current
+    OutlinedButton(
+        enabled = isEditable,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(48.dp),
+        onClick = onClick,
+        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+            contentColor = White.copy(alpha = 0.6f),
+            containerColor = NavBarBackground,
+            disabledContainerColor = NavBarBackground.copy(alpha = 0.5f),
+            disabledContentColor = White.copy(alpha = 0.3f)
+        ),
+        contentPadding = PaddingValues(0.dp),
+        border = null,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            text = localizedRes.string(R.string.profile_system_settings),
+            color = if (isEditable) DialogButton else DialogButton.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyLarge
+        )
+    }
+}
+
 @Composable
 private fun TimeView(
+    isEditable: Boolean,
     hoursAndMinutes: Pair<Int, Int>,
     onTimeChanged: (Pair<Int, Int>) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val textColor = if (expanded) DayBlue else White
+    val textColor = if (expanded) DayBlue else {
+        if (isEditable) White else White.copy(0.5f)
+    }
 
-    Box(modifier = Modifier.noRippleClickable { expanded = true }) {
+    Box(modifier = Modifier.noRippleClickable {
+        if (isEditable) {
+            expanded = true
+        }
+    }) {
         Text(
-            modifier = Modifier.background(color = DarkGray, shape = RoundedCornerShape(8.dp))
+            modifier = Modifier.background(
+                color = if (isEditable) DarkGray else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
                 .padding(vertical = 4.dp, horizontal = 8.dp),
             text = "%02d:%02d".format(hoursAndMinutes.first, hoursAndMinutes.second),
             style = MaterialTheme.typography.bodyLarge,
@@ -304,15 +491,17 @@ private fun TimeView(
 @Composable
 fun CustomSwitch(
     checked: Boolean,
+    isEditable: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     width: Dp = 52.dp,
     height: Dp = 32.dp,
     thumbPadding: Dp = 2.dp,
-    checkedColor: Color = DayBlue,
-    uncheckedColor: Color = DarkGray
 ) {
+
+    val checkedColor: Color = if (isEditable) DayBlue else DayBlue.copy(alpha = 0.5f)
+    val uncheckedColor: Color = if (isEditable) DarkGray else DarkGray.copy(alpha = 0.5f)
     val thumbSize = height - thumbPadding * 2
 
     val backgroundColor by animateColorAsState(
@@ -333,7 +522,7 @@ fun CustomSwitch(
             .clip(RoundedCornerShape(percent = 50))
             .background(backgroundColor)
             .clickable(
-                enabled = enabled,
+                enabled = enabled && isEditable,
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) {
@@ -351,7 +540,7 @@ fun CustomSwitch(
                     ambientColor = Color.Black.copy(alpha = 0.25f),
                     spotColor = Color.Black.copy(alpha = 0.25f)
                 )
-                .background(Color.White, CircleShape)
+                .background(if (isEditable) Color.White else White.copy(alpha = 0.7f), CircleShape)
         )
     }
 }

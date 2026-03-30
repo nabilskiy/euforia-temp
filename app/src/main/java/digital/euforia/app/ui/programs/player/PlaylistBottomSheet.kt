@@ -61,7 +61,8 @@ fun PlaylistBottomSheet(
     selectedPublicationId: Int?,
     isPremium: Boolean,
     onPublicationSelected: (PublicationInfo) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onCloseClick: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val localizedRes = LocalLocalizedRes.current
@@ -96,7 +97,10 @@ fun PlaylistBottomSheet(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = appBarModifier.fillMaxWidth()) {
-                IconButton(onClick = onDismiss, modifier = Modifier.padding(16.dp)) {
+                IconButton(onClick = {
+                    onCloseClick()
+                    onDismiss()
+                }, modifier = Modifier.padding(16.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_close),
                         contentDescription = null,

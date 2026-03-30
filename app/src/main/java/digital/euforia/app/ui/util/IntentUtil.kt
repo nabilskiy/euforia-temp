@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.browser.customtabs.CustomTabsIntent
 import digital.euforia.app.R
 import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.subscription.Configuration
@@ -54,32 +55,35 @@ fun sendSupportEmail(
 }
 
 fun openDeveloperLink(context: Context) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(DEVELOPER_LINK)).apply {
-        // In case application context is passed
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    try {
-        context.startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-        // No activity can handle the intent; nothing to do
-    }
+    openWebLink(context, DEVELOPER_LINK)
 }
 
 /**
- * Opens the given URL in a browser using ACTION_VIEW.
+ * Opens the given URL in Chrome Custom Tabs if available, or falls back to a browser.
  * Safe to call with Application context.
  */
-private fun openWebLink(context: Context, url: String?) {
+fun openWebLink(context: Context, url: String?) {
     if (url.isNullOrBlank()) return
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
+    val uri = Uri.parse(url)
     try {
-        context.startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-        // No activity can handle the intent; ignore
+        val customTabsIntent = CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+
+        // CustomTabsIntent needs FLAG_ACTIVITY_NEW_TASK if started from application context
+        customTabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        customTabsIntent.launchUrl(context, uri)
     } catch (_: Exception) {
-        // Ignore malformed URIs
+        // Fallback to standard ACTION_VIEW if Custom Tabs fail
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            // Ignore if everything fails
+        }
     }
 }
 
@@ -152,16 +156,8 @@ fun openTikTokAccount(context: Context) {
         // Fall back to browser without package
     }
 
-    // Final fallback: open in any browser
-    val webIntent = Intent(
-        Intent.ACTION_VIEW,
-        Uri.parse("https://www.tiktok.com/@$username")
-    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-    try {
-        context.startActivity(webIntent)
-    } catch (_: ActivityNotFoundException) {
-        // No activity can handle the intent; nothing to do
-    }
+    // Final fallback: open in any browser (Chrome Custom Tabs)
+    openWebLink(context, "https://www.tiktok.com/@$username")
 }
 
 private fun extractTikTokUsername(input: String): String? {
@@ -228,14 +224,8 @@ fun openXAccount(context: Context) {
         // Fall back to browser
     }
 
-    // Final fallback: any browser
-    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://x.com/$username")).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    try {
-        context.startActivity(webIntent)
-    } catch (_: ActivityNotFoundException) {
-    }
+    // Final fallback: any browser (Chrome Custom Tabs)
+    openWebLink(context, "https://x.com/$username")
 }
 
 /**
@@ -273,13 +263,8 @@ fun openInstagramAccount(context: Context) {
     } catch (_: ActivityNotFoundException) {
     }
 
-    // Browser fallback
-    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/$username"))
-        .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-    try {
-        context.startActivity(webIntent)
-    } catch (_: ActivityNotFoundException) {
-    }
+    // Browser fallback (Chrome Custom Tabs)
+    openWebLink(context, "https://www.instagram.com/$username")
 }
 
 /**
@@ -315,14 +300,8 @@ fun openFacebookAccount(context: Context) {
     } catch (_: ActivityNotFoundException) {
     }
 
-    // Final: open in any browser
-    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(pageUrl)).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    try {
-        context.startActivity(webIntent)
-    } catch (_: ActivityNotFoundException) {
-    }
+    // Final: open in any browser (Chrome Custom Tabs)
+    openWebLink(context, pageUrl)
 }
 
 /**
@@ -353,15 +332,8 @@ fun openYouTubeAccount(context: Context) {
         }
     }
 
-    // Final fallback: open the primary handle URL in browser
-    val webIntent = Intent(
-        Intent.ACTION_VIEW,
-        Uri.parse("https://www.youtube.com/@$username")
-    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-    try {
-        context.startActivity(webIntent)
-    } catch (_: ActivityNotFoundException) {
-    }
+    // Final fallback: open the primary handle URL in browser (Chrome Custom Tabs)
+    openWebLink(context, "https://www.youtube.com/@$username")
 }
 
 // Helper to normalize a shared social username value (remove '@', trim spaces and slashes)
@@ -470,5 +442,26 @@ fun shareProgram(
 
     context.startActivity(
         Intent.createChooser(intent, context.getString(R.string.share))
+    )
+}
+
+fun shareApp(context: Context, title: String?) {
+    val url = MARKET_DEEP_LINK + context.packageName
+    val text = if (title.isNullOrBlank()) {
+        context.getString(R.string.profile_share) + "\n\n" + url
+    } else {
+        title.format(url)
+    }
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    context.startActivity(
+        Intent.createChooser(intent, context.getString(R.string.profile_share_app)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
     )
 }

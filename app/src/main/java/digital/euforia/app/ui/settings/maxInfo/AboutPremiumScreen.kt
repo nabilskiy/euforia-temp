@@ -63,6 +63,7 @@ import digital.euforia.app.ui.theme.MaxGradient
 import digital.euforia.app.ui.theme.MaxGradientReversed
 import digital.euforia.app.ui.theme.MaxGradientReversedHorizontal
 import digital.euforia.app.ui.theme.PremiumGradient
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.AnimatedSizeBox
 import digital.euforia.app.ui.util.widget.BlurredAppBar
@@ -113,7 +114,7 @@ private fun AboutPremiumContent(
     var isBottomSheetVisible by remember { mutableStateOf(false) }
     var currentItem by remember { mutableStateOf<MaxInfoItem?>(null) }
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             titleRes = R.string.active_subscription_default_name,
             shouldBlur = shouldBlur,

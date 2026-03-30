@@ -1,7 +1,9 @@
 package digital.euforia.app.domain.model
 
+import androidx.compose.runtime.Immutable
 import digital.euforia.app.ui.programs.publication.PublicationType
 
+@Immutable
 data class PublicationInfo(
     val id: Int,
     val packageId: Int? = null,

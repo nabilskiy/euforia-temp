@@ -78,7 +78,9 @@ import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.NavBarBackground
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.formatDuration
 import digital.euforia.app.ui.util.sharePublication
 import digital.euforia.app.ui.util.widget.ErrorView
@@ -99,8 +101,14 @@ fun PublicationPlayerScreen(
     navBarVisibilityState: MutableState<Boolean>,
 ) {
     val state by viewModel.collectAsState()
+    var launchSubscriptionActivity by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect)
+        when (sideEffect) {
+            PublicationPlayerSideEffect.ShowSubscription -> {
+                launchSubscriptionActivity?.invoke()
+            }
+        }
     }
 
     val activity = LocalContext.current.findActivity()
@@ -110,25 +118,33 @@ fun PublicationPlayerScreen(
     ReleasePlaybackOnDispose(activity, state.publicationInfo?.id, viewModel)
 
     NavBarlessScreen(navBarVisibilityState) {
-        PublicationPlayerContent(
-            publicationInfo = state.publicationInfo,
-            navController = navController,
-            isPremium = state.isPremium,
-            isLoading = state.isLoading,
-            errorState = state.errorState,
-            soundEffects = state.soundEffectsList,
-            selectedSoundIndex = state.selectedSoundEffectIndex,
-            playlist = state.playlist,
-            onPublicationSelected = viewModel::onPublicationSelected,
-            selectedSoundTitle = { state.soundEffectsList.getOrNull(state.selectedSoundEffectIndex)?.title.orEmpty() },
-            getController = { ctx -> viewModel.getOrCreateController(ctx) },
-            onPrepareAndPlay = { ex -> viewModel.prepareAndPlay(ex) },
-            onRetryClick = { },
-            onDownloadsClick = { },
-            onSoundEffectClick = viewModel::onSoundEffectSelected,
-            onMuteClick = viewModel::onMuteClicked,
-            onFavouriteClick = viewModel::onFavouriteClicked
-        )
+        SubscriptionActivityLauncher { launch ->
+            launchSubscriptionActivity = launch
+            PublicationPlayerContent(
+                publicationInfo = state.publicationInfo,
+                navController = navController,
+                isPremium = state.isPremium,
+                isLoading = state.isLoading,
+                errorState = state.errorState,
+                soundEffects = state.soundEffectsList,
+                selectedSoundIndex = state.selectedSoundEffectIndex,
+                playlist = state.playlist,
+                onPublicationSelected = viewModel::onPublicationSelected,
+                selectedSoundTitle = { state.soundEffectsList.getOrNull(state.selectedSoundEffectIndex)?.title.orEmpty() },
+                getController = { ctx -> viewModel.getOrCreateController(ctx) },
+                onPrepareAndPlay = { ex -> viewModel.prepareAndPlay(ex) },
+                onRetryClick = { },
+                onDownloadsClick = { },
+                onSoundEffectClick = viewModel::onSoundEffectSelected,
+                onMuteClick = viewModel::onMuteClicked,
+                onFavouriteClick = viewModel::onFavouriteClicked,
+                onSeek = viewModel::onSeek,
+                onCloseClick = viewModel::onCloseClicked,
+                onPlaylistClick = viewModel::onPlaylistClicked,
+                onPlaylistCloseClick = viewModel::onPlaylistCloseClicked,
+                onPlaylistShown = viewModel::onPlaylistShown
+            )
+        }
     }
 }
 
@@ -152,6 +168,11 @@ private fun PublicationPlayerContent(
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
     onFavouriteClick: (PublicationInfo) -> Unit,
+    onSeek: () -> Unit,
+    onCloseClick: () -> Unit,
+    onPlaylistClick: () -> Unit,
+    onPlaylistCloseClick: () -> Unit,
+    onPlaylistShown: () -> Unit,
 ) {
     val videoUrl = publicationInfo?.videoUrl
 
@@ -180,7 +201,7 @@ private fun PublicationPlayerContent(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Black)) {
         if (isLoading) {
             ProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else if (errorState != null) {
@@ -200,7 +221,10 @@ private fun PublicationPlayerContent(
                 selectedSoundIndex = selectedSoundIndex,
                 getController = getController,
                 onPrepareAndPlay = onPrepareAndPlay,
-                onClose = { navController.popBackStack() },
+                onClose = {
+                    onCloseClick()
+                    navController.popBackStack()
+                },
                 onSoundEffectClick = { index ->
                     if (index != selectedSoundIndex) {
                         onSoundEffectClick(index)
@@ -220,9 +244,13 @@ private fun PublicationPlayerContent(
                     }
                 },
                 onPlaylistClick = {
+                    onPlaylistClick()
+                    onPlaylistShown()
                     playlistSheetState.value = true
                 },
-                onFavouriteClick = onFavouriteClick
+                onFavouriteClick = onFavouriteClick,
+                onSeek = onSeek,
+                isVolumeSheetVisible = showSheet
             )
         }
 
@@ -232,7 +260,9 @@ private fun PublicationPlayerContent(
                 selectedPublicationId = currentMediaId ?: publicationInfo.id,
                 isPremium = isPremium,
                 onPublicationSelected = onPublicationSelected,
-                onDismiss = { playlistSheetState.value = false })
+                onDismiss = { playlistSheetState.value = false },
+                onCloseClick = onCloseClick
+            )
         }
         VolumeBottomSheet(
             visible = showSheet,
@@ -266,12 +296,17 @@ private fun ExerciseVideoPlayer(
     onMuteClick: () -> Unit,
     onPlaylistClick: () -> Unit,
     onFavouriteClick: (PublicationInfo) -> Unit,
+    onSeek: () -> Unit,
+    isVolumeSheetVisible: Boolean = false,
 ) {
     val context = LocalContext.current
     val activity = remember { context.findActivity() }
     val configuration = LocalConfiguration.current
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
+
+    var isScrubbing by remember { mutableStateOf(false) }
+    var isOptionsExpanded by remember { mutableStateOf(false) }
 
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var interactionTick by remember { mutableIntStateOf(0) }
@@ -282,9 +317,13 @@ private fun ExerciseVideoPlayer(
         val controller = getController(context)
         player = controller
         Timber.tag("PUBLICATION_PLAYBACK")
-            .d("ExerciseVideoPlayer: LaunchedEffect player init, currentMediaId=${(controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id}")
-        if (controller.playbackState == Player.STATE_IDLE || (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id != publicationInfo.id) {
+            .d("ExerciseVideoPlayer: LaunchedEffect player init, currentMediaId=${(controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id}, state=${controller.playbackState}")
+        val currentMediaId =
+            (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id
+        if (controller.playbackState == Player.STATE_IDLE || currentMediaId != publicationInfo.id) {
             onPrepareAndPlay(publicationInfo)
+        } else if (!controller.isPlaying) {
+            controller.play()
         }
     }
 
@@ -292,7 +331,9 @@ private fun ExerciseVideoPlayer(
         val controller = player ?: return@LaunchedEffect
         Timber.tag("PUBLICATION_PLAYBACK")
             .d("ExerciseVideoPlayer: LaunchedEffect publicationId changed to ${publicationInfo.id}, playerState=${controller.playbackState}, currentMediaId=${(controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id}")
-        if (controller.playbackState == Player.STATE_IDLE || (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id != publicationInfo.id) {
+        val currentMediaId =
+            (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id
+        if (controller.playbackState == Player.STATE_IDLE || currentMediaId != publicationInfo.id) {
             onPrepareAndPlay(publicationInfo)
         }
     }
@@ -308,8 +349,15 @@ private fun ExerciseVideoPlayer(
         onDispose { player?.removeListener(listener) }
     }
 
-    LaunchedEffect(controlsVisible, isPlaying, interactionTick) {
-        if (controlsVisible && isPlaying) {
+    LaunchedEffect(
+        controlsVisible,
+        isPlaying,
+        interactionTick,
+        isScrubbing,
+        isOptionsExpanded,
+        isVolumeSheetVisible
+    ) {
+        if (controlsVisible && isPlaying && !isScrubbing && !isOptionsExpanded && !isVolumeSheetVisible) {
             delay(3000)
             controlsVisible = false
         }
@@ -364,7 +412,13 @@ private fun ExerciseVideoPlayer(
                     }
                 }
                 DisposableEffect(coverPlayer) {
-                    onDispose { coverPlayer.release() }
+                    Timber.tag("PUBLICATION_PLAYBACK")
+                        .d("ExerciseVideoPlayer: Meditation coverPlayer init")
+                    onDispose {
+                        Timber.tag("PUBLICATION_PLAYBACK")
+                            .d("ExerciseVideoPlayer: Meditation coverPlayer release")
+                        coverPlayer.release()
+                    }
                 }
                 LaunchedEffect(coverPlayer, isPlaying) {
                     if (isPlaying) coverPlayer.play() else coverPlayer.pause()
@@ -437,6 +491,14 @@ private fun ExerciseVideoPlayer(
                 hazeState = hazeState,
                 soundEffects = soundEffects,
                 selectedSoundIndex = selectedSoundIndex,
+                isOptionsExpanded = isOptionsExpanded,
+                onOptionsExpandedChange = { expanded ->
+                    isOptionsExpanded = expanded
+                    if (expanded) {
+                        controlsVisible = true
+                        interactionTick++
+                    }
+                },
                 onToggleFullscreen = {
                     controlsVisible = true
                     interactionTick++
@@ -451,20 +513,44 @@ private fun ExerciseVideoPlayer(
                     controlsVisible = true
                     interactionTick++
                 },
-                onSoundEffectClick = onSoundEffectClick,
-                onMuteClick = onMuteClick,
-                onPlaylistClick = onPlaylistClick,
-                onFavouriteClick = onFavouriteClick
+                onSoundEffectClick = { index ->
+                    val userInteraction = {
+                        controlsVisible = true
+                        interactionTick++
+                    }
+                    userInteraction()
+                    onSoundEffectClick(index)
+                },
+                onMuteClick = {
+                    val userInteraction = {
+                        controlsVisible = true
+                        interactionTick++
+                    }
+                    userInteraction()
+                    onMuteClick()
+                },
+                onPlaylistClick = {
+                    val userInteraction = {
+                        controlsVisible = true
+                        interactionTick++
+                    }
+                    userInteraction()
+                    onPlaylistClick()
+                },
+                onFavouriteClick = onFavouriteClick,
+                onScrubbingChange = { scrubbing ->
+                    isScrubbing = scrubbing
+                    if (scrubbing) {
+                        controlsVisible = true
+                        interactionTick++
+                    }
+                },
+                onSeek = onSeek
             )
         }
     }
 }
 
-private fun handleSideEffect(sideEffect: PublicationPlayerSideEffect) {
-    when (sideEffect) {
-        else -> {}
-    }
-}
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -483,6 +569,8 @@ private fun BoxScope.PlayerControlsOverlay(
     hazeState: HazeState,
     soundEffects: List<SoundEffectUi>,
     selectedSoundIndex: Int,
+    isOptionsExpanded: Boolean,
+    onOptionsExpandedChange: (Boolean) -> Unit,
     onToggleFullscreen: () -> Unit,
     onClose: () -> Unit,
     onUserInteraction: () -> Unit,
@@ -490,6 +578,8 @@ private fun BoxScope.PlayerControlsOverlay(
     onMuteClick: () -> Unit,
     onPlaylistClick: () -> Unit,
     onFavouriteClick: (PublicationInfo) -> Unit,
+    onScrubbingChange: (Boolean) -> Unit,
+    onSeek: () -> Unit,
 ) {
     var durationMs by remember {
         androidx.compose.runtime.mutableLongStateOf(
@@ -530,6 +620,8 @@ private fun BoxScope.PlayerControlsOverlay(
             publicationInfo = publicationInfo,
             isLandscape = isLandscape,
             isFullscreen = isFullscreen,
+            isOptionsExpanded = isOptionsExpanded,
+            onOptionsExpandedChange = onOptionsExpandedChange,
             onClose = {
                 onUserInteraction(); onClose()
             },
@@ -565,12 +657,15 @@ private fun BoxScope.PlayerControlsOverlay(
                 onUserInteraction(); onToggleFullscreen()
             },
             onSeek = { pos ->
+                onSeek()
                 player.seekTo(pos)
                 onUserInteraction()
             },
+            onScrubbingChange = onScrubbingChange,
             onSoundEffectClick = onSoundEffectClick,
             onMuteClick = onMuteClick,
-            onPlaylistClick = onPlaylistClick
+            onPlaylistClick = onPlaylistClick,
+            onUserInteraction = onUserInteraction
         )
     }
 }
@@ -645,19 +740,22 @@ private fun ReleasePlaybackOnDispose(
     key: Any?,
     viewModel: PublicationPlayerViewModel
 ) {
+    val context = LocalContext.current
     // We want to stop playback only when the screen is actually closed, 
     // not when the 'key' (publication ID) changes, because changing the key 
     // happens when we transition between items in a playlist.
-    DisposableEffect(activity) {
-        Timber.tag("PUBLICATION_PLAYBACK").d("ReleasePlaybackOnDispose: init")
+    DisposableEffect(Unit) {
+        Timber.tag("PUBLICATION_PLAYBACK")
+            .d("ReleasePlaybackOnDispose: init hash=${viewModel.hashCode()}")
         onDispose {
+            val activity_ = context.findActivity()
             val isChanging = try {
-                activity?.isChangingConfigurations == true
+                activity_?.isChangingConfigurations == true
             } catch (_: Throwable) {
                 false
             }
             Timber.tag("PUBLICATION_PLAYBACK")
-                .d("ReleasePlaybackOnDispose: onDispose isChanging=$isChanging")
+                .d("ReleasePlaybackOnDispose: onDispose isChanging=$isChanging hash=${viewModel.hashCode()}")
             if (!isChanging) {
                 viewModel.stopPlaybackAndRelease(stopService = true)
             }
@@ -671,6 +769,8 @@ private fun BoxScope.ControlsTopBar(
     publicationInfo: PublicationInfo,
     isLandscape: Boolean,
     isFullscreen: Boolean,
+    isOptionsExpanded: Boolean,
+    onOptionsExpandedChange: (Boolean) -> Unit,
     onClose: () -> Unit,
     onToggleFullscreen: () -> Unit,
     onFavouriteClick: (PublicationInfo) -> Unit,
@@ -710,6 +810,8 @@ private fun BoxScope.ControlsTopBar(
             }
             PublicationOptionMenu(
                 isFavourite = publicationInfo.isFavourite,
+                expanded = isOptionsExpanded,
+                onExpandedChange = onOptionsExpandedChange,
                 onAddFavouriteClick = { onFavouriteClick(publicationInfo) },
                 onShareClick = {
                     sharePublication(
@@ -761,9 +863,11 @@ private fun BoxScope.BottomControls(
     soundEffects: List<SoundEffectUi>,
     onToggleFullscreen: () -> Unit,
     onSeek: (Long) -> Unit,
+    onScrubbingChange: (Boolean) -> Unit,
     onSoundEffectClick: (Int) -> Unit,
     onMuteClick: () -> Unit,
     onPlaylistClick: () -> Unit,
+    onUserInteraction: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -780,7 +884,8 @@ private fun BoxScope.BottomControls(
             isAvatarItemShown = false,
             onAvatarClick = {},
             onMuteClick = onMuteClick,
-            onClick = onSoundEffectClick
+            onClick = onSoundEffectClick,
+            onInteraction = { onUserInteraction() }
         )
 
         AndroidView(
@@ -791,13 +896,17 @@ private fun BoxScope.BottomControls(
                     setUnplayedColor(NavBarBackground.toArgb())
                     setScrubberColor(White.toArgb())
                     addListener(object : TimeBar.OnScrubListener {
-                        override fun onScrubStart(timeBar: TimeBar, position: Long) {}
+                        override fun onScrubStart(timeBar: TimeBar, position: Long) {
+                            onScrubbingChange(true)
+                        }
+
                         override fun onScrubMove(timeBar: TimeBar, position: Long) {}
                         override fun onScrubStop(
                             timeBar: TimeBar,
                             position: Long,
                             canceled: Boolean
                         ) {
+                            onScrubbingChange(false)
                             if (!canceled) onSeek(position)
                         }
                     })
@@ -838,7 +947,6 @@ private fun BoxScope.BottomControls(
                             tint = White
                         )
                     }
-
                 }
             }
             Text(text = formatDuration(durationMs.coerceAtLeast(0L)), color = White)

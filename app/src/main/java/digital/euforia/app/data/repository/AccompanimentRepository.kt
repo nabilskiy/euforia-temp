@@ -23,10 +23,40 @@ class AccompanimentRepository @Inject constructor(
     private val accompanimentItemDao: AccompanimentItemDao
 ) {
 
+    suspend fun syncTodayAccompaniment(demo: Boolean): ResultWrapper<Unit> {
+        return api.getTodayAccompaniments(demo).map { networkAccompaniments ->
+            val entity = networkAccompaniments.toEntity()
+            accompanimentDao.deleteAllExcept(listOf(entity.id), false)
+            accompanimentDao.upsertAll(listOf(entity))
+
+            val existingItems = accompanimentItemDao.getAllByAccompaniment(entity.id)
+
+            if (existingItems.isEmpty()) {
+                val items = listOf(
+                    AccompanimentItem(
+                        accompanimentId = entity.id,
+                        timeOfDay = TimeOfDay.MORNING
+                    ),
+                    AccompanimentItem(
+                        accompanimentId = entity.id,
+                        timeOfDay = TimeOfDay.DAYTIME
+                    ),
+                    AccompanimentItem(
+                        accompanimentId = entity.id,
+                        timeOfDay = TimeOfDay.EVENING
+                    ),
+                )
+                Timber.tag("ACC_SYNC")
+                    .d("Inserting items for accompaniment ${entity.id}")
+                accompanimentItemDao.insertAll(items)
+            }
+        }
+    }
+
     suspend fun syncAccompaniments(demo: Boolean): ResultWrapper<Unit> {
         //resync when demo completed
 //        val keepDemo = !demo
-        return api.getAccompanimentsPerWeek(demo).map { networkAccompaniments ->
+        return api.getAccompanimentsPerWeek(if (demo) 1 else 0).map { networkAccompaniments ->
             val entities = networkAccompaniments.map { it.toEntity() }
             if (entities.isNotEmpty()) {
                 val ids = entities.map { it.id }
@@ -64,7 +94,7 @@ class AccompanimentRepository @Inject constructor(
     }
 
     suspend fun getAccompanimentWithItems(isDemo: Boolean): ResultWrapper<List<AccompanimentWithItems>> {
-        val result = api.getAccompanimentsPerWeek(isDemo)
+        val result = api.getAccompanimentsPerWeek(if (isDemo) 1 else 0)
         return result.map { networkAccompaniments ->
             val entities = networkAccompaniments.map { it.toEntity() }
             val ids = entities.map { it.id }

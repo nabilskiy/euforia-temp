@@ -2,6 +2,7 @@ package digital.euforia.app.ui.settings.language
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.domain.model.onboarding.Language
 import org.orbitmvi.orbit.ContainerHost
@@ -10,7 +11,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LanguageViewModel @Inject constructor(
-    private val appPreferences: AppPreferences
+    private val appPreferences: AppPreferences,
+    private val configFetcher: EuforiaRemoteConfigFetcher
 ) : ViewModel(),
     ContainerHost<LanguageState, LanguageSideEffect> {
     override val container = container<LanguageState, LanguageSideEffect>(
@@ -39,6 +41,8 @@ class LanguageViewModel @Inject constructor(
                     language = language.tag
                 )
             }
+            configFetcher.reset()
+            postSideEffect(LanguageSideEffect.RestartApp)
         }
     }
 }
@@ -48,4 +52,6 @@ data class LanguageState(
     val language: String? = null
 )
 
-sealed class LanguageSideEffect {}
+sealed class LanguageSideEffect {
+    object RestartApp : LanguageSideEffect()
+}

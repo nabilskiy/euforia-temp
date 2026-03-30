@@ -17,6 +17,9 @@ class AccompanimentItemRepository @Inject constructor(
     suspend fun update(item: AccompanimentItem) =
         accompanimentItemDao.update(item)
 
+    suspend fun updateRatingById(id: Int, isRated: Boolean, rating: Int) =
+        accompanimentItemDao.updateRatingById(id, isRated, rating)
+
     suspend fun getById(id: Int): AccompanimentItem? =
         accompanimentItemDao.getById(id)
 

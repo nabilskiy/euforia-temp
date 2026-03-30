@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import android.app.Activity
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -38,6 +39,7 @@ import dev.chrisbanes.haze.hazeSource
 import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.Red
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.BlurredAppBar
@@ -91,7 +93,7 @@ private fun ClearDataContent(
         }
     }
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             titleRes = R.string.personal_data_title,
             backTitleRes = R.string.back,

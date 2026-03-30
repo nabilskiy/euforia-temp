@@ -2,6 +2,7 @@ package digital.euforia.app.domain.usecase.subscription
 
 import android.content.Context
 import android.content.res.Configuration
+import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -57,7 +58,8 @@ class GetMaxInfoUseCase @Inject constructor(
         )
     }
 
-    private data class AboutPremiumDto(
+    @JsonClass(generateAdapter = true)
+    data class AboutPremiumDto(
         val title: String,
         val details: String,
         val items: List<ItemDto>,
@@ -65,7 +67,8 @@ class GetMaxInfoUseCase @Inject constructor(
         val bottomCardText: String
     )
 
-    private data class ItemDto(
+    @JsonClass(generateAdapter = true)
+    data class ItemDto(
         val title: String,
         val text: String,
         val imageUrl: String,

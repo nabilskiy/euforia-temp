@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -118,7 +119,9 @@ private fun AnimationView(shouldAnimate: () -> Boolean) {
         composition = composition,
         iterations = IterateForever,
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .padding(bottom = 78.dp)
+            .navigationBarsPadding(),
         contentScale = ContentScale.FillWidth,
         isPlaying = shouldAnimate()
     )

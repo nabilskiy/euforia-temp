@@ -25,6 +25,7 @@ class HeadersInterceptor(
             .newBuilder()
             .addHeader(ACCEPT_LANGUAGE, Locale.getDefault().language)
             .addHeader(APP_OS, ANDROID)
+            .addHeader(APP_DEVICE, ANDROID)
             .addHeader(APP_VERSION, "${BuildConfig.VERSION_CODE}")
             .addHeader(APP_VERSION_NAME, BuildConfig.VERSION_NAME)
 //            .addHeader(APP_GEN_TOKEN, authTokenProvider.token ?: "")
@@ -110,6 +111,7 @@ class HeadersInterceptor(
         const val APP_VERSION_NAME = "App-Version-Name"
         const val APP_GEN_TOKEN = "App-Gen-Token"
         const val APP_DEVICE_TOKEN = "App-Device-Token"
+        const val APP_DEVICE = "App-Device"
         const val APP_SUBS_TOKEN = "App-Subs-Token"
         const val APP_TIMEZONE = "App-Timezone"
         const val APP_SANDBOX = "App-Sandbox"

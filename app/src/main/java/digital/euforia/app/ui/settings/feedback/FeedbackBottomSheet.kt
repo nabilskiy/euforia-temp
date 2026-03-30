@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,14 +26,21 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -45,6 +53,7 @@ import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.theme.subtitleSmall
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import org.orbitmvi.orbit.compose.collectAsState
+import org.orbitmvi.orbit.compose.collectSideEffect
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
@@ -53,7 +62,10 @@ import digital.euforia.app.data.db.entity.FeedbackQuestionType
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.AnimatedSizeButton
 import digital.euforia.app.ui.util.widget.CorporateTextField
+import digital.euforia.app.ui.util.widget.SettingsTextField
+import digital.euforia.app.ui.util.widget.WhiteOutlinedButton
 import digital.euforia.app.ui.util.widget.applyIf
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,13 +74,44 @@ fun FeedbackBottomSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
     val state by viewModel.collectAsState()
+    val context = LocalContext.current
 
+    viewModel.collectSideEffect { sideEffect ->
+        when (sideEffect) {
+            FeedbackSideEffect.Close -> {
+                onDismiss()
+                viewModel.resetForm()
+            }
+        }
+    }
 
+    LaunchedEffect(state.errorMessage, state.errorResId) {
+        state.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+        state.errorResId?.let {
+            Toast.makeText(context, context.getString(it), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    if (state.showCloseConfirmation) {
+        FeedbackCloseDialog(
+            hazeState = rememberHazeState(),
+            onCancel = viewModel::onDismissCloseConfirmation,
+            onSkip = viewModel::onConfirmClose
+        )
+    }
+
+    if (state.showThanksDialog) {
+        FeedbackThanksDialog(
+            hazeState = rememberHazeState(),
+            onConfirm = viewModel::onConfirmThanks
+        )
+    }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = viewModel::onCloseAttempt,
         sheetState = sheetState,
         modifier = Modifier.padding(top = 32.dp).statusBarsPadding(),
         dragHandle = {},
@@ -77,13 +120,12 @@ fun FeedbackBottomSheet(
         tonalElevation = 0.dp,
         scrimColor = Color.Black.copy(alpha = 0.45f)
     ) {
-//        CircularProgressIndicator()
         state.form?.let { form ->
             FeedbackFormContent(
                 form = form,
                 onSubmit = viewModel::onSubmitForm,
                 onOptionSelected = viewModel::onOptionSelected,
-                onDismiss = onDismiss,
+                onDismiss = viewModel::onCloseAttempt,
                 onAnswerTextChanged = viewModel::onAnswerTextChanged
             )
         }
@@ -108,7 +150,7 @@ fun FeedbackFormContent(
             listState.firstVisibleItemIndex > 0
         }
     }
-    Box {
+    Box(modifier = Modifier.background(BottomSheetBackground)) {
         val appBarModifier = if (shouldBlur) {
             Modifier
                 .hazeEffect(
@@ -160,7 +202,7 @@ fun FeedbackFormContent(
                 questionItem(question, onOptionSelected, onAnswerTextChanged)
             }
             footerItem(form) {
-                onDismiss()
+                onSubmit()
             }
         }
     }
@@ -170,7 +212,7 @@ fun LazyListScope.subtitleItem(text: String) = item(key = "subtitle_$text") {
     Text(
         modifier = Modifier.fillMaxWidth(),
         text = text,
-        style = subtitleSmall,
+        style = subtitleSmall.copy(fontWeight = FontWeight.Light),
         color = Color.White.copy(alpha = 0.4f)
     )
 }
@@ -227,25 +269,34 @@ fun QuestionTitle(title: String) {
 @Composable
 fun TextFeedbackView(question: UiQuestion, onAnswerTextChanged: (Int, String) -> Unit) {
     val focusRequester = remember { FocusRequester() }
-
-    CorporateTextField(
-        modifier = Modifier.fillMaxWidth().height(156.dp),
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val isRequired = question.isRequired
+    SettingsTextField(
+        modifier = Modifier.fillMaxWidth(),
         value = question.answerText.orEmpty(),
         placeholder = question.hint.orEmpty(),
         onValueChanged = { onAnswerTextChanged(question.id, it.text) },
         maxLength = 1000,
-        isSingleLine = false,
         heightDp = 156.dp,
+        isSingleLine = false,
+        keyboardController = keyboardController,
+        focusManager = focusManager,
+        onClearClick = { focusManager.clearFocus() },
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Done,
+            keyboardType = KeyboardType.Text
+        )
     )
 }
 
 @Composable
 fun OptionView(option: UiOption, isSelected: Boolean, onClick: () -> Unit) {
-    val shape = remember { RoundedCornerShape(24.dp) }
+    val shape = remember { RoundedCornerShape(20.dp) }
     Row(
         modifier = Modifier.fillMaxWidth()
             .noRippleClickable { onClick() }
-            .background(color = White.copy(alpha = 0.1f), shape = shape)
+            .background(color = White.copy(alpha = 0.05f), shape = shape)
             .applyIf(isSelected) {
                 border(
                     width = 1.dp,
@@ -253,7 +304,7 @@ fun OptionView(option: UiOption, isSelected: Boolean, onClick: () -> Unit) {
                     shape = shape
                 )
             }
-            .padding(12.dp),
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val iconRes = if (isSelected) {
@@ -270,10 +321,10 @@ fun OptionView(option: UiOption, isSelected: Boolean, onClick: () -> Unit) {
         )
 
         Text(
-            modifier = Modifier.padding(start = 12.dp),
+            modifier = Modifier.padding(start = 8.dp),
             text = option.text,
             style = subtitleSmall,
-            color = Color.White.copy(alpha = 0.4f)
+            color = Color.White.copy(alpha = 0.7f)
         )
     }
 }
@@ -293,8 +344,8 @@ private fun LazyListScope.footerItem(form: UiFeedbackForm, onClick: () -> Unit) 
                 )
             }
             form.buttonTitle?.let { text ->
-                AnimatedSizeButton(
-                    modifier = Modifier.fillMaxWidth(),
+                WhiteOutlinedButton(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     text = text,
                     onClick = onClick
                 )

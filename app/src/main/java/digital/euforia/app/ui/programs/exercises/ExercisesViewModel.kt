@@ -4,10 +4,12 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.ParseDeepLinkUseCase
 import digital.euforia.app.domain.usecase.program.ExerciseUiBlock
+import digital.euforia.app.domain.usecase.program.GetExerciseBlocksComposeUseCase
 import digital.euforia.app.domain.usecase.program.GetExerciseBlocksUseCase
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.programs.publication.PublicationType
@@ -23,14 +25,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ExercisesViewModel @Inject constructor(
-    private val getExerciseExerciseBlocksUseCase: GetExerciseBlocksUseCase,
+    private val getExerciseExerciseBlocksUseCase: GetExerciseBlocksComposeUseCase,
     private val profilePreferences: ProfilePreferences,
-    private val parseDeepLinkUseCase: ParseDeepLinkUseCase
+    private val parseDeepLinkUseCase: ParseDeepLinkUseCase,
+    private val analyticSender: AnalyticSender,
 ) : ViewModel(),
     ContainerHost<ExercisesState, ExercisesSideEffect> {
     override val container = container<ExercisesState, ExercisesSideEffect>(
         initialState = ExercisesState(),
         onCreate = {
+            analyticSender.exercisesLibraryShow()
             observePremium()
             loadExerciseBlocks()
         }
@@ -80,6 +84,7 @@ class ExercisesViewModel @Inject constructor(
     }
 
     fun onExerciseClicked(publication: PublicationInfo) {
+        viewModelScope.launch { analyticSender.exercisesLibraryItemClick(publication.publicationType.value) }
         postEffect(
             ExercisesSideEffect.NavigateToPublication(
                 id = publication.id,
@@ -90,14 +95,17 @@ class ExercisesViewModel @Inject constructor(
     }
 
     fun onBannerClicked(banner: ExerciseUiBlock.Banner) {
-        val sideEffect = if (banner.actionUrl != null) {
-            val destination = parseDeepLinkUseCase.invoke(banner.actionUrl.toUri())
-            ExercisesSideEffect.NavigateToDestination(destination = destination)
-        } else {
-            return
-        }
+        viewModelScope.launch {
 
-        postEffect(sideEffect)
+            val sideEffect = if (banner.actionUrl != null) {
+                val destination = parseDeepLinkUseCase.invoke(banner.actionUrl.toUri())
+                ExercisesSideEffect.NavigateToDestination(destination = destination)
+            } else {
+                return@launch
+            }
+
+            postEffect(sideEffect)
+        }
     }
 
     fun onRetryClick() {
@@ -106,6 +114,10 @@ class ExercisesViewModel @Inject constructor(
 
     fun onDownloadsClicked() {
         postEffect(ExercisesSideEffect.NavigateToDownloads)
+    }
+
+    fun onTitleClicked(type: String) {
+        viewModelScope.launch { analyticSender.exercisesLibraryItemTitleClick(type) }
     }
 }
 

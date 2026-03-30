@@ -27,6 +27,7 @@ import digital.euforia.app.ui.onboarding.OnboardingViewModel
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.AnimatedListCheckItem
+import digital.euforia.app.ui.util.widget.fadeBottom
 import digital.euforia.app.ui.util.widget.fadeTop
 
 @Composable
@@ -52,8 +53,7 @@ private fun GoalsPageContent(
         modifier = Modifier
             .fillMaxSize()
             .fadeTop()
-//            .overscroll(overscrollEffect = LocalOverscrollFactory.current?.createOverscrollEffect())
-        ,
+            .fadeBottom(),
         verticalArrangement = spacedBy(16.dp),
         contentPadding = PaddingValues(
             start = 16.dp,

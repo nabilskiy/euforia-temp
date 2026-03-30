@@ -26,6 +26,7 @@ import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.BlurredAppBar
@@ -64,6 +65,7 @@ fun FavouritesScreen(
             onMoreMeditationsClick = {},
             onMoreExercisesClick = {},
             onMoreArticlesClick = {},
+            onTitleClick = viewModel::onTitleClicked
         )
     }
 }
@@ -84,6 +86,7 @@ private fun FavouritesContent(
     onMoreMeditationsClick: () -> Unit,
     onMoreExercisesClick: () -> Unit,
     onMoreArticlesClick: () -> Unit,
+    onTitleClick: (String) -> Unit,
 ) {
     val listState = rememberLazyListState()
     val hazeState = rememberHazeState()
@@ -145,6 +148,7 @@ private fun FavouritesContent(
                     itemImageUrl = { it.imageUrl },
                     itemDuration = { it.durationMinutes ?: 1 },
                     onMoreClick = onMoreMeditationsClick,
+                    onTitleClick = { onTitleClick(PublicationType.MEDITATION.value) }
                 )
                 genericRowItem(
                     title = localizedRes.string(R.string.exercises_title),
@@ -160,6 +164,7 @@ private fun FavouritesContent(
                     itemImageUrl = { it.imageUrl },
                     itemDuration = { it.durationMinutes ?: 1 },
                     onMoreClick = onMoreExercisesClick,
+                    onTitleClick = { onTitleClick(PublicationType.EXERCISE.value) }
                 )
                 genericRowItem(
                     title = localizedRes.string(R.string.articles_title),
@@ -175,6 +180,7 @@ private fun FavouritesContent(
                     itemImageUrl = { it.imageUrl },
                     itemDuration = { it.durationMinutes ?: 1 },
                     onMoreClick = onMoreArticlesClick,
+                    onTitleClick = { onTitleClick(PublicationType.ARTICLE.value) }
                 )
             }
         }

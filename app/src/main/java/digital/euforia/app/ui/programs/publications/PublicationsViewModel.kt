@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.program.GetPublicationInfosUseCase
 import digital.euforia.app.ui.programs.publication.PublicationType
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class PublicationsViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getPublicationInfosUseCase: GetPublicationInfosUseCase,
+    private val analyticSender: AnalyticSender
 ) : ViewModel(), ContainerHost<PublicationsState, PublicationsSideEffect> {
 
     private val ids: String = requireNotNull(savedStateHandle.get<String>("ids"))
@@ -28,9 +30,20 @@ class PublicationsViewModel @Inject constructor(
     override val container = container<PublicationsState, PublicationsSideEffect>(
         initialState = PublicationsState(),
         onCreate = {
+            logShowEvent()
             loadPublications()
         }
     )
+
+    private fun logShowEvent() {
+        viewModelScope.launch {
+            when (type) {
+                PublicationType.MEDITATION -> analyticSender.meditationsListShow()
+                PublicationType.EXERCISE -> analyticSender.exercisesListShow()
+                PublicationType.ARTICLE -> analyticSender.articlesListShow()
+            }
+        }
+    }
 
     private fun loadPublications() {
         viewModelScope.launch {
@@ -51,6 +64,14 @@ class PublicationsViewModel @Inject constructor(
     }
 
     fun onPublicationClicked(publicationInfo: PublicationInfo) {
+        viewModelScope.launch {
+            when (type) {
+                PublicationType.MEDITATION -> analyticSender.meditationsItemClick()
+                PublicationType.EXERCISE -> analyticSender.exercisesItemClick()
+                PublicationType.ARTICLE -> analyticSender.articlesItemClick()
+            }
+        }
+
         postEffect(
             PublicationsSideEffect.NavigateToPublication(
                 id = publicationInfo.id,

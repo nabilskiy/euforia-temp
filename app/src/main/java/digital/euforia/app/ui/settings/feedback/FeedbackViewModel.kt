@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.db.entity.FeedbackQuestionType
 import digital.euforia.app.domain.usecase.feedback.GetFeedbackFormUseCase
-import digital.euforia.app.ui.settings.feedback.toUiFeedbackForm
+import digital.euforia.app.domain.usecase.settings.SubmitFormUseCase
+import digital.euforia.app.data.model.FormAnswerRequest
+import digital.euforia.app.domain.util.ResultWrapper
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.syntax.Syntax
@@ -14,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FeedbackViewModel @Inject constructor(
-    private val getFeedbackFormUseCase: GetFeedbackFormUseCase
+    private val getFeedbackFormUseCase: GetFeedbackFormUseCase,
+    private val submitFormUseCase: SubmitFormUseCase
 ) : ViewModel(),
     ContainerHost<FeedbackState, FeedbackSideEffect> {
     override val container = container<FeedbackState, FeedbackSideEffect>(
@@ -28,6 +31,13 @@ class FeedbackViewModel @Inject constructor(
         viewModelScope.launch {
             val form = getFeedbackFormUseCase()
             reduce { state.copy(form = form?.toUiFeedbackForm()) }
+        }
+    }
+
+    fun resetForm() {
+        intent {
+            val form = getFeedbackFormUseCase()
+            reduce { FeedbackState(form = form?.toUiFeedbackForm()) }
         }
     }
 
@@ -75,13 +85,96 @@ class FeedbackViewModel @Inject constructor(
         }
     }
 
-    fun onSubmitForm() {}
+    fun onCloseAttempt() {
+        intent {
+            val form = state.form ?: run {
+                postSideEffect(FeedbackSideEffect.Close)
+                return@intent
+            }
+            val hasAnswers = form.questions.any { question ->
+                question.selectedOptionIds.isNotEmpty() || !question.answerText.isNullOrBlank()
+            }
+
+            if (hasAnswers) {
+                reduce { state.copy(showCloseConfirmation = true) }
+            } else {
+                postSideEffect(FeedbackSideEffect.Close)
+            }
+        }
+    }
+
+    fun onConfirmClose() {
+        intent {
+            reduce { state.copy(showCloseConfirmation = false) }
+            postSideEffect(FeedbackSideEffect.Close)
+        }
+    }
+
+    fun onConfirmThanks() {
+        intent {
+            reduce { state.copy(showThanksDialog = false) }
+            postSideEffect(FeedbackSideEffect.Close)
+        }
+    }
+
+    fun onDismissCloseConfirmation() {
+        intent {
+            reduce { state.copy(showCloseConfirmation = false) }
+        }
+    }
+
+    fun onSubmitForm() {
+        intent {
+            val form = state.form ?: return@intent
+            val answers = mutableListOf<FormAnswerRequest>()
+            var isValid = true
+
+            form.questions.forEach { question ->
+                val answer: Any? = when (question.type) {
+                    FeedbackQuestionType.SINGLE_CHOICE -> question.selectedOptionIds.firstOrNull()
+                    FeedbackQuestionType.MULTI_CHOICE -> question.selectedOptionIds.toList()
+                    FeedbackQuestionType.TEXT -> question.answerText?.takeIf { it.isNotBlank() }
+                    else -> null
+                }
+
+                if (question.isRequired && (answer == null || (answer is List<*> && answer.isEmpty()))) {
+                    isValid = false
+                }
+
+                if (answer != null) {
+                    answers.add(FormAnswerRequest(key = question.key, answer = answer))
+                }
+            }
+
+            if (!isValid) {
+                reduce { state.copy(errorResId = digital.euforia.app.R.string.feedback_form_validation_text) }
+                return@intent
+            }
+
+            reduce { state.copy(isLoading = true, errorMessage = null, errorResId = null) }
+
+            val result = submitFormUseCase(form.id.toString(), answers)
+            when (result) {
+                is ResultWrapper.Success -> {
+                    reduce { state.copy(isLoading = false, isSuccess = true, showThanksDialog = true) }
+                }
+
+                is ResultWrapper.Failure -> {
+                    reduce { state.copy(isLoading = false, errorMessage = result.throwable.message ?: "Something went wrong") }
+                }
+            }
+        }
+    }
 }
 
 data class FeedbackState(
     val errorMessage: String? = null,
-//    val form: FeedbackFormWithQuestions? = null
+    val errorResId: Int? = null,
     val form: UiFeedbackForm? = null,
+    val isLoading: Boolean = false,
+    val isSuccess: Boolean = false,
+    val showCloseConfirmation: Boolean = false,
+    val showThanksDialog: Boolean = false,
 )
 
 data class UiOption(
@@ -120,4 +213,6 @@ data class UiFeedbackForm(
 
     )
 
-sealed class FeedbackSideEffect {}
+sealed class FeedbackSideEffect {
+    object Close : FeedbackSideEffect()
+}

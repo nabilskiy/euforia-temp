@@ -164,8 +164,7 @@ public abstract class SubscriptionFragment extends BaseFragment<UserActivity> {
                 new OnBackPressedCallback(true) {
                     @Override
                     public void handleOnBackPressed() {
-                        // Finish the Activity that hosts this Subscription screen
-                        requireActivity().finish();
+                        onBackClick();
                     }
                 });
 
@@ -345,7 +344,6 @@ public abstract class SubscriptionFragment extends BaseFragment<UserActivity> {
 
         analyticSender.premiumBack();
 
-        // Optional: attach extras if you want to pass some data
         requireActivity().finish();
 //        requireActivity().getOnBackPressedDispatcher().onBackPressed();
     }

@@ -137,7 +137,7 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     @Keep
     data class ProgramDetails(
         val programId: Int,
-    )
+    ) : HomeDestination()
 
     @Serializable
     @Keep
@@ -160,7 +160,7 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     data class PublicationPlayer(
         val id: Int,
         val publicationType: PublicationType,
-    )
+    ): HomeDestination()
 
     @Serializable
     @Keep

@@ -3,6 +3,8 @@ package digital.euforia.app.ui.howitworks
 import android.graphics.Color
 import android.view.LayoutInflater
 import androidx.annotation.OptIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
@@ -21,6 +23,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.navigation.NavHostController
 import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.NavBarlessScreen
+import digital.euforia.app.ui.theme.PrimaryBackground
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -58,36 +61,38 @@ private fun HowItWorksContent(videoUrl: String?) {
         onDispose { exoPlayer.release() }
     }
 
-    AndroidView(
-        factory = { ctx ->
-            LayoutInflater.from(ctx)
-                .inflate(R.layout.player_view_texture, null, false).also { root ->
-                    root.findViewById<PlayerView>(R.id.player_view).apply {
-                        this.player = exoPlayer
-                        setShutterBackgroundColor(Color.TRANSPARENT)
-                        setKeepContentOnPlayerReset(true)
-                        // Center video and fit within parent while preserving aspect ratio
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        // Enable default ExoPlayer controls
-                        useController = true
-                        controllerShowTimeoutMs = 3000
-                        setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-                        setControllerHideOnTouch(true)
-                        showController()
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
+        AndroidView(
+            factory = { ctx ->
+                LayoutInflater.from(ctx)
+                    .inflate(R.layout.player_view_texture, null, false).also { root ->
+                        root.findViewById<PlayerView>(R.id.player_view).apply {
+                            this.player = exoPlayer
+                            setShutterBackgroundColor(Color.TRANSPARENT)
+                            setKeepContentOnPlayerReset(true)
+                            // Center video and fit within parent while preserving aspect ratio
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            // Enable default ExoPlayer controls
+                            useController = true
+                            controllerShowTimeoutMs = 3000
+                            setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                            setControllerHideOnTouch(true)
+                            showController()
+                        }
                     }
+            },
+            update = { root ->
+                root.findViewById<PlayerView>(R.id.player_view).apply {
+                    player = exoPlayer
+                    useController = true
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                 }
-        },
-        update = { root ->
-            root.findViewById<PlayerView>(R.id.player_view).apply {
-                player = exoPlayer
-                useController = true
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            }
-        },
-        modifier = Modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-    )
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .navigationBarsPadding()
+        )
+    }
 }
 
 private fun handleSideEffect(sideEffect: HowItWorksSideEffect) {

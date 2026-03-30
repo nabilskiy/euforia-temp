@@ -42,10 +42,13 @@ import digital.euforia.app.ui.theme.SecondRank
 import digital.euforia.app.ui.theme.ThirdRank
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.noRippleClickable
 
 fun LazyListScope.topProgramsItem(
     isDemo: Boolean,
-    topPrograms: List<RankedPackage>
+    topPrograms: List<RankedPackage>,
+    onProgramClick: (id: Int) -> Unit,
+    onProgramsClick: () -> Unit
 ) = item(key = PlanViewItems.TOP, contentType = PlanViewItems.TOP) {
     val localizedRes = LocalLocalizedRes.current
     Column(
@@ -63,17 +66,19 @@ fun LazyListScope.topProgramsItem(
         )
 
         topPrograms.forEach { pkg ->
-            ProgramItem(pkg)
+            ProgramItem(pkg) {
+                onProgramClick(pkg.id)
+            }
         }
 
-        ProgramButton { }
+        ProgramButton { onProgramsClick() }
     }
 }
 
 @Composable
-private fun ProgramItem(pkg: RankedPackage) {
+private fun ProgramItem(pkg: RankedPackage, onClick: () -> Unit) {
     Row(
-        modifier = Modifier,
+        modifier = Modifier.noRippleClickable(onClick),
         horizontalArrangement = spacedBy(16.dp)
     ) {
         Box(modifier = Modifier.weight(0.3f)) {

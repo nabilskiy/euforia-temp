@@ -6,7 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.R
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.repository.FavouritesRepository
+import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.usecase.program.GetPublicationInfoUseCase
 import digital.euforia.app.domain.usecase.program.GetSimilarPublicationsUseCase
@@ -27,7 +29,9 @@ class PublicationViewModel @Inject constructor(
     private val getPublicationInfoUseCase: GetPublicationInfoUseCase,
     private val getSimilarPublicationsUseCase: GetSimilarPublicationsUseCase,
     private val updateFavouriteUseCase: UpdateFavouriteUseCase,
-    private val favouritesRepository: FavouritesRepository
+    private val favouritesRepository: FavouritesRepository,
+    private val profilePreferences: ProfilePreferences,
+    private val analyticSender: AnalyticSender
 ) : ViewModel(), ContainerHost<PublicationState, PublicationSideEffect> {
 
     private val id: Int =
@@ -39,9 +43,16 @@ class PublicationViewModel @Inject constructor(
     override val container = container<PublicationState, PublicationSideEffect>(
         initialState = PublicationState(),
         onCreate = {
+            logShow()
+            observePremium()
             load()
         }
     )
+
+
+    private fun logShow() {
+        viewModelScope.launch { analyticSender.entityShow(publicationType.value, id.toString()) }
+    }
 
     private fun load() {
         viewModelScope.launch {
@@ -66,6 +77,14 @@ class PublicationViewModel @Inject constructor(
                 reduceState {
                     copy(isLoading = false)
                 }
+            }
+        }
+    }
+
+    private fun observePremium() {
+        viewModelScope.launch {
+            profilePreferences.getIsPremiumFlow().collectLatest { isPremium ->
+                reduceState { copy(isPremium = isPremium) }
             }
         }
     }
@@ -108,6 +127,7 @@ class PublicationViewModel @Inject constructor(
     }
 
     fun onPublicationClicked(publicationInfo: PublicationInfo) {
+        viewModelScope.launch { analyticSender.entitySimilarItemClick(publicationType.value) }
         postEffect(
             PublicationSideEffect.NavigateToPublication(
                 id = publicationInfo.id,
@@ -119,6 +139,7 @@ class PublicationViewModel @Inject constructor(
 
     fun onShowSimilarClicked() {
         intent {
+            analyticSender.entitySimilarClick(publicationType.value)
             val ids = state.similarPublications.map { it.id }.joinToString(",")
             postSideEffect(
                 PublicationSideEffect.NavigateToSimilar(
@@ -131,6 +152,7 @@ class PublicationViewModel @Inject constructor(
 
     fun onPlayClicked() {
         viewModelScope.launch {
+            analyticSender.entityActionClick(publicationType.value)
             when (publicationType) {
                 PublicationType.ARTICLE -> postEffect(PublicationSideEffect.OpenArticle(id))
                 PublicationType.EXERCISE -> postEffect(PublicationSideEffect.OpenExercise(id))
@@ -152,12 +174,44 @@ class PublicationViewModel @Inject constructor(
     fun onFavouriteClicked(publicationInfo: PublicationInfo) {
         viewModelScope.launch {
             val newIsFavourite = !publicationInfo.isFavourite
+            if (newIsFavourite) {
+                analyticSender.entityAddToFavoritesClick(publicationType.value)
+            } else {
+                analyticSender.entityRemoveFromFavoritesClick(publicationType.value)
+            }
             updateFavouriteUseCase.invoke(
                 id = publicationInfo.id,
                 isFavourite = newIsFavourite,
                 type = publicationInfo.publicationType
             )
         }
+    }
+
+    fun onShareClicked() {
+        viewModelScope.launch { analyticSender.entityMenuShareClick(publicationType.value) }
+        postEffect(
+            PublicationSideEffect.Share(
+                type = publicationType,
+                id = id
+            )
+        )
+    }
+
+    fun onPackageClicked() {
+        intent {
+            if (state.publicationInfo?.packageId != null) {
+                analyticSender.entityPackageClick(state.publicationInfo?.id.toString())
+                postSideEffect(
+                    PublicationSideEffect.NavigateToPackage(
+                        packageId = state.publicationInfo!!.packageId!!
+                    )
+                )
+            }
+        }
+    }
+
+    fun onArticleReaderShow() {
+        viewModelScope.launch { analyticSender.articleReaderShow(id.toString()) }
     }
 }
 
@@ -185,13 +239,15 @@ sealed class PublicationSideEffect {
     data class OpenArticle(val id: Int) : PublicationSideEffect()
     data class OpenExercise(val id: Int) : PublicationSideEffect()
     data class OpenMeditation(val id: Int) : PublicationSideEffect()
+    data class NavigateToPackage(val packageId: Int) : PublicationSideEffect()
+    data class Share(val type: PublicationType, val id: Int) : PublicationSideEffect()
 }
 
 @Keep
-enum class PublicationType {
-    ARTICLE,
-    EXERCISE,
-    MEDITATION
+enum class PublicationType(val value: String) {
+    ARTICLE("article"),
+    EXERCISE("exercise"),
+    MEDITATION("meditation");
 }
 
 fun PublicationType.getIconRes(): Int {

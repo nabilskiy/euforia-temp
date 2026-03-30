@@ -123,6 +123,11 @@ fun ProgramDetailsScreen(
                 onBackClick = { navController.popBackStack() },
                 onPageSelected = viewModel::onPageSelected,
                 onPublicationClick = viewModel::onPublicationClicked,
+                onShareClick = viewModel::onShareClicked,
+                onAboutClick = viewModel::onAboutClicked,
+                onMeditationsClick = viewModel::onMeditationsClicked,
+                onArticlesClick = viewModel::onArticlesClicked,
+                onExercisesClick = viewModel::onExercisesClicked,
                 launchSubscriptionActivity = launchSubscriptionActivity,
             )
         }
@@ -146,6 +151,11 @@ private fun ProgramDetailsContent(
     onBackClick: () -> Unit,
     onPageSelected: (Int) -> Unit,
     onPublicationClick: (PublicationInfo) -> Unit,
+    onShareClick: () -> Unit,
+    onAboutClick: () -> Unit,
+    onMeditationsClick: () -> Unit = {},
+    onArticlesClick: () -> Unit = {},
+    onExercisesClick: () -> Unit = {},
     launchSubscriptionActivity: () -> Unit,
 ) {
     val pagerState = rememberPagerState { 3 }
@@ -235,8 +245,12 @@ private fun ProgramDetailsContent(
                         )
                     }
                     ProgramOptionMenu(
-                        onAboutClick = { isAboutVisible.value = true },
+                        onAboutClick = {
+                            onAboutClick()
+                            isAboutVisible.value = true
+                        },
                         onShareClick = {
+                            onShareClick()
                             shareProgram(
                                 context = context,
                                 id = programUi?.id ?: 0,
@@ -283,6 +297,7 @@ private fun ProgramDetailsContent(
                     modifier = Modifier.graphicsLayer {
                         translationY = stickyTranslationYPx
                     },
+                    isPremium = isPremium,
                     color = programUi?.color1?.toComposeColor() ?: White,
                     meditationUi = meditations,
                     articlesUi = articles,
@@ -312,6 +327,7 @@ private fun ProgramDetailsContent(
 
 private fun LazyListScope.pagerItem(
     modifier: Modifier,
+    isPremium: Boolean,
     color: Color = White,
     meditationUi: List<PublicationInfo>,
     articlesUi: List<PublicationInfo>,
@@ -327,7 +343,7 @@ private fun LazyListScope.pagerItem(
         when (position) {
             0 -> GenericPagerPage(
                 color = color,
-                isPremium = false,
+                isPremium = isPremium,
                 iconRes = R.drawable.ic_type_audio,
                 isPlayable = true,
                 items = meditationUi,
@@ -340,7 +356,7 @@ private fun LazyListScope.pagerItem(
 
             1 -> GenericPagerPage(
                 color = color,
-                isPremium = false,
+                isPremium = isPremium,
                 iconRes = R.drawable.ic_type_read,
                 isPlayable = false,
                 items = articlesUi,
@@ -353,7 +369,7 @@ private fun LazyListScope.pagerItem(
 
             else -> GenericPagerPage(
                 color = color,
-                isPremium = false,
+                isPremium = isPremium,
                 iconRes = R.drawable.ic_type_exercise,
                 isPlayable = true,
                 items = exercisesUi,

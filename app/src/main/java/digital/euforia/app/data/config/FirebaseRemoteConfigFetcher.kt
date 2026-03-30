@@ -135,6 +135,10 @@ abstract class FirebaseRemoteConfigFetcher(
 
     abstract fun logError(tag: String, e: Throwable)
 
+    suspend fun reset() {
+        remoteConfig.reset().await()
+    }
+
     companion object {
         const val TAG = "FirebaseRemoteConfig"
         private const val INITIAL_MAX_DELAY: Long = 2000L

@@ -1,5 +1,7 @@
 package digital.euforia.app.service
 
+import android.app.PendingIntent
+import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -14,6 +16,7 @@ import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionError
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.R
+import digital.euforia.app.ui.MainActivity
 import timber.log.Timber
 
 @AndroidEntryPoint
@@ -96,9 +99,19 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
             .setChannelName(R.string.app_name)
             .build()
 
-    private fun createMediaSession(exo: ExoPlayer): MediaSession =
-        MediaSession.Builder(this, exo)
+    private fun createMediaSession(exo: ExoPlayer): MediaSession {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        return MediaSession.Builder(this, exo)
             .setId("exercise_video_session")
+            .setSessionActivity(pendingIntent)
             .setCallback(object : MediaSession.Callback {
                 override fun onConnect(
                     session: MediaSession,
@@ -138,6 +151,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                 ): com.google.common.util.concurrent.ListenableFuture<SessionResult> {
                     return when (customCommand.customAction) {
                         Commands.STOP_SERVICE.customAction -> {
+                            Timber.tag("PUBLICATION_PLAYBACK").d("Service: received STOP_SERVICE")
                             player?.let { p ->
                                 p.playWhenReady = false
                                 p.stop()
@@ -206,6 +220,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                 }
             })
             .build()
+    }
 
     private fun ensureSfxPlayer(): ExoPlayer {
         val existing = sfxPlayer

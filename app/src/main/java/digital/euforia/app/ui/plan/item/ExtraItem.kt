@@ -62,7 +62,7 @@ import digital.euforia.app.ui.util.LocalLocalizedRes
 
 fun LazyListScope.extraItem(
     extraPackage: ExtraPackage?,
-    onClick: () -> Unit
+    onClick: (Int) -> Unit
 ) = item(key = PlanViewItems.EXTRA, contentType = PlanViewItems.EXTRA) {
     if (extraPackage != null) {
         val urls = extraPackage.imgUrls
@@ -81,7 +81,7 @@ fun LazyListScope.extraItem(
                 PreviewsRow(urlList = urls, hazeState = hazeState)
                 PreviewsRow(urlList = reversedUrls, hazeState = hazeState, isReversed = true)
             }
-            DescriptionView(onClick = onClick, hazeState)
+            DescriptionView(onClick = { onClick(extraPackage.id) }, hazeState)
         }
     }
 }

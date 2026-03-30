@@ -64,12 +64,17 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.settings.support.SupportBottomSheet
 import digital.euforia.app.ui.theme.PrimaryBackground
+import digital.euforia.app.ui.settings.support.SupportSideEffect
+import digital.euforia.app.ui.settings.support.SupportViewModel
+import digital.euforia.app.ui.util.widget.NotificationToast
 import digital.euforia.app.ui.util.widget.ErrorView
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.NoConnectionView
 import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun FAQScreen(
@@ -77,19 +82,49 @@ fun FAQScreen(
     viewModel: FAQViewModel
 ) {
     val state by viewModel.collectAsState()
+    val supportViewModel: SupportViewModel = hiltViewModel()
+    var isSupportSheetVisible by remember { mutableStateOf(false) }
+    var isSupportToastVisible by remember { mutableStateOf(false) }
+    var supportToastMessageRes by remember { mutableStateOf(R.string.sent_success) }
+
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(sideEffect)
     }
 
-    FAQContent(
-        isLoading = state.isLoading,
-        errorState = state.errorState,
-        categories = state.uiFaqCategories,
-        analyticSender = viewModel.analyticSender,
-        onBackClick = { navController.popBackStack() },
-        onDownloadsClick = { navController.navigate(HomeDestination.Downloads) },
-        onRetryClick = viewModel::loadFAQCategories,
-    )
+    supportViewModel.collectSideEffect { sideEffect ->
+        when (sideEffect) {
+            is SupportSideEffect.ShowToast -> {
+                supportToastMessageRes = sideEffect.messageRes
+                isSupportToastVisible = true
+            }
+
+            is SupportSideEffect.CloseSheet -> {
+                isSupportSheetVisible = false
+            }
+        }
+    }
+
+    val localizedRes = LocalLocalizedRes.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        FAQContent(
+            isLoading = state.isLoading,
+            errorState = state.errorState,
+            categories = state.uiFaqCategories,
+            analyticSender = viewModel.analyticSender,
+            onBackClick = { navController.popBackStack() },
+            onDownloadsClick = { navController.navigate(HomeDestination.Downloads) },
+            onRetryClick = viewModel::loadFAQCategories,
+            isSupportSheetVisible = isSupportSheetVisible,
+            onSupportSheetVisibilityChange = { isSupportSheetVisible = it },
+            supportViewModel = supportViewModel
+        )
+
+        NotificationToast(
+            text = localizedRes.string(supportToastMessageRes),
+            isVisible = isSupportToastVisible,
+            onDismissed = { isSupportToastVisible = false }
+        )
+    }
 }
 
 @Composable
@@ -100,7 +135,10 @@ private fun FAQContent(
     analyticSender: AnalyticSender,
     onRetryClick: () -> Unit,
     onDownloadsClick: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isSupportSheetVisible: Boolean,
+    onSupportSheetVisibilityChange: (Boolean) -> Unit,
+    supportViewModel: SupportViewModel
 ) {
     val listState = rememberLazyListState()
     val hazeState = dev.chrisbanes.haze.rememberHazeState()
@@ -145,7 +183,10 @@ private fun FAQContent(
                     categoryItem(category) { analyticSender.faqItemClick() }
                 }
                 if (categories.isNotEmpty()) {
-                    questionItem { analyticSender.faqSupportClick() }
+                    questionItem {
+                        onSupportSheetVisibilityChange(true)
+                        analyticSender.faqSupportClick()
+                    }
                     item {
                         Spacer(
                             modifier = Modifier.fillMaxWidth().navigationBarsPadding()
@@ -153,6 +194,17 @@ private fun FAQContent(
                         )
                     }
                 }
+            }
+        }
+
+        if (isSupportSheetVisible) {
+            val localizedRes = LocalLocalizedRes.current
+            SupportBottomSheet(
+                title = localizedRes.string(R.string.feedback_impression_title),
+                subtitle = localizedRes.string(R.string.feedback_impression_subtitle),
+                viewModel = supportViewModel
+            ) {
+                onSupportSheetVisibilityChange(false)
             }
         }
     }
@@ -176,7 +228,7 @@ private fun LazyListScope.categoryItem(category: UiFAQCategory, onClick: () -> U
 
             Column(
                 modifier = Modifier.fillMaxWidth()
-                    .background(color = White.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+                    .background(color = White.copy(alpha = 0.05f), shape = RoundedCornerShape(12.dp))
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -221,8 +273,8 @@ private fun faqItem(item: UiFAQItem, onClick: () -> Unit) {
             Text(
                 modifier = Modifier.weight(1f),
                 text = item.question,
-                color = White,
-                style = MaterialTheme.typography.bodyLarge
+                color = White.copy(alpha = 0.9f),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
             )
             Icon(
                 painter = painterResource(R.drawable.ic_next),
@@ -236,8 +288,8 @@ private fun faqItem(item: UiFAQItem, onClick: () -> Unit) {
             Text(
                 modifier = Modifier.padding(top = 16.dp),
                 text = item.answer,
-                color = White,
-                style = MaterialTheme.typography.bodySmall
+                color = White.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodyMedium.copy()
             )
         }
     }

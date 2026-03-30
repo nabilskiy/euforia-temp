@@ -20,6 +20,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import digital.euforia.app.R
+import digital.euforia.app.ui.devoptions.DevOptionsScreen
 import digital.euforia.app.ui.home.HomeScreen
 import digital.euforia.app.ui.howitworks.HowItWorksScreen
 import digital.euforia.app.ui.onboarding.OnboardingScreen
@@ -61,6 +62,15 @@ fun AppNavigation(
     isBottomBarShown: MutableState<Boolean>,
     deepLinkUri: String?
 ) {
+    LaunchedEffect(deepLinkUri) {
+        if (!deepLinkUri.isNullOrBlank()) {
+            val uri = Uri.parse(deepLinkUri)
+            // If we're not on splash, maybe navigate directly?
+            // But usually Splash handles it.
+            Timber.tag("NAVIGATION").d("AppNavigation deepLinkUri updated: $deepLinkUri")
+        }
+    }
+
     LaunchedEffect(Unit) {
         navController.addOnDestinationChangedListener { _, destination, arguments ->
             Timber.tag("NAVIGATION")
@@ -74,34 +84,10 @@ fun AppNavigation(
                 modifier = Modifier.fillMaxSize(),
                 navController = navController,
                 startDestination = Splash(deepLinkUri),
-                enterTransition = {
-                    // forward navigation
-                    slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = 300)
-                    )
-                },
-                exitTransition = {
-                    // screen we leave when going forward
-                    slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = 300)
-                    )
-                },
-                popEnterTransition = {
-                    // when pressing back
-                    slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = 300)
-                    )
-                },
-                popExitTransition = {
-                    // screen we leave when popping back
-                    slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = 300)
-                    )
-                }
+//                enterTransition = NavAnimations.enter,
+//                exitTransition = NavAnimations.exit,
+//                popEnterTransition = NavAnimations.popEnter,
+//                popExitTransition = NavAnimations.popExit
             ) {
                 composable<Splash>(
                     enterTransition = {
@@ -125,7 +111,12 @@ fun AppNavigation(
                     spheresState.value = true
                     VideoScreen(navController = navController, viewModel = hiltViewModel())
                 }
-                composable<Onboarding>() {
+                composable<Onboarding>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     isBottomBarShown.value = false
                     spheresState.value = true
                     OnboardingScreen(navController = navController, viewModel = hiltViewModel())
@@ -150,8 +141,15 @@ fun AppNavigation(
                 }
 
                 // Home Destinations moved here
-                composable<HomeDestination.Plan> {
+                composable<HomeDestination.Plan>(
+                    enterTransition = NavAnimations.enter,
+//                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+//                    popExitTransition = NavAnimations.popExit
+                ) {
+                    spheresState.value = false
                     isBottomBarShown.value = true
+
                     PlanScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
@@ -159,7 +157,12 @@ fun AppNavigation(
                         animatedVisibilityScope = this
                     )
                 }
-                composable<HomeDestination.Programs> {
+                composable<HomeDestination.Programs>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     isBottomBarShown.value = true
                     ProgramsScreen(
                         navController = navController,
@@ -167,12 +170,21 @@ fun AppNavigation(
                     )
                 }
 
-                composable<HomeDestination.Soundscapes> {
+                composable<HomeDestination.Soundscapes>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     isBottomBarShown.value = true
                     ComingSoonView(
                         titleRes = R.string.scenes_title,
                         navController = navController
                     )
+//                    DevOptionsScreen(
+//                        navController = navController,
+//                        viewModel = hiltViewModel()
+//                    )
                 }
                 composable<HomeDestination.AudioPlayer> {
                     isBottomBarShown.value = false
@@ -182,68 +194,153 @@ fun AppNavigation(
                         this
                     )
                 }
-                composable<HomeDestination.Settings> {
+                composable<HomeDestination.Settings>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     isBottomBarShown.value = true
                     SettingsScreen(navController, hiltViewModel(), this)
                 }
 
-                composable<HomeDestination.Name> {
+                composable<HomeDestination.Name>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     NameScreen(navController, hiltViewModel(), isBottomBarShown, this)
                 }
 
-                composable<HomeDestination.Email> {
+                composable<HomeDestination.Email>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     EmailScreen(navController, hiltViewModel(), isBottomBarShown, this)
                 }
 
-                composable<HomeDestination.Voice> {
+                composable<HomeDestination.Voice>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     VoiceScreen(navController, hiltViewModel(), isBottomBarShown, this)
                 }
 
-                composable<HomeDestination.FAQ> {
+                composable<HomeDestination.FAQ>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     FAQScreen(navController, hiltViewModel())
                 }
 
-                composable<HomeDestination.Language> {
+                composable<HomeDestination.Language>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     LanguageScreen(navController, hiltViewModel(), isBottomBarShown, this)
                 }
 
-                composable<HomeDestination.Subscription> {
+                composable<HomeDestination.Subscription>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     SubscriptionScreen(navController, hiltViewModel(), isBottomBarShown, this)
                 }
 
-                composable<HomeDestination.Notifications> {
+                composable<HomeDestination.Notifications>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     NotificationsScreen(navController, hiltViewModel(), isBottomBarShown, this)
                 }
 
-                composable<HomeDestination.DeviceInfo> {
+                composable<HomeDestination.DeviceInfo>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     DeviceInfoScreen(navController, hiltViewModel(), isBottomBarShown)
                 }
-                composable<HomeDestination.FirstWeek> {
+                composable<HomeDestination.FirstWeek>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     FirstWeekScreen(navController, hiltViewModel(), isBottomBarShown)
                 }
 
-                composable<HomeDestination.HowItWorks> {
+                composable<HomeDestination.HowItWorks>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     HowItWorksScreen(navController, hiltViewModel(), isBottomBarShown)
                 }
 
-                composable<HomeDestination.PersonalData> {
+                composable<HomeDestination.PersonalData>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     PersonalDataScreen(navController, hiltViewModel(), isBottomBarShown, this)
                 }
 
-                composable<HomeDestination.AppData> {
+                composable<HomeDestination.AppData>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     ClearDataScreen(navController, hiltViewModel(), isBottomBarShown)
                 }
 
-                composable<HomeDestination.AboutPremium> {
+                composable<HomeDestination.AboutPremium>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     AboutPremiumScreen(navController, hiltViewModel(), isBottomBarShown)
                 }
-                composable<HomeDestination.Emergency> {
+                composable<HomeDestination.Emergency>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     EmergencyScreen(navController, hiltViewModel(), isBottomBarShown)
                 }
-                composable<HomeDestination.EmergencyContacts> {
+                composable<HomeDestination.EmergencyContacts>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     ContactsScreen(navController, hiltViewModel(), isBottomBarShown)
                 }
-                composable<HomeDestination.Downloads> {
+                composable<HomeDestination.Downloads>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     isBottomBarShown.value = false
                     ComingSoonView(
                         titleRes = R.string.downloads_title,
@@ -251,21 +348,36 @@ fun AppNavigation(
                         isBackAllowed = true
                     )
                 }
-                composable<HomeDestination.ProgramDetails> {
+                composable<HomeDestination.ProgramDetails>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     ProgramDetailsScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
                         navBarVisibilityState = isBottomBarShown,
                     )
                 }
-                composable<HomeDestination.PublicationDetails> {
+                composable<HomeDestination.PublicationDetails>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     PublicationScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
                         navBarVisibilityState = isBottomBarShown,
                     )
                 }
-                composable<HomeDestination.Publications> {
+                composable<HomeDestination.Publications>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     PublicationsScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
@@ -273,21 +385,36 @@ fun AppNavigation(
                     )
                 }
 
-                composable<HomeDestination.PublicationPlayer> {
+                composable<HomeDestination.PublicationPlayer>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     PublicationPlayerScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
                         navBarVisibilityState = isBottomBarShown,
                     )
                 }
-                composable<HomeDestination.Exercises> {
+                composable<HomeDestination.Exercises>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     ExercisesScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
                     )
                 }
 
-                composable<HomeDestination.Favourites> {
+                composable<HomeDestination.Favourites>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
                     FavouritesScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),

@@ -32,6 +32,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 //import androidx.compose.animation.rememberSharedContentState
 //import androidx.compose.animation.sharedElement
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -44,6 +45,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Cyan
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
@@ -65,11 +70,13 @@ import digital.euforia.app.domain.model.settings.SettingGroup
 import digital.euforia.app.domain.model.settings.SettingType
 import digital.euforia.app.domain.model.settings.SettingsItem
 import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.plan.item.notificationItem
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.settings.feedback.FeedbackBottomSheet
 import digital.euforia.app.ui.settings.support.SupportBottomSheet
 import digital.euforia.app.ui.subscription.UserActivity
 import digital.euforia.app.ui.theme.DarkGray
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.SoonColor
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.openDeveloperLink
@@ -86,12 +93,17 @@ import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.openSystemSettings
 import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.PremiumButtonState
+import digital.euforia.app.ui.settings.support.SupportSideEffect
+import digital.euforia.app.ui.settings.support.SupportViewModel
+import digital.euforia.app.ui.util.widget.NotificationToast
 import digital.euforia.app.ui.util.widget.UpgradeView
 import digital.euforia.app.ui.util.widget.applyIf
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
+import digital.euforia.app.ui.util.shareApp
 import timber.log.Timber
 
 @Composable
@@ -101,17 +113,68 @@ fun SharedTransitionScope.SettingsScreen(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val state by viewModel.collectAsState()
+    val supportViewModel: SupportViewModel = hiltViewModel()
+    var isSupportSheetVisible by remember { mutableStateOf(false) }
+    var isSupportToastVisible by remember { mutableStateOf(false) }
+    var supportToastMessageRes by remember { mutableStateOf(R.string.sent_success) }
+
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val isPermissionGranted =
+                    NotificationManagerCompat.from(context).areNotificationsEnabled()
+                viewModel.updateNotificationPermission(isPermissionGranted)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(sideEffect)
     }
 
-    SettingsContent(
-        navController = navController,
-        settingGroups = state.settingGroups,
-        animatedVisibilityScope = animatedVisibilityScope,
-        isPremium = state.isPremium,
-        analyticSender = viewModel.analyticSender
-    )
+    supportViewModel.collectSideEffect { sideEffect ->
+        when (sideEffect) {
+            is SupportSideEffect.ShowToast -> {
+                supportToastMessageRes = sideEffect.messageRes
+                isSupportToastVisible = true
+            }
+
+            is SupportSideEffect.CloseSheet -> {
+                isSupportSheetVisible = false
+            }
+        }
+    }
+
+    val localizedRes = LocalLocalizedRes.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        SettingsContent(
+            navController = navController,
+            settingGroups = state.settingGroups,
+            animatedVisibilityScope = animatedVisibilityScope,
+            isPremium = state.isPremium,
+            isNotificationPermissionGranted = state.isNotificationPermissionGranted,
+            showNotificationPermissionItem = state.showNotificationPermissionItem,
+            onNotificationPermissionDismiss = viewModel::dismissNotificationPermissionItem,
+            analyticSender = viewModel.analyticSender,
+            shareMessage = state.shareMessage,
+            isSupportSheetVisible = isSupportSheetVisible,
+            onSupportSheetVisibilityChange = { isSupportSheetVisible = it },
+            supportViewModel = supportViewModel
+        )
+
+        NotificationToast(
+            text = localizedRes.string(supportToastMessageRes),
+            isVisible = isSupportToastVisible,
+            onDismissed = { isSupportToastVisible = false }
+        )
+    }
 }
 
 @Composable
@@ -119,8 +182,15 @@ private fun SharedTransitionScope.SettingsContent(
     navController: NavHostController,
     settingGroups: List<SettingGroup>,
     isPremium: Boolean = false,
+    isNotificationPermissionGranted: Boolean,
+    showNotificationPermissionItem: Boolean,
+    onNotificationPermissionDismiss: () -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    analyticSender: AnalyticSender
+    analyticSender: AnalyticSender,
+    shareMessage: String? = null,
+    isSupportSheetVisible: Boolean,
+    onSupportSheetVisibilityChange: (Boolean) -> Unit,
+    supportViewModel: SupportViewModel
 ) {
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
@@ -138,9 +208,8 @@ private fun SharedTransitionScope.SettingsContent(
         }
     }
     var isFeedbackSheetVisible by remember { mutableStateOf(false) }
-    var isSupportSheetVisible by remember { mutableStateOf(false) }
     SubscriptionActivityLauncher { launchSubscriptionActivity ->
-        Box() {
+        Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
             BlurredAppBar(
                 titleRes = R.string.profile_title,
                 hazeState = hazeState,
@@ -164,6 +233,14 @@ private fun SharedTransitionScope.SettingsContent(
                 ),
             ) {
                 settingsSharedTitleItem(this@SettingsContent, animatedVisibilityScope)
+                notificationItem(
+                    visible = !isNotificationPermissionGranted && showNotificationPermissionItem,
+                    onClick = {
+                        openSystemSettings(context)
+                        onNotificationPermissionDismiss()
+                    },
+                    onCloseClick = onNotificationPermissionDismiss
+                )
                 for ((index, settingGroup) in settingGroups.withIndex()) {
                     if (index != 0) dividerItem(index)
                     settingGroupItem(
@@ -178,7 +255,10 @@ private fun SharedTransitionScope.SettingsContent(
                                     isFeedbackSheetVisible = true
                                 },
                                 showSupportSheet = {
-                                    isSupportSheetVisible = true
+                                    onSupportSheetVisibilityChange(true)
+                                },
+                                shareApp = {
+                                    shareApp(context, shareMessage)
                                 })
                         })
                 }
@@ -193,8 +273,13 @@ private fun SharedTransitionScope.SettingsContent(
             }
 
             if (isSupportSheetVisible) {
-                SupportBottomSheet() {
-                    isSupportSheetVisible = false
+                val localizedRes = LocalLocalizedRes.current
+                SupportBottomSheet(
+                    title = localizedRes.string(R.string.feedback_support_title),
+                    subtitle = localizedRes.string(R.string.feedback_support_subtitle),
+                    viewModel = supportViewModel,
+                ) {
+                    onSupportSheetVisibilityChange(false)
                 }
             }
         }
@@ -371,7 +456,8 @@ private fun handleSettingClick(
     context: Context,
     analyticSender: AnalyticSender,
     showFeedbackSheet: () -> Unit,
-    showSupportSheet: () -> Unit
+    showSupportSheet: () -> Unit,
+    shareApp: () -> Unit
 ) {
     when (settingItem.settingType) {
         SettingType.NAME -> {
@@ -476,6 +562,7 @@ private fun handleSettingClick(
 
         SettingType.SHARE_APP -> {
             analyticSender.settingsShare()
+            shareApp()
         }
 
         else -> {}

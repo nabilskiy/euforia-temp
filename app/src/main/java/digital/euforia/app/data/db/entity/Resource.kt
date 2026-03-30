@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.squareup.moshi.JsonClass
 
 @Entity(tableName = "resources")
 data class Resource(
@@ -35,6 +36,7 @@ data class Resource(
     }
 }
 
+@JsonClass(generateAdapter = true)
 data class ResourceEntity(
     @ColumnInfo(name = "videoUrl") val videoUrl: String?,
     @ColumnInfo(name = "imageUrl") val imageUrl: String?,

@@ -19,5 +19,6 @@ data class AudioPlayerUiState(
     val avatarPreviewIds: List<Int>,
     val avatarUi: AvatarUi?,
     val soundsEffects: List<SoundEffectUi>,
+    val isRated: Boolean,
     val sharedElementKey: String?
 )

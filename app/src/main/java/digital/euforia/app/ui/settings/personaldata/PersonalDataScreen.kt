@@ -44,6 +44,7 @@ import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.settings.subscription.SubscriptionOption
 import digital.euforia.app.ui.settings.subscription.optionsItem
 import digital.euforia.app.ui.theme.NavBarBackground
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.openAppPage
 import digital.euforia.app.ui.util.openPrivacyPolicy
@@ -114,7 +115,7 @@ private fun SharedTransitionScope.PersonalDataContent(
         }
     }
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             titleRes = R.string.profile_personal_data,
             backTitleRes = R.string.profile_title,

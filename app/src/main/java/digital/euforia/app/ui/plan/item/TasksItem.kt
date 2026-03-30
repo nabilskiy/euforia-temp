@@ -1,5 +1,11 @@
 package digital.euforia.app.ui.plan.item
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
 import androidx.compose.foundation.layout.Box
@@ -21,12 +27,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
@@ -136,6 +147,18 @@ private fun BoxScope.ProgressScaleView(backgroundHeightDp: Dp, foregroundHeightD
                 )
         )
         // foreground
+        var size by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+        val infiniteTransition = rememberInfiniteTransition(label = "tasksShimmer")
+        val shimmerOffsetY by infiniteTransition.animateFloat(
+            initialValue = -2f,
+            targetValue = 2f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 4000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "tasksShimmerOffset"
+        )
+
         Box(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
@@ -144,7 +167,29 @@ private fun BoxScope.ProgressScaleView(backgroundHeightDp: Dp, foregroundHeightD
                 .background(
                     brush = TasksGradient, shape = CircleShape
                 )
-        )
+                .clip(CircleShape)
+                .onGloballyPositioned { size = it.size }
+        ) {
+            if (size.height > 0) {
+                val heightF = size.height.toFloat()
+                val animatedStart = (shimmerOffsetY * heightF)
+                val brush = Brush.linearGradient(
+                    colors = listOf(
+                        White.copy(alpha = 0f),
+                        White.copy(alpha = 0.2f),
+                        White.copy(alpha = 0f)
+                    ),
+                    start = Offset(x = 0f, y = animatedStart - heightF),
+                    end = Offset(x = 0f, y = animatedStart)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(foregroundHeightDp)
+                        .background(brush = brush)
+                )
+            }
+        }
     }
 }
 

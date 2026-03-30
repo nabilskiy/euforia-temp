@@ -1,6 +1,7 @@
 package digital.euforia.app.domain.usecase.settings
 
 import digital.euforia.app.data.api.EuforiaApi
+import digital.euforia.app.data.model.FeedbackRequest
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.settings.FeedbackType
 import jakarta.inject.Inject
@@ -23,11 +24,13 @@ class SendFeedbackUseCase @Inject constructor(
                 val name = profilePreferences.getName()
                 val email = userEmail ?: profilePreferences.getEmail()
                 api.submitFeedback(
-                    type = type.typeName,
-                    message = message.orEmpty(),
-                    details = details.orEmpty(),
-                    name = name.orEmpty(),
-                    email = email.orEmpty()
+                    FeedbackRequest(
+                        type = type.typeName,
+                        message = message.orEmpty(),
+                        details = details.orEmpty(),
+                        name = name.orEmpty(),
+                        email = email.orEmpty()
+                    )
                 )
 
             } catch (e: Exception) {

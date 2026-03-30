@@ -21,6 +21,7 @@ import digital.euforia.app.domain.model.plan.RankedPackage
 import digital.euforia.app.domain.model.plan.ExtraPackage
 import digital.euforia.app.domain.model.plan.demoDailyTasks
 import digital.euforia.app.domain.model.plan.premiumDailyTasks
+import digital.euforia.app.domain.model.settings.StartupRequestsPriority
 import digital.euforia.app.domain.model.toEventParam
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentWithItemsFlowUseCase
 import digital.euforia.app.domain.usecase.accompaniment.GetAccompanimentsWithItemsUseCase
@@ -39,6 +40,9 @@ import digital.euforia.app.ui.util.logTag
 import digital.euforia.app.ui.util.reduceState
 import digital.euforia.app.ui.util.widget.ErrorViewState
 import digital.euforia.app.ui.util.widget.mapToErrorViewState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -78,6 +82,8 @@ class PlanViewModel @Inject constructor(
             observeStates()
             initialLoading()
             applyTranslations()
+            observeCompletedTasks()
+            maybeAskForStartupDialogs()
         }
     )
 
@@ -90,6 +96,9 @@ class PlanViewModel @Inject constructor(
         }
     }
 
+    private val _completedTask = MutableStateFlow(0)
+    val completedTask: StateFlow<Int> = _completedTask.asStateFlow()
+
 //    fun checkNetwork() {
 //        intent {
 //            val isNetworkAvailable = checkInternetConnectionUseCase.invoke()
@@ -101,6 +110,13 @@ class PlanViewModel @Inject constructor(
 //        }
 //    }
 
+    private fun observeCompletedTasks() {
+        viewModelScope.launch {
+            checkTaskCompletionUseCase.invoke().collectLatest { completed ->
+                _completedTask.value = completed
+            }
+        }
+    }
     private fun startLoading() {
         reduceState { copy(isLoading = true, isAccompanimentLoading = true, errorState = null) }
     }
@@ -221,13 +237,18 @@ class PlanViewModel @Inject constructor(
                         freeDemoDays = state.freeDemoDays,
                         todayOffsetBefore = todayBefore
                     )
+                    val demoLockState =
+                        if (index == 0 && isDemo && accompanimentWithItems.accompaniment.demo) DayUi.LockState.UNLOCKED else lockState
+                    Timber.tag("LockState")
+                        .d("Index: $index, isDemo: $isDemo, isPremium: $isPremium, completedDays: $completedDays, freeDemoDays: ${state.freeDemoDays}, todayOffsetBefore: $todayBefore, lockState: $lockState, demoLockState: $demoLockState")
                     accompanimentWithItems.toDayUi(
                         isToday = isToday,
-                        lockState = lockState,
+                        lockState = demoLockState,
                         timeOfDay = state.timeOfDay,
                         isPremium = isPremium,
                         dayIndex = index,
-                        todayOffsetBefore = todayBefore
+                        todayOffsetBefore = todayBefore,
+                        forceUnlock = index == 0 && isDemo && accompanimentWithItems.accompaniment.demo
                     )
                 }.let { list ->
                     if (isDemo && !isPremium) list + createSubscriptionDayUi() else list
@@ -245,7 +266,7 @@ class PlanViewModel @Inject constructor(
                     isPremium = isPremium,
                     isDemo = isDemo,
                     days = dayItems,
-                    completedDailyTasks = completedDailyTasks,
+//                    completedDailyTasks = completedDailyTasks,
                     dailyTasks = if (isDemo) demoDailyTasks() else premiumDailyTasks(),
                     topPackages = topPackages,
                     extraPackage = extraPackage,
@@ -278,15 +299,13 @@ class PlanViewModel @Inject constructor(
                 )
             }
 
-            val accompaniment = state.days.getOrNull(state.selectedDayIndex)?.accompaniment
-                ?: return@intent
-            val title = when (item.item.timeOfDay) {
-                TimeOfDay.MORNING -> accompaniment.morningTitle
-                TimeOfDay.DAYTIME -> accompaniment.daytimeTitle
-                TimeOfDay.EVENING -> accompaniment.eveningTitle
+            if (item.state == DayTimeItemUi.State.LOCKED) {
+                reduceState { copy(showLockedDayPopup = true) }
+                return@intent
             }
 
-            if (item.state == DayTimeItemUi.State.LOCKED) return@intent
+            val accompaniment = state.days.getOrNull(state.selectedDayIndex)?.accompaniment
+                ?: return@intent
             val accompanimentItem = item.item
 //            val audioUrl = accompanimentItem.audioUrl ?: return@intent
             postSideEffect(
@@ -337,6 +356,196 @@ class PlanViewModel @Inject constructor(
     fun onDownloadClicked() {
         intent { postSideEffect(PlanSideEffect.NavigateDownloads) }
     }
+
+    fun onProgramClicked(id: Int) {
+        intent { postSideEffect(PlanSideEffect.NavigateToProgramDetail(id)) }
+    }
+
+    fun onProgramsClicked() {
+        intent { postSideEffect(PlanSideEffect.NavigateToPrograms) }
+    }
+
+    fun updateNotificationPermission(isGranted: Boolean) {
+        intent {
+            reduce {
+                state.copy(isNotificationPermissionGranted = isGranted)
+            }
+        }
+    }
+
+    fun dismissNotificationPermissionItem() {
+        intent {
+            reduce {
+                state.copy(showNotificationPermissionItem = false)
+            }
+        }
+    }
+
+    private fun maybeAskForStartupDialogs() {
+        viewModelScope.launch {
+            val priorities = StartupRequestsPriority.entries.sortedByDescending { it.priority }
+            for (priority in priorities) {
+                val shown = when (priority) {
+                    StartupRequestsPriority.RATE_APP -> maybeAskForAppRatingInternal()
+                    StartupRequestsPriority.FEEDBACK -> maybeAskForFeedbackInternal()
+                    StartupRequestsPriority.EMAIL -> maybeAskForEmailInternal()
+                }
+                if (shown) break
+            }
+        }
+    }
+
+    private suspend fun maybeAskForAppRatingInternal(): Boolean {
+        return runCatching {
+            val cfg = config.getRateAppConfig()
+            if (!cfg.isEnabled) return false
+            if (appPreferences.isRateAppRated()) return false
+
+            // Count this Plan screen open as a launch towards rating
+            appPreferences.incrementRateAppLaunchCount()
+            val launches = appPreferences.getRateAppLaunchCount()
+            if (launches < cfg.launchCount) return false
+
+            val last = appPreferences.getRateAppLastPromptAt()
+            val intervalMillis = (cfg.timeInterval.coerceAtLeast(0)) * 60L * 60L * 1000L
+            val now = System.currentTimeMillis()
+            if (last != null && now - last < intervalMillis) return false
+
+            // Ready to show prompt
+            appPreferences.setRateAppLastPromptNow()
+            appPreferences.setRateAppLaunchCount(0)
+            intent {
+                postSideEffect(PlanSideEffect.ShowRateAppPrompt)
+            }
+            true
+        }.getOrDefault(false)
+    }
+
+    private suspend fun maybeAskForFeedbackInternal(): Boolean {
+        return runCatching {
+            val cfg = config.getFeedbackFormConfig()
+            if (!cfg.isEnabled) return false
+            if (appPreferences.isFeedbackFormCompleted()) return false
+
+            appPreferences.incrementFeedbackFormLaunchCount()
+            val launches = appPreferences.getFeedbackFormLaunchCount()
+            if (launches < cfg.launchCount) return false
+
+            val last = appPreferences.getFeedbackFormLastPromptAt()
+            val intervalMillis = (cfg.timeInterval.coerceAtLeast(0)) * 60L * 60L * 1000L
+            val now = System.currentTimeMillis()
+            if (last != null && now - last < intervalMillis) return false
+
+            appPreferences.setFeedbackFormLastPromptNow()
+            appPreferences.setFeedbackFormLaunchCount(0)
+            intent {
+                reduce { state.copy(showFeedbackRequestDialog = true) }
+            }
+            true
+        }.getOrDefault(false)
+    }
+
+    private suspend fun maybeAskForEmailInternal(): Boolean {
+        return runCatching {
+            val cfg = config.getEmailAlertConfig()
+            if (!cfg.isEnabled) return false
+            if (profilePreferences.getEmail() != null) return false
+
+            appPreferences.incrementEmailAlertLaunchCount()
+            val launches = appPreferences.getEmailAlertLaunchCount()
+            if (launches < cfg.launchCount) return false
+
+            val last = appPreferences.getEmailAlertLastPromptAt()
+            val intervalMillis = (cfg.timeInterval.coerceAtLeast(0)) * 60L * 60L * 1000L
+            val now = System.currentTimeMillis()
+            if (last != null && now - last < intervalMillis) return false
+
+            appPreferences.setEmailAlertLastPromptNow()
+            appPreferences.setEmailAlertLaunchCount(0)
+            intent {
+                reduce { state.copy(showEmailAlert = true) }
+            }
+            true
+        }.getOrDefault(false)
+    }
+
+    @Deprecated("Use maybeAskForStartupDialogs", ReplaceWith("maybeAskForStartupDialogs()"))
+    private fun maybeAskForAppRating() {
+        viewModelScope.launch { maybeAskForAppRatingInternal() }
+    }
+
+    fun onRatePromptDismissed() {
+        viewModelScope.launch {
+            appPreferences.setRateAppLastPromptNow()
+        }
+    }
+
+    fun onRateNow() {
+        viewModelScope.launch {
+            appPreferences.setRateAppRated(true)
+        }
+    }
+
+    @Deprecated("Use maybeAskForStartupDialogs", ReplaceWith("maybeAskForStartupDialogs()"))
+    private fun maybeAskForFeedback() {
+        viewModelScope.launch { maybeAskForFeedbackInternal() }
+    }
+
+    fun onFeedbackRequestConfirm() {
+        intent {
+            reduce {
+                state.copy(
+                    showFeedbackRequestDialog = false,
+                    showFeedbackBottomSheet = true
+                )
+            }
+        }
+    }
+
+    fun onFeedbackRequestCancel() {
+        intent {
+            reduce {
+                state.copy(showFeedbackRequestDialog = false)
+            }
+        }
+    }
+
+    fun onFeedbackBottomSheetDismiss() {
+        viewModelScope.launch {
+            appPreferences.setFeedbackFormCompleted(true)
+            intent {
+                reduce {
+                    state.copy(showFeedbackBottomSheet = false)
+                }
+            }
+        }
+    }
+
+    @Deprecated("Use maybeAskForStartupDialogs", ReplaceWith("maybeAskForStartupDialogs()"))
+    private fun maybeAskForEmail() {
+        viewModelScope.launch { maybeAskForEmailInternal() }
+    }
+
+    fun onEmailAlertConfirm(email: String) {
+        viewModelScope.launch {
+            profilePreferences.setEmail(email)
+            intent {
+                reduce { state.copy(showEmailAlert = false) }
+            }
+        }
+    }
+
+    fun onEmailAlertCancel() {
+        intent {
+            reduce { state.copy(showEmailAlert = false) }
+        }
+    }
+
+    fun onCloseLockedDayPopup() {
+        intent {
+            reduceState { copy(showLockedDayPopup = false) }
+        }
+    }
 }
 
 data class PlanState(
@@ -346,10 +555,10 @@ data class PlanState(
     val isPremium: Boolean = false,
     val isDemo: Boolean = true,
     val freeDemoDays: Int = 3,
-    val timeOfDay: TimeOfDay = TimeOfDay.MORNING,
+    val timeOfDay: TimeOfDay = TimeOfDay.EVENING,
     val timeOfDayConfig: TimeOfDayConfig = defaultTimeOfDayConfig(),
     val todayOffset: TodayOffset = TodayOffset(),
-    val completedDailyTasks: Int = 1,
+//    val completedDailyTasks: Int = 1,
     val dailyTasks: List<DailyTask> = demoDailyTasks(),
     val topPackages: List<RankedPackage> = emptyList(),
     val extraPackage: ExtraPackage? = null,
@@ -361,6 +570,12 @@ data class PlanState(
     val isAccompanimentLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val errorState: ErrorViewState? = null,
+    val isNotificationPermissionGranted: Boolean = true,
+    val showNotificationPermissionItem: Boolean = true,
+    val showFeedbackRequestDialog: Boolean = false,
+    val showFeedbackBottomSheet: Boolean = false,
+    val showEmailAlert: Boolean = false,
+    val showLockedDayPopup: Boolean = false,
 )
 
 data class TodayOffset(
@@ -406,7 +621,6 @@ data class DayTimeItemUi(
     }
 }
 
-
 sealed class PlanSideEffect {
     data class NavigateAudioPlayer(
         val accompanimentId: Int,
@@ -416,4 +630,8 @@ sealed class PlanSideEffect {
     data object ShowSkipWeekDialog : PlanSideEffect()
     data object NavigateFinishWeekScreen : PlanSideEffect()
     data object NavigateDownloads : PlanSideEffect()
+    data class NavigateToProgramDetail(val programId: Int) : PlanSideEffect()
+    data object NavigateToPrograms : PlanSideEffect()
+    data object ShowRateAppPrompt : PlanSideEffect()
+    data object ShowFeedbackRequestDialog : PlanSideEffect()
 }

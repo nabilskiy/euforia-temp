@@ -78,6 +78,14 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    fun onTimeSensitiveToggled(enabled: Boolean) {
+        intent {
+            reduce {
+                state.copy(isTimeSensitiveEnabled = enabled)
+            }
+        }
+    }
+
     fun onMorningTimeChanged(time: Pair<Int, Int>) {
         intent {
             if (state.timeOfDayConfig.isMorningRange(time.first)) {
@@ -101,6 +109,14 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    fun updateNotificationPermission(enabled: Boolean) {
+        intent {
+            reduce {
+                state.copy(isNotificationEnabled = enabled)
+            }
+        }
+    }
+
     fun saveSettings() {
         viewModelScope.launch {
             val state = container.stateFlow.value
@@ -113,6 +129,7 @@ class NotificationsViewModel @Inject constructor(
             appPreferences.setDayNotificationTime(dayHour, dayMinute)
             val (eveningHour, eveningMinute) = state.eveningTime
             appPreferences.setEveningNotificationTime(eveningHour, eveningMinute)
+            appPreferences.setIsTimeSensitive(state.isTimeSensitiveEnabled)
             updateNotificationsUseCase()
             intent { postSideEffect(NotificationsSideEffect.NavigateBack)}
         }
@@ -124,6 +141,8 @@ data class NotificationsState(
     val isMorningNotificationEnabled: Boolean = true,
     val isDayNotificationEnabled: Boolean = true,
     val isEveningNotificationEnabled: Boolean = true,
+    val isTimeSensitiveEnabled: Boolean = true,
+    val isNotificationEnabled: Boolean = false,
     val morningTime: Pair<Int, Int> = 7 to 0,
     val dayTime: Pair<Int, Int> = 12 to 0,
     val eveningTime: Pair<Int, Int> = 18 to 0,

@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
@@ -32,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +51,7 @@ import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.theme.AppBarBackground
+import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.appbarMedium
 import digital.euforia.app.ui.theme.subtitleSmall
@@ -56,6 +60,7 @@ import digital.euforia.app.ui.util.widget.CorporateTextField
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.widget.titleItem
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.SettingsTextField
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -68,15 +73,18 @@ fun SharedTransitionScope.EmailScreen(
 ) {
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
-        handleSideEffect(sideEffect)
+        handleSideEffect(sideEffect, navController)
     }
 
     NavBarlessScreen(navBarVisibilityState) {
         EmailContent(
             navController = navController,
             email = state.email,
+            isValid = state.isValid,
+            isUpdating = state.isUpdating,
             onEmailChanged = viewModel::onEmailChanged,
             onBackClick = { navController.popBackStack() },
+            onSaveClick = { viewModel.onSaveClicked() },
             animatedVisibilityScope = animatedVisibilityScope
         )
     }
@@ -85,9 +93,12 @@ fun SharedTransitionScope.EmailScreen(
 @Composable
 private fun SharedTransitionScope.EmailContent(
     navController: NavHostController,
+    isValid: Boolean,
+    isUpdating: Boolean,
     email: String? = null,
     onEmailChanged: (String) -> Unit = {},
     onBackClick: () -> Unit,
+    onSaveClick: () -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val localizedRes = LocalLocalizedRes.current
@@ -103,7 +114,7 @@ private fun SharedTransitionScope.EmailContent(
         }
     }
 
-    Box() {
+    Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
         BlurredAppBar(
             backTitleRes = R.string.profile_title,
             titleRes = R.string.change_email_title,
@@ -112,7 +123,18 @@ private fun SharedTransitionScope.EmailContent(
             onBackClick = onBackClick,
             sharedElementKeyForBackTitle = "my_euforia_title",
             animatedVisibilityScope = animatedVisibilityScope,
-            navController = navController
+            navController = navController,
+            actionButton = {
+                Text(
+                    text = localizedRes.string(R.string.save),
+                    color = if (!isValid) Color.White.copy(alpha = 0.4f) else White,
+                    style = appbarMedium.copy(fontWeight = FontWeight.Medium),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .noRippleClickable(onSaveClick)
+                )
+            }
+
         )
         LazyColumn(
             modifier = Modifier.fillMaxSize().hazeSource(hazeState),
@@ -140,13 +162,17 @@ fun LazyListScope.emailItem(email: String?, onEmailChanged: (String) -> Unit) = 
     val localizedRes = LocalLocalizedRes.current
 
     val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    CorporateTextField(
+    SettingsTextField(
         modifier = Modifier.fillMaxWidth(),
         value = email.orEmpty(),
         placeholder = localizedRes.string(R.string.email_placeholder),
         onValueChanged = { onEmailChanged(it.text) },
-        maxLength = 150,
+        keyboardController = keyboardController,
+        focusManager = focusManager,
+        onClearClick = { onEmailChanged("") },
     )
 
     Text(
@@ -205,8 +231,9 @@ private fun AppBar(shouldBlur: Boolean, hazeState: HazeState? = null, onBackClic
 
 }
 
-private fun handleSideEffect(sideEffect: EmailSideEffect) {
+private fun handleSideEffect(sideEffect: EmailSideEffect, navController: NavHostController) {
     when (sideEffect) {
+        is EmailSideEffect.NavigateBack -> navController.popBackStack()
         else -> {}
     }
 }

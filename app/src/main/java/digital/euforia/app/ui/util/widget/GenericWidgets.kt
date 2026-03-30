@@ -43,7 +43,8 @@ fun <T> LazyListScope.genericRowItem(
     itemImageUrl: (T) -> String?,
     itemDuration: (T) -> Int,
     onMoreClick: () -> Unit,
-    onItemClick: (T) -> Unit
+    onItemClick: (T) -> Unit,
+    onTitleClick: () -> Unit,
 ) = item(key = "${title.lowercase()}_item") {
 
     Column(
@@ -52,14 +53,14 @@ fun <T> LazyListScope.genericRowItem(
     ) {
         description?.let {
             Text(
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.noRippleClickable(onTitleClick).padding(horizontal = 16.dp),
                 text = description.uppercase(),
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = Medium),
                 color = White.copy(alpha = 0.6f),
             )
         }
         Text(
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
+            modifier = Modifier.noRippleClickable(onTitleClick).padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
             text = title,
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = Bold),
             color = White,

@@ -52,8 +52,16 @@ fun ColumnScope.SoundsEffectsView(
     onMuteClick: () -> Unit,
     onClick: (Int) -> Unit,
     onAvatarClick: () -> Unit = {},
+    onInteraction: (Long) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) {
+            onInteraction(0L)
+        }
+    }
+
     val density = androidx.compose.ui.platform.LocalDensity.current
     LaunchedEffect(selectedIndex, soundsEffects.size) {
         if (selectedIndex >= 0 && soundsEffects.isNotEmpty()) {
