@@ -6,27 +6,27 @@ import digital.euforia.app.data.db.entity.Music
 
 @JsonClass(generateAdapter = true)
 data class NetworkMusic(
-    @field:Json(name = "class") val type: String,          // "music"
-    @field:Json(name = "id") val id: Int,
-    @field:Json(name = "alias") val alias: String,
-    @field:Json(name = "type") val contentType: String,     // e.g. "scene"
-    @field:Json(name = "category_id") val categoryId: Int,
-    @field:Json(name = "name") val name: String,
-    @field:Json(name = "description") val description: String?,
-    @field:Json(name = "file_url") val fileUrl: String,
-    @field:Json(name = "image_url") val imageUrl: String,
-    @field:Json(name = "file") val file: NetworkFile?
+    @field:Json(name = "class") val type: String? = null,
+    @field:Json(name = "id") val id: Int? = null,
+    @field:Json(name = "alias") val alias: String? = null,
+    @field:Json(name = "type") val contentType: String? = null,
+    @field:Json(name = "category_id") val categoryId: Int? = null,
+    @field:Json(name = "name") val name: String? = null,
+    @field:Json(name = "description") val description: String? = null,
+    @field:Json(name = "file_url") val fileUrl: String? = null,
+    @field:Json(name = "image_url") val imageUrl: String? = null,
+    @field:Json(name = "file") val file: NetworkFile? = null,
 )
 
 fun NetworkMusic.toEntity(): Music = Music(
-    id = id,
-    type = type,
-    contentType = contentType,
-    alias = alias,
-    categoryId = categoryId,
-    name = name,
+    id = requireNotNull(id) { "music id is required" },
+    type = type ?: "music",
+    contentType = contentType.orEmpty(),
+    alias = alias.orEmpty(),
+    categoryId = categoryId ?: 0,
+    name = name.orEmpty(),
     description = description,
-    fileUrl = fileUrl,
-    imageUrl = imageUrl,
+    fileUrl = fileUrl.orEmpty(),
+    imageUrl = imageUrl.orEmpty(),
     file = file?.toEntity(),
 )

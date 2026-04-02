@@ -492,6 +492,14 @@
     <string name="faq_footer_support">Submit a question</string>
 
     <!-- Sound Scene -->
+    <string name="soundscapes_upgrade">UPGRADE</string>
+    <string name="soundscapes_category_sleep">Sleep</string>
+    <string name="soundscapes_category_meditation">Meditation</string>
+    <string name="soundscapes_category_focus">Focus</string>
+    <string name="soundscapes_category_relax">Relax</string>
+    <string name="soundscapes_section_nature">Nature</string>
+    <string name="soundscapes_section_journey">Journey</string>
+    <string name="soundscapes_section_other">Other</string>
     <string name="scenes_title">Soundscapes</string>
     <string name="scenes_category_saved">Saved</string>
     <string name="scenes_category_my">My Soundscapes</string>

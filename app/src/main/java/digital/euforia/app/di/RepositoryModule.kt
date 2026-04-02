@@ -15,6 +15,7 @@ import digital.euforia.app.data.repository.ArticleRepository
 import digital.euforia.app.data.repository.ExerciseRepository
 import digital.euforia.app.data.repository.PackageRepository
 import digital.euforia.app.data.repository.ResourceRepository
+import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.data.repository.FaqCategoryRepository
 import digital.euforia.app.data.repository.FeedbackFormRepository
 import digital.euforia.app.data.repository.MeditationRepository
@@ -151,6 +152,22 @@ class RepositoryModule {
         return MeditationRepository(
             api = api,
             meditationDao = database.meditationDao(),
+        )
+    }
+
+    @Singleton
+    @Provides
+    fun provideSoundscapesRepository(
+        api: EuforiaApi,
+        database: AppDatabase,
+    ): SoundscapesRepository {
+        return SoundscapesRepository(
+            api = api,
+            sceneCategoryDao = database.sceneCategoryDao(),
+            sceneDao = database.sceneDao(),
+            playlistDao = database.soundscapePlaylistDao(),
+            presetDao = database.soundscapePresetDao(),
+            downloadDao = database.soundscapeDownloadDao(),
         )
     }
 

@@ -20,10 +20,15 @@ import digital.euforia.app.data.db.dao.MeditationDao
 import digital.euforia.app.data.db.dao.MusicDao
 import digital.euforia.app.data.db.dao.PackageDao
 import digital.euforia.app.data.db.dao.ResourceDao
+import digital.euforia.app.data.db.dao.SceneCategoryDao
+import digital.euforia.app.data.db.dao.SceneDao
 import digital.euforia.app.data.db.dao.FaqCategoryDao
 import digital.euforia.app.data.db.dao.FaqItemDao
 import digital.euforia.app.data.db.dao.FavouritePublicationsDao
 import digital.euforia.app.data.db.dao.FeedbackFormDao
+import digital.euforia.app.data.db.dao.SoundscapeDownloadDao
+import digital.euforia.app.data.db.dao.SoundscapePlaylistDao
+import digital.euforia.app.data.db.dao.SoundscapePresetDao
 import digital.euforia.app.data.db.entity.Accompaniment
 import digital.euforia.app.data.db.entity.File
 import digital.euforia.app.data.db.entity.SampleEntity
@@ -36,16 +41,21 @@ import digital.euforia.app.data.db.entity.Meditation
 import digital.euforia.app.data.db.entity.Music
 import digital.euforia.app.data.db.entity.Package
 import digital.euforia.app.data.db.entity.Resource
+import digital.euforia.app.data.db.entity.Scene
+import digital.euforia.app.data.db.entity.SceneCategory
 import digital.euforia.app.data.db.entity.FaqCategory
 import digital.euforia.app.data.db.entity.FaqItem
 import digital.euforia.app.data.db.entity.FavouritePublication
 import digital.euforia.app.data.db.entity.FeedbackForm
 import digital.euforia.app.data.db.entity.FeedbackOption
 import digital.euforia.app.data.db.entity.FeedbackQuestion
+import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
+import digital.euforia.app.data.db.entity.SoundscapePlaylist
+import digital.euforia.app.data.db.entity.SoundscapePreset
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class, IntListConverter::class, PublicationTypeConverter::class])
 @Database(
-    version = 10,
+    version = 13,
     entities = [
         SampleEntity::class,
         Accompaniment::class,
@@ -65,6 +75,11 @@ import digital.euforia.app.data.db.entity.FeedbackQuestion
         FeedbackQuestion::class,
         FeedbackOption::class,
         FavouritePublication::class,
+        SceneCategory::class,
+        Scene::class,
+        SoundscapePlaylist::class,
+        SoundscapePreset::class,
+        SoundscapeDownloadItem::class,
     ]
 )
 
@@ -85,4 +100,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun faqItemDao(): FaqItemDao
     abstract fun feedbackFormDao(): FeedbackFormDao
     abstract fun favouritePublicationsDao(): FavouritePublicationsDao
+    abstract fun sceneCategoryDao(): SceneCategoryDao
+    abstract fun sceneDao(): SceneDao
+    abstract fun soundscapePlaylistDao(): SoundscapePlaylistDao
+    abstract fun soundscapePresetDao(): SoundscapePresetDao
+    abstract fun soundscapeDownloadDao(): SoundscapeDownloadDao
 }

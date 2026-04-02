@@ -50,6 +50,9 @@ class AppPreferences(
     private val keyLastPlaybackResetDate = stringPreferencesKey("last_playback_reset_date")
     private val keyDeletedAvatarIds = stringSetPreferencesKey("deleted_avatar_ids")
     private val keyCustomAvatarUris = stringSetPreferencesKey("custom_avatar_uris")
+    private val keySoundscapesEnabled = booleanPreferencesKey("soundscapes_enabled")
+    private val keySoundscapesLevel = intPreferencesKey("soundscapes_level")
+    private val keySoundscapesLastPreset = intPreferencesKey("soundscapes_last_preset")
 
     // Rating app preferences
     private val keyRateAppLaunchCount = intPreferencesKey("rate_app_launch_count")
@@ -504,6 +507,48 @@ class AppPreferences(
             val current = preferences[keyCustomAvatarUris] ?: emptySet()
             preferences[keyCustomAvatarUris] = current + "$id|$uri"
         }
+    }
+
+    suspend fun setSoundscapesEnabled(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[keySoundscapesEnabled] = enabled
+        }
+    }
+
+    suspend fun isSoundscapesEnabled(): Boolean {
+        return store.data.firstOrNull()?.get(keySoundscapesEnabled) ?: true
+    }
+
+    fun isSoundscapesEnabledFlow(): Flow<Boolean> {
+        return store.data.map { preferences ->
+            preferences[keySoundscapesEnabled] ?: true
+        }
+    }
+
+    suspend fun setSoundscapesLevel(level: Int) {
+        store.edit { preferences ->
+            preferences[keySoundscapesLevel] = level.coerceIn(0, 100)
+        }
+    }
+
+    suspend fun getSoundscapesLevel(): Int {
+        return store.data.firstOrNull()?.get(keySoundscapesLevel) ?: 35
+    }
+
+    fun getSoundscapesLevelFlow(): Flow<Int> {
+        return store.data.map { preferences ->
+            preferences[keySoundscapesLevel] ?: 35
+        }
+    }
+
+    suspend fun setSoundscapesLastPreset(presetId: Int) {
+        store.edit { preferences ->
+            preferences[keySoundscapesLastPreset] = presetId
+        }
+    }
+
+    suspend fun getSoundscapesLastPreset(): Int {
+        return store.data.firstOrNull()?.get(keySoundscapesLastPreset) ?: -1
     }
 
     private suspend fun checkDailyReset() {

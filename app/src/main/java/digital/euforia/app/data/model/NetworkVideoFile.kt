@@ -5,16 +5,16 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class NetworkVideoFile(
-    @field:Json(name = "class") val type: String,
-    @field:Json(name = "id") val id: Int,
-    @field:Json(name = "url") val url: String,
-    @field:Json(name = "ext") val ext: String,
-    @field:Json(name = "size") val size: Long?,
-    @field:Json(name = "width") val width: Int?,
-    @field:Json(name = "height") val height: Int?,
-    @field:Json(name = "ratio") val ratio: Double?,
-    @field:Json(name = "duration") val duration: Int?,
-    @field:Json(name = "video_urls") val videoUrls: NetworkVideoUrls?
+    @field:Json(name = "class") val type: String? = null,
+    @field:Json(name = "id") val id: Int? = null,
+    @field:Json(name = "url") val url: String? = null,
+    @field:Json(name = "ext") val ext: String? = null,
+    @field:Json(name = "size") val size: Long? = null,
+    @field:Json(name = "width") val width: Int? = null,
+    @field:Json(name = "height") val height: Int? = null,
+    @field:Json(name = "ratio") val ratio: Double? = null,
+    @field:Json(name = "duration") val duration: Int? = null,
+    @field:Json(name = "video_urls") val videoUrls: NetworkVideoUrls? = null,
 )
 
 @JsonClass(generateAdapter = true)

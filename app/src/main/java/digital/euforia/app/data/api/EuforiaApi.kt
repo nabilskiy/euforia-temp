@@ -14,7 +14,9 @@ import digital.euforia.app.data.model.NetworkFeedbackForm
 import digital.euforia.app.data.model.NetworkMeditation
 import digital.euforia.app.data.model.NetworkMusic
 import digital.euforia.app.data.model.NetworkPackage
+import digital.euforia.app.data.model.NetworkPlaylist
 import digital.euforia.app.data.model.NetworkResource
+import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.NetworkSearchResults
 import digital.euforia.app.data.model.NetworkSettings
 import digital.euforia.app.data.model.NetworkSound
@@ -42,6 +44,27 @@ interface EuforiaApi {
 
     @GET("music")
     suspend fun music(): ResultWrapper<List<NetworkMusic>>
+
+    @GET("categories/scene")
+    suspend fun getSceneCategories(): ResultWrapper<List<NetworkCategory>>
+
+    @GET("scenes")
+    suspend fun scenes(
+        @Query("per-page") perPage: Int? = 500
+    ): ResultWrapper<List<NetworkScene>>
+
+    @GET("scenes/{id}")
+    suspend fun scene(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkScene>
+
+    @GET("playlists")
+    suspend fun playlists(): ResultWrapper<List<NetworkPlaylist>>
+
+    @GET("playlists/{id}")
+    suspend fun playlist(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkPlaylist>
 
     @GET("accompaniments/week")
     suspend fun getAccompanimentsPerWeek(

@@ -13,4 +13,6 @@ data class NetworkCategory(
     @field:Json(name = "meditations") val meditations: List<NetworkMeditation> = emptyList(),
     @field:Json(name = "exercises") val exercises: List<NetworkExercise> = emptyList(),
     @field:Json(name = "articles") val articles: List<NetworkArticle> = emptyList(),
+    @field:Json(name = "scenes") val scenes: List<NetworkScene> = emptyList(),
+    @field:Json(name = "position") val position: Int? = null,
 )

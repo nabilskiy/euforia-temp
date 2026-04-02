@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import digital.euforia.app.R
 import digital.euforia.app.ui.devoptions.DevOptionsScreen
+import digital.euforia.app.ui.downloads.DownloadsScreen
 import digital.euforia.app.ui.home.HomeScreen
 import digital.euforia.app.ui.howitworks.HowItWorksScreen
 import digital.euforia.app.ui.onboarding.OnboardingScreen
@@ -47,6 +48,8 @@ import digital.euforia.app.ui.settings.personaldata.cleardata.ClearDataScreen
 import digital.euforia.app.ui.settings.subscription.SubscriptionScreen
 import digital.euforia.app.ui.settings.subscription.info.DeviceInfoScreen
 import digital.euforia.app.ui.settings.voice.VoiceScreen
+import digital.euforia.app.ui.soundscapes.SoundscapeSceneScreen
+import digital.euforia.app.ui.soundscapes.SoundscapesScreen
 import digital.euforia.app.ui.sos.EmergencyScreen
 import digital.euforia.app.ui.sos.contacts.ContactsScreen
 import digital.euforia.app.ui.splash.SplashScreen
@@ -177,14 +180,22 @@ fun AppNavigation(
                     popExitTransition = NavAnimations.popExit
                 ) {
                     isBottomBarShown.value = true
-                    ComingSoonView(
-                        titleRes = R.string.scenes_title,
-                        navController = navController
+                    SoundscapesScreen(
+                        navController = navController,
+                        viewModel = hiltViewModel()
                     )
-//                    DevOptionsScreen(
-//                        navController = navController,
-//                        viewModel = hiltViewModel()
-//                    )
+                }
+                composable<HomeDestination.SoundscapesScene>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
+                    isBottomBarShown.value = false
+                    SoundscapeSceneScreen(
+                        navController = navController,
+                        viewModel = hiltViewModel()
+                    )
                 }
                 composable<HomeDestination.AudioPlayer> {
                     isBottomBarShown.value = false
@@ -342,10 +353,9 @@ fun AppNavigation(
                     popExitTransition = NavAnimations.popExit
                 ) {
                     isBottomBarShown.value = false
-                    ComingSoonView(
-                        titleRes = R.string.downloads_title,
+                    DownloadsScreen(
                         navController = navController,
-                        isBackAllowed = true
+                        viewModel = hiltViewModel()
                     )
                 }
                 composable<HomeDestination.ProgramDetails>(

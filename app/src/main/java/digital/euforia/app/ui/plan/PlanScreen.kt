@@ -480,7 +480,10 @@ private fun SharedTransitionScope.PlanContent(
                         isDemo = isDemo,
                         isPremium = isPremium,
                         bannerConfig = bannerConfig,
-                        onSoundscapesClick = {},
+                        onSoundscapesClick = {
+                            analyticSender.todayScenesClick()
+                            navController.navigate(HomeDestination.Soundscapes)
+                        },
                         onBannerClick = {
                             launchSubscriptionActivity()
                         },

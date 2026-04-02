@@ -7,5 +7,5 @@ data class NetworkSearchResults(
     val exercises: List<NetworkExercise>,
     val articles: List<NetworkArticle>,
     val meditations: List<NetworkMeditation>,
-    val scenes: List<String>,
+    val scenes: List<NetworkScene>,
 )
