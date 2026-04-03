@@ -6,12 +6,12 @@
 package digital.euforia.app.ui.soundscapes
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapePreset
 import digital.euforia.app.data.store.AppPreferences
+import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapePresetsFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapesCatalogFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SoundscapeCategorySection
@@ -21,7 +21,6 @@ import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
@@ -80,6 +79,7 @@ class SoundscapesViewModel @Inject constructor(
     private val getSoundscapePresetsFlowUseCase: GetSoundscapePresetsFlowUseCase,
     private val saveSoundscapePresetUseCase: SaveSoundscapePresetUseCase,
     private val appPreferences: AppPreferences,
+    private val profilePreferences: ProfilePreferences,
     private val playbackController: SoundscapePlaybackController,
     private val analyticSender: AnalyticSender,
 ) : ViewModel(), ContainerHost<SoundscapesState, SoundscapesSideEffect> {
@@ -95,11 +95,11 @@ class SoundscapesViewModel @Inject constructor(
     )
 
     fun refresh() {
-        viewModelScope.launch {
-            reduceState { copy(isLoading = true) }
+        intent {
+            reduce { state.copy(isLoading = true) }
             syncSoundscapesCatalogUseCase.invoke()
-                .onFailure { reduceState { copy(error = it.message ?: "Sync failed") } }
-                .onFinish { reduceState { copy(isLoading = false) } }
+                .onFailure { reduce { state.copy(error = it.message ?: "Sync failed") } }
+                .onFinish { reduce { state.copy(isLoading = false) } }
         }
     }
 
@@ -123,7 +123,12 @@ class SoundscapesViewModel @Inject constructor(
 
     fun onSceneClick(scene: Scene) {
         intent {
-            postSideEffect(SoundscapesSideEffect.OpenScene(scene.id))
+            val isPremium = profilePreferences.getIsPremium()
+            if (scene.pro && !isPremium) {
+                postSideEffect(SoundscapesSideEffect.OpenPaywall)
+            } else {
+                postSideEffect(SoundscapesSideEffect.OpenScene(scene.id))
+            }
         }
     }
 
@@ -140,7 +145,7 @@ class SoundscapesViewModel @Inject constructor(
     }
 
     fun onSavePreset(name: String, sceneId: Int, layersJson: String) {
-        viewModelScope.launch {
+        intent {
             val preset = SoundscapePreset(name = name, sceneId = sceneId, layersJson = layersJson)
             saveSoundscapePresetUseCase(preset)
             appPreferences.setSoundscapesLastPreset(preset.id)
@@ -148,15 +153,19 @@ class SoundscapesViewModel @Inject constructor(
     }
 
     private fun observeCatalog() {
-        viewModelScope.launch {
+        intent {
             getSoundscapesCatalogFlowUseCase.invoke().collectLatest { catalog ->
-                reduceState {
+                reduce {
                     val nextSections = catalog.categorySections
-                    copy(
+                    state.copy(
                         scenes = catalog.scenes,
                         categorySections = nextSections,
                         playlists = catalog.playlists,
-                        displaySections = applyFiltersToSections(nextSections, query, quickFilter)
+                        displaySections = applyFiltersToSections(
+                            nextSections,
+                            state.query,
+                            state.quickFilter
+                        )
                     )
                 }
             }
@@ -164,18 +173,18 @@ class SoundscapesViewModel @Inject constructor(
     }
 
     private fun observePresets() {
-        viewModelScope.launch {
+        intent {
             getSoundscapePresetsFlowUseCase().collectLatest { presets ->
-                reduceState { copy(presets = presets) }
+                reduce { state.copy(presets = presets) }
             }
         }
     }
 
     private fun observePlayback() {
-        viewModelScope.launch {
+        intent {
             playbackController.playback.collectLatest { playback ->
-                reduceState {
-                    copy(
+                reduce {
+                    state.copy(
                         miniPlayer = MiniPlayerUi(
                             isVisible = playback.sceneId != null,
                             title = playback.sceneTitle,
@@ -190,7 +199,14 @@ class SoundscapesViewModel @Inject constructor(
     fun onMiniPlayerClick() {
         val sceneId = playbackController.playback.value.sceneId ?: return
         intent {
-            postSideEffect(SoundscapesSideEffect.OpenScene(sceneId))
+            val scene = state.scenes.firstOrNull { it.id == sceneId }
+            val isPro = scene?.pro == true
+            val isPremium = profilePreferences.getIsPremium()
+            if (isPro && !isPremium) {
+                postSideEffect(SoundscapesSideEffect.OpenPaywall)
+            } else {
+                postSideEffect(SoundscapesSideEffect.OpenScene(sceneId))
+            }
         }
     }
 }
@@ -216,4 +232,5 @@ data class MiniPlayerUi(
 
 sealed class SoundscapesSideEffect {
     data class OpenScene(val sceneId: Int) : SoundscapesSideEffect()
+    data object OpenPaywall : SoundscapesSideEffect()
 }

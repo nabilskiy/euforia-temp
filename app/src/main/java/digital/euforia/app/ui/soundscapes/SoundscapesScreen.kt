@@ -88,15 +88,15 @@ fun SoundscapesScreen(
     var showPlaylists by rememberSaveable { mutableStateOf(false) }
     val localizedRes = LocalLocalizedRes.current
 
-    viewModel.collectSideEffect { sideEffect ->
-        when (sideEffect) {
-            is SoundscapesSideEffect.OpenScene -> {
-                navController.navigate(HomeDestination.SoundscapesScene(sideEffect.sceneId))
+    SubscriptionActivityLauncher { launchSubscription ->
+        viewModel.collectSideEffect { sideEffect ->
+            when (sideEffect) {
+                is SoundscapesSideEffect.OpenScene -> {
+                    navController.navigate(HomeDestination.SoundscapesScene(sideEffect.sceneId))
+                }
+                SoundscapesSideEffect.OpenPaywall -> launchSubscription()
             }
         }
-    }
-
-    SubscriptionActivityLauncher { launchSubscription ->
         Box(
             modifier = Modifier
                 .fillMaxSize()

@@ -23,6 +23,9 @@ interface SceneDao {
     @Query("SELECT * FROM scenes WHERE id = :id LIMIT 1")
     fun getByIdFlow(id: Int): Flow<Scene?>
 
+    @Query("SELECT * FROM scenes WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Int): Scene?
+
     @Query("DELETE FROM scenes WHERE id NOT IN (:ids)")
     suspend fun deleteAllExcept(ids: List<Int>)
 }

@@ -1,0 +1,124 @@
+{
+  "class": "scene",
+  "id": 296,
+  "alias": "Lavender-Hills",
+  "category_id": 3,
+  "pro": false,
+  "name": "Lavender Hills",
+  "subtitle": "",
+  "description": "",
+  "keywords": "purple lavander hills fields inner calm landscape harmonious thoughts sleep meditattion relax inspiration soft inspiration mindful presence tranquil mind emotional balance",
+  "image_url": "https://euforia.digital/storage/models/jpg/b/b0cbb8cb24b08f760146101bcd306a0e.jpg",
+  "image_preview_url": "https://euforia.digital/storage/models/jpg/d/dc4129b78cccab47774126849f4f245e.jpg",
+  "image_cover_url": null,
+  "video_url": "https://customer-zyro8j897o6h15e5.cloudflarestream.com/9da11f865909086ae1700cb2ca195823/manifest/video.m3u8",
+  "video": {
+    "class": "file",
+    "id": 17203,
+    "url": "https://customer-zyro8j897o6h15e5.cloudflarestream.com/9da11f865909086ae1700cb2ca195823/manifest/video.m3u8",
+    "ext": "mp4",
+    "size": 6716504,
+    "width": 1080,
+    "height": 1920,
+    "ratio": 0.56,
+    "duration": 10,
+    "video_urls": {
+      "hls": "https://customer-zyro8j897o6h15e5.cloudflarestream.com/9da11f865909086ae1700cb2ca195823/manifest/video.m3u8",
+      "dash": "https://customer-zyro8j897o6h15e5.cloudflarestream.com/9da11f865909086ae1700cb2ca195823/manifest/video.mpd"
+    }
+  },
+  "scene_musics": [
+    {
+      "class": "scene_music",
+      "music_file_url": "https://euforia.digital/storage/models/m4a/9/971f0b1e899b43e3cb8c580cdde929be.m4a",
+      "volume": 67,
+      "timeout": 0,
+      "interval": 0,
+      "music": {
+        "class": "music",
+        "id": 460,
+        "alias": "new-beginnings-vence-ray",
+        "type": "scene",
+        "category_id": 3,
+        "name": "New Beginnings – Vence Ray",
+        "description": "",
+        "file_url": "https://euforia.digital/storage/models/m4a/9/971f0b1e899b43e3cb8c580cdde929be.m4a",
+        "image_url": "https://euforia.digital/storage/models/jpg/6/6c32df3c4b6df7a9675fbabaac9dee2e.jpg",
+        "file": {
+          "class": "file",
+          "id": 37678,
+          "url": "https://euforia.digital/storage/models/m4a/9/971f0b1e899b43e3cb8c580cdde929be.m4a",
+          "ext": "m4a",
+          "size": 9924994,
+          "duration": 246
+        }
+      }
+    }
+  ],
+  "scene_sounds": [
+    {
+      "class": "scene_sound",
+      "sound_file_url": "https://euforia.digital/storage/models/mp3/3/36f706acf7fb089c6bb41523a04a28db.mp3",
+      "volume": 16,
+      "timeout": 0,
+      "interval": 0,
+      "pos_x": 91,
+      "pos_y": 28,
+      "effects": null,
+      "sound": {
+        "class": "sound",
+        "id": 637,
+        "alias": "grass-wind",
+        "category_id": 2,
+        "name": "Grass Wind",
+        "description": "",
+        "color": null,
+        "continuous": true,
+        "min_repeat_delay": 0,
+        "max_repeat_delay": 300,
+        "file_url": "https://euforia.digital/storage/models/mp3/3/36f706acf7fb089c6bb41523a04a28db.mp3",
+        "image_url": "https://euforia.digital/storage/models/png/7/7dcbcc7be9169bd7b5c30dbdd69fc97d.png",
+        "file": {
+          "class": "file",
+          "id": 17233,
+          "url": "https://euforia.digital/storage/models/mp3/3/36f706acf7fb089c6bb41523a04a28db.mp3",
+          "ext": "mp3",
+          "size": 3238246,
+          "duration": 80
+        }
+      }
+    },
+    {
+      "class": "scene_sound",
+      "sound_file_url": "https://euforia.digital/storage/models/m4a/5/5efe7d68ccc3e41597a15b3545a3d946.m4a",
+      "volume": 57,
+      "timeout": 0,
+      "interval": 0,
+      "pos_x": 89,
+      "pos_y": 91,
+      "effects": null,
+      "sound": {
+        "class": "sound",
+        "id": 877,
+        "alias": "evening-cicada",
+        "category_id": 16,
+        "name": "Evening Cicada",
+        "description": "",
+        "color": null,
+        "continuous": true,
+        "min_repeat_delay": 0,
+        "max_repeat_delay": 300,
+        "file_url": "https://euforia.digital/storage/models/m4a/5/5efe7d68ccc3e41597a15b3545a3d946.m4a",
+        "image_url": "https://euforia.digital/storage/models/png/4/4faa29329fda6649c70b82d655318d21.png",
+        "file": {
+          "class": "file",
+          "id": 37677,
+          "url": "https://euforia.digital/storage/models/m4a/5/5efe7d68ccc3e41597a15b3545a3d946.m4a",
+          "ext": "m4a",
+          "size": 8044478,
+          "duration": 200
+        }
+      }
+    }
+  ]
+}

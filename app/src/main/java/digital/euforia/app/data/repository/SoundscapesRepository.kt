@@ -17,6 +17,7 @@ import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
 import digital.euforia.app.data.db.entity.SoundscapePreset
 import digital.euforia.app.data.model.NetworkCategory
+import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.toEntity
 import digital.euforia.app.domain.util.ResultWrapper
 import kotlinx.coroutines.flow.Flow
@@ -76,6 +77,13 @@ class SoundscapesRepository @Inject constructor(
     fun getSceneCategoriesFlow(): Flow<List<SceneCategory>> = sceneCategoryDao.getAllOrderedFlow()
     fun getScenesFlow(): Flow<List<Scene>> = sceneDao.getAllFlow()
     fun getSceneFlow(id: Int): Flow<Scene?> = sceneDao.getByIdFlow(id)
+
+    suspend fun getSceneById(id: Int): Scene? = sceneDao.getById(id)
+    suspend fun getSceneDetails(id: Int): ResultWrapper<NetworkScene> {
+        return api.scene(id).onSuccess { networkScene ->
+            sceneDao.upsertAll(listOf(networkScene.toEntity()))
+        }
+    }
     fun getPlaylistsFlow(): Flow<List<SoundscapePlaylist>> = playlistDao.getAllFlow()
 
     suspend fun searchScenes(query: String): ResultWrapper<List<Scene>> {
