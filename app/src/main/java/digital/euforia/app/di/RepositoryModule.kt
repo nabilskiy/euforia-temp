@@ -1,3 +1,8 @@
+/**
+ * Developed by www.euforia.digital.
+ * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
+ */
+
 package digital.euforia.app.di
 
 import android.content.Context
@@ -19,6 +24,7 @@ import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.data.repository.FaqCategoryRepository
 import digital.euforia.app.data.repository.FeedbackFormRepository
 import digital.euforia.app.data.repository.MeditationRepository
+import digital.euforia.app.data.repository.MusicRepository
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.domain.mapper.program.PublicationInfoMapper
 import digital.euforia.app.service.notifications.NotificationScheduler
@@ -157,6 +163,19 @@ class RepositoryModule {
 
     @Singleton
     @Provides
+    fun provideMusicRepository(
+        api: EuforiaApi,
+        database: AppDatabase,
+    ): MusicRepository {
+        return MusicRepository(
+            api = api,
+            musicDao = database.musicDao(),
+            musicCategoryDao = database.musicCategoryDao(),
+        )
+    }
+
+    @Singleton
+    @Provides
     fun provideSoundscapesRepository(
         api: EuforiaApi,
         database: AppDatabase,
@@ -165,6 +184,8 @@ class RepositoryModule {
             api = api,
             sceneCategoryDao = database.sceneCategoryDao(),
             sceneDao = database.sceneDao(),
+            soundDao = database.soundscapeSoundDao(),
+            localStateDao = database.soundscapeSceneLocalStateDao(),
             playlistDao = database.soundscapePlaylistDao(),
             presetDao = database.soundscapePresetDao(),
             downloadDao = database.soundscapeDownloadDao(),

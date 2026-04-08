@@ -13,6 +13,7 @@ import digital.euforia.app.data.model.NetworkFaqItem
 import digital.euforia.app.data.model.NetworkFeedbackForm
 import digital.euforia.app.data.model.NetworkMeditation
 import digital.euforia.app.data.model.NetworkMusic
+import digital.euforia.app.data.model.NetworkMusicCategory
 import digital.euforia.app.data.model.NetworkPackage
 import digital.euforia.app.data.model.NetworkPlaylist
 import digital.euforia.app.data.model.NetworkResource
@@ -20,6 +21,7 @@ import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.NetworkSearchResults
 import digital.euforia.app.data.model.NetworkSettings
 import digital.euforia.app.data.model.NetworkSound
+import digital.euforia.app.data.model.NetworkSoundCategory
 import digital.euforia.app.domain.util.ResultWrapper
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
@@ -39,11 +41,61 @@ interface EuforiaApi {
     @GET("articles")
     suspend fun articles(): Response<List<String>>
 
+    /**
+     * Matches iOS `getSounds(pagination: PerPagePagination(perPage: 500, initialPage: 1))`.
+     */
     @GET("sounds")
-    suspend fun sounds(): ResultWrapper<List<NetworkSound>>
+    suspend fun sounds(
+        @Query("per-page") perPage: Int = 500,
+        @Query("page") page: Int = 1,
+    ): ResultWrapper<List<NetworkSound>>
 
+    @GET("sounds/{id}")
+    suspend fun sound(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkSound>
+
+    /**
+     * Matches iOS `getSoundCategories(pagination: PerPagePagination(perPage: 100, initialPage: 1))`.
+     */
+    @GET("categories/sound")
+    suspend fun getSoundCategories(
+        @Query("per-page") perPage: Int = 100,
+        @Query("page") page: Int = 1,
+    ): ResultWrapper<List<NetworkSoundCategory>>
+
+    @GET("categories/sound/{id}")
+    suspend fun getSoundCategory(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkSoundCategory>
+
+    /**
+     * Matches iOS `getMusics(pagination: PerPagePagination(perPage: 500, initialPage: 1))`.
+     */
     @GET("music")
-    suspend fun music(): ResultWrapper<List<NetworkMusic>>
+    suspend fun music(
+        @Query("per-page") perPage: Int = 500,
+        @Query("page") page: Int = 1,
+    ): ResultWrapper<List<NetworkMusic>>
+
+    @GET("music/{id}")
+    suspend fun getMusic(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkMusic>
+
+    /**
+     * Matches iOS `getMusicCategories(pagination: PerPagePagination(perPage: 100, initialPage: 1))`.
+     */
+    @GET("categories/music")
+    suspend fun getMusicCategories(
+        @Query("per-page") perPage: Int = 100,
+        @Query("page") page: Int = 1,
+    ): ResultWrapper<List<NetworkMusicCategory>>
+
+    @GET("categories/music/{id}")
+    suspend fun getMusicCategory(
+        @Path("id") id: Int
+    ): ResultWrapper<NetworkMusicCategory>
 
     @GET("categories/scene")
     suspend fun getSceneCategories(): ResultWrapper<List<NetworkCategory>>

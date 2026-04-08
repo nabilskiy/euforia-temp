@@ -16,6 +16,7 @@ import javax.inject.Singleton
 data class SoundscapeLayerState(
     val id: Int,
     val title: String,
+    val audioUrl: String? = null,
     val volume: Float = 1f,
     val muted: Boolean = false,
 )
@@ -38,6 +39,7 @@ interface SoundEngine {
     fun setLayerVolume(layerId: Int, volume: Float)
     fun muteLayer(layerId: Int, muted: Boolean)
     fun removeLayer(layerId: Int)
+    fun addLayer(layer: SoundscapeLayerState)
     fun setTimer(seconds: Int?)
 }
 
@@ -94,6 +96,13 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
     override fun removeLayer(layerId: Int) {
         _playback.update { state ->
             state.copy(layers = state.layers.filterNot { it.id == layerId })
+        }
+    }
+
+    override fun addLayer(layer: SoundscapeLayerState) {
+        _playback.update { state ->
+            if (state.layers.any { it.id == layer.id }) state
+            else state.copy(layers = (state.layers + layer).take(10))
         }
     }
 

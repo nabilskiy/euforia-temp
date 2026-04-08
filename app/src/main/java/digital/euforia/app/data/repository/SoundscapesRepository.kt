@@ -11,11 +11,16 @@ import digital.euforia.app.data.db.dao.SceneDao
 import digital.euforia.app.data.db.dao.SoundscapeDownloadDao
 import digital.euforia.app.data.db.dao.SoundscapePlaylistDao
 import digital.euforia.app.data.db.dao.SoundscapePresetDao
+import digital.euforia.app.data.db.dao.SoundscapeSceneLocalStateDao
+import digital.euforia.app.data.db.dao.SoundscapeSoundDao
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SceneCategory
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
 import digital.euforia.app.data.db.entity.SoundscapePreset
+import digital.euforia.app.data.db.entity.SoundscapeSceneLocalState
+import digital.euforia.app.data.db.entity.SoundscapeSound
+import digital.euforia.app.data.db.entity.SoundscapeSoundCategory
 import digital.euforia.app.data.model.NetworkCategory
 import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.toEntity
@@ -30,6 +35,8 @@ class SoundscapesRepository @Inject constructor(
     private val api: EuforiaApi,
     private val sceneCategoryDao: SceneCategoryDao,
     private val sceneDao: SceneDao,
+    private val soundDao: SoundscapeSoundDao,
+    private val localStateDao: SoundscapeSceneLocalStateDao,
     private val playlistDao: SoundscapePlaylistDao,
     private val presetDao: SoundscapePresetDao,
     private val downloadDao: SoundscapeDownloadDao,
@@ -84,7 +91,35 @@ class SoundscapesRepository @Inject constructor(
             sceneDao.upsertAll(listOf(networkScene.toEntity()))
         }
     }
+    suspend fun syncSoundsCatalog(): ResultWrapper<Unit> {
+        return api.getSoundCategories().flatMap { categories ->
+            api.sounds().map { sounds ->
+                val categoryEntities = categories.mapIndexed { index, category ->
+                    category.toEntity(index)
+                }
+                val soundEntities = sounds.map { it.toEntity() }
+                if (categoryEntities.isNotEmpty()) {
+                    soundDao.upsertCategories(categoryEntities)
+                    soundDao.deleteCategoriesExcept(categoryEntities.map { it.id })
+                } else {
+                    soundDao.clearCategories()
+                }
+                if (soundEntities.isNotEmpty()) {
+                    soundDao.upsertSounds(soundEntities)
+                    soundDao.deleteSoundsExcept(soundEntities.map { it.id })
+                } else {
+                    soundDao.clearSounds()
+                }
+            }
+        }
+    }
+    fun getAllSoundsFlow(): Flow<List<SoundscapeSound>> = soundDao.getAllSoundsFlow()
+    suspend fun getAllSounds(): List<SoundscapeSound> = soundDao.getAllSounds()
+    fun getAllSoundCategoriesFlow(): Flow<List<SoundscapeSoundCategory>> = soundDao.getAllCategoriesFlow()
+
     fun getPlaylistsFlow(): Flow<List<SoundscapePlaylist>> = playlistDao.getAllFlow()
+    suspend fun getLocalSceneState(sceneId: Int): SoundscapeSceneLocalState? = localStateDao.getBySceneId(sceneId)
+    suspend fun upsertLocalSceneState(state: SoundscapeSceneLocalState) = localStateDao.upsert(state)
 
     suspend fun searchScenes(query: String): ResultWrapper<List<Scene>> {
         return api.search(query = query, searchScenes = 1).map { response ->

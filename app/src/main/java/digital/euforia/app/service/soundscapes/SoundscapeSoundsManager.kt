@@ -1,0 +1,147 @@
+/**
+ * Developed by www.euforia.digital.
+ * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
+ */
+
+package digital.euforia.app.service.soundscapes
+
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import dagger.hilt.android.qualifiers.ApplicationContext
+import timber.log.Timber
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SoundscapeSoundsManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val players = LinkedHashMap<Int, ExoPlayer>()
+    private val playerUrls = LinkedHashMap<Int, String>()
+    private val fadeGeneration = LinkedHashMap<Int, Int>()
+    private var currentSceneId: Int? = null
+
+    fun render(playback: SoundscapePlaybackState) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            mainHandler.post { render(playback) }
+            return
+        }
+        if (playback.sceneId == null) {
+            releaseAll()
+            return
+        }
+        if (currentSceneId != playback.sceneId) {
+            releaseAll()
+            currentSceneId = playback.sceneId
+        }
+
+        val layersWithAudio = playback.layers
+            .filter { !it.audioUrl.isNullOrBlank() }
+            .take(10)
+        val keepIds = layersWithAudio.map { it.id }.toSet()
+
+        // Release removed layers.
+        val toRemove = players.keys.filter { it !in keepIds }
+        toRemove.forEach { id ->
+            fadeGeneration.remove(id)
+            playerUrls.remove(id)
+            players.remove(id)?.release()
+        }
+
+        // Create/update players for active layers.
+        layersWithAudio.forEach { layer ->
+            val layerUrl = layer.audioUrl.orEmpty()
+            val existing = players[layer.id]
+            val currentUrl = playerUrls[layer.id]
+            val player = if (existing == null || currentUrl != layerUrl) {
+                existing?.release()
+                createPlayer(layerUrl).also {
+                    players[layer.id] = it
+                    playerUrls[layer.id] = layerUrl
+                }
+            } else existing
+            val targetVolume = if (layer.muted) 0f else layer.volume.coerceIn(0f, 1f)
+            if (playback.isPlaying) {
+                cancelFade(layer.id)
+                player.volume = targetVolume
+                player.playWhenReady = true
+                player.play()
+            } else {
+                startFadeOut(layer.id, player)
+            }
+        }
+        Timber.tag("SOUNDSCAPES_AUDIO").d(
+            "render scene=%s layers=%s players=%s playing=%s",
+            playback.sceneId,
+            layersWithAudio.size,
+            players.size,
+            playback.isPlaying
+        )
+    }
+
+    fun releaseAll() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            mainHandler.post { releaseAll() }
+            return
+        }
+        players.values.forEach { it.release() }
+        players.clear()
+        playerUrls.clear()
+        fadeGeneration.clear()
+        currentSceneId = null
+    }
+
+    private fun createPlayer(audioUrl: String): ExoPlayer {
+        return ExoPlayer.Builder(context).build().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .setUsage(C.USAGE_MEDIA)
+                    .build(),
+                false
+            )
+            setMediaItem(MediaItem.fromUri(audioUrl))
+            repeatMode = Player.REPEAT_MODE_ALL
+            prepare()
+            volume = 0.6f
+        }.also {
+            Timber.tag("SOUNDSCAPES_AUDIO").d("Layer player created for %s", audioUrl)
+        }
+    }
+
+    private fun cancelFade(layerId: Int) {
+        fadeGeneration[layerId] = (fadeGeneration[layerId] ?: 0) + 1
+    }
+
+    private fun startFadeOut(layerId: Int, player: ExoPlayer) {
+        val gen = (fadeGeneration[layerId] ?: 0) + 1
+        fadeGeneration[layerId] = gen
+        val startVolume = player.volume.coerceIn(0f, 1f)
+        if (startVolume <= 0.0001f) {
+            player.pause()
+            player.playWhenReady = false
+            return
+        }
+        val steps = 10
+        val stepDelayMs = 28L
+        for (step in 1..steps) {
+            mainHandler.postDelayed({
+                if (fadeGeneration[layerId] != gen) return@postDelayed
+                val t = step / steps.toFloat()
+                val v = startVolume * (1f - t)
+                player.volume = v.coerceIn(0f, 1f)
+                if (step == steps) {
+                    player.pause()
+                    player.playWhenReady = false
+                }
+            }, step * stepDelayMs)
+        }
+    }
+}
