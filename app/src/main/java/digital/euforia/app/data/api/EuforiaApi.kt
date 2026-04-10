@@ -16,6 +16,7 @@ import digital.euforia.app.data.model.NetworkMusic
 import digital.euforia.app.data.model.NetworkMusicCategory
 import digital.euforia.app.data.model.NetworkPackage
 import digital.euforia.app.data.model.NetworkPlaylist
+import digital.euforia.app.data.model.NetworkPlaylistDetails
 import digital.euforia.app.data.model.NetworkResource
 import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.NetworkSearchResults
@@ -116,7 +117,7 @@ interface EuforiaApi {
     @GET("playlists/{id}")
     suspend fun playlist(
         @Path("id") id: Int
-    ): ResultWrapper<NetworkPlaylist>
+    ): ResultWrapper<NetworkPlaylistDetails>
 
     @GET("accompaniments/week")
     suspend fun getAccompanimentsPerWeek(

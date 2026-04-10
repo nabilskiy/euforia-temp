@@ -132,6 +132,10 @@ class SoundscapesViewModel @Inject constructor(
         }
     }
 
+    fun onPlaylistClick(playlistId: Int) {
+        intent { postSideEffect(SoundscapesSideEffect.OpenPlaylist(playlistId)) }
+    }
+
     fun onQuickPlay(scene: Scene) {
         playbackController.start(
             sceneId = scene.id,
@@ -232,5 +236,6 @@ data class MiniPlayerUi(
 
 sealed class SoundscapesSideEffect {
     data class OpenScene(val sceneId: Int) : SoundscapesSideEffect()
+    data class OpenPlaylist(val playlistId: Int) : SoundscapesSideEffect()
     data object OpenPaywall : SoundscapesSideEffect()
 }

@@ -49,6 +49,7 @@ import digital.euforia.app.ui.settings.subscription.SubscriptionScreen
 import digital.euforia.app.ui.settings.subscription.info.DeviceInfoScreen
 import digital.euforia.app.ui.settings.voice.VoiceScreen
 import digital.euforia.app.ui.soundscapes.SoundscapeSceneScreen
+import digital.euforia.app.ui.soundscapes.SoundscapePlaylistScreen
 import digital.euforia.app.ui.soundscapes.SoundscapesScreen
 import digital.euforia.app.ui.sos.EmergencyScreen
 import digital.euforia.app.ui.sos.contacts.ContactsScreen
@@ -193,6 +194,18 @@ fun AppNavigation(
                 ) {
                     isBottomBarShown.value = false
                     SoundscapeSceneScreen(
+                        navController = navController,
+                        viewModel = hiltViewModel()
+                    )
+                }
+                composable<HomeDestination.SoundscapesPlaylist>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
+                    isBottomBarShown.value = false
+                    SoundscapePlaylistScreen(
                         navController = navController,
                         viewModel = hiltViewModel()
                     )

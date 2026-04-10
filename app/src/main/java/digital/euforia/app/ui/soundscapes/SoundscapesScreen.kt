@@ -94,6 +94,9 @@ fun SoundscapesScreen(
                 is SoundscapesSideEffect.OpenScene -> {
                     navController.navigate(HomeDestination.SoundscapesScene(sideEffect.sceneId))
                 }
+                is SoundscapesSideEffect.OpenPlaylist -> {
+                    navController.navigate(HomeDestination.SoundscapesPlaylist(sideEffect.playlistId))
+                }
                 SoundscapesSideEffect.OpenPaywall -> launchSubscription()
             }
         }
@@ -137,6 +140,7 @@ fun SoundscapesScreen(
                         item {
                             PlaylistsInlineBlock(
                                 playlists = state.playlists,
+                                onPlaylistClick = viewModel::onPlaylistClick,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
@@ -356,7 +360,7 @@ private fun SectionBlock(
 }
 
 @Composable
-private fun SceneCard(
+fun SceneCard(
     scene: Scene,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
@@ -417,6 +421,7 @@ private fun SceneCard(
 @Composable
 private fun PlaylistsInlineBlock(
     playlists: List<SoundscapePlaylist>,
+    onPlaylistClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val localizedRes = LocalLocalizedRes.current
@@ -442,7 +447,8 @@ private fun PlaylistsInlineBlock(
                         modifier = Modifier
                             .weight(1f)
                             .height(100.dp)
-                            .clip(RoundedCornerShape(20.dp)),
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { onPlaylistClick(pl.id) },
                         color = SoundscapesCardSurface,
                         shape = RoundedCornerShape(20.dp),
                         border = BorderStroke(1.dp, SoundscapesTileBorder)

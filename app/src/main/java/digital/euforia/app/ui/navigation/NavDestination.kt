@@ -52,6 +52,12 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
 
     @Serializable
     @Keep
+    data class SoundscapesPlaylist(
+        val playlistId: Int
+    ) : HomeDestination(showNavBar = false)
+
+    @Serializable
+    @Keep
     data object Settings : HomeDestination()
 
     @Serializable

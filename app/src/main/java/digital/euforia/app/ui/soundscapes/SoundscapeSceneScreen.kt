@@ -366,7 +366,7 @@ fun SoundscapeSceneScreen(
                         onToggle = viewModel::onPlayPause,
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
-                    IconButton(
+                    AnimatedAddSoundsButton(
                         onClick = {
                             markInteraction()
                             showMusicOptions = false
@@ -377,16 +377,9 @@ fun SoundscapeSceneScreen(
                         modifier = Modifier
                             .align(Alignment.CenterStart)
                             .padding(start = 24.dp)
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.45f))
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_sounds_scene_add),
-                            contentDescription = "Add sounds",
-                            tint = White
-                        )
-                    }
+                            .size(44.dp),
+                        enabled = controlsVisible
+                    )
                     IconButton(
                         onClick = {
                             markInteraction()

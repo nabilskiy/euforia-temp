@@ -118,6 +118,19 @@ class SoundscapesRepository @Inject constructor(
     fun getAllSoundCategoriesFlow(): Flow<List<SoundscapeSoundCategory>> = soundDao.getAllCategoriesFlow()
 
     fun getPlaylistsFlow(): Flow<List<SoundscapePlaylist>> = playlistDao.getAllFlow()
+    fun getPlaylistFlow(id: Int): Flow<SoundscapePlaylist?> = playlistDao.getByIdFlow(id)
+    suspend fun getScenesByIds(ids: List<Int>): List<Scene> = sceneDao.getByIds(ids)
+    suspend fun getPlaylistDetails(id: Int): ResultWrapper<SoundscapePlaylist> {
+        return api.playlist(id).map { playlist ->
+            val sceneEntities = playlist.scenes.map { it.toEntity() }
+            val entity = playlist.toEntity()
+            if (sceneEntities.isNotEmpty()) {
+                sceneDao.upsertAll(sceneEntities)
+            }
+            playlistDao.upsertAll(listOf(entity))
+            entity
+        }
+    }
     suspend fun getLocalSceneState(sceneId: Int): SoundscapeSceneLocalState? = localStateDao.getBySceneId(sceneId)
     suspend fun upsertLocalSceneState(state: SoundscapeSceneLocalState) = localStateDao.upsert(state)
 
