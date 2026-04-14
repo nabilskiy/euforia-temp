@@ -625,6 +625,11 @@
     <string name="profile_about_vibes">Loving Voice Therapy</string>
     <string name="enter_email_alert_cancel">Later</string>
     <string name="downloads_management_title">Clear downloads</string>
+    <string name="downloads_filter_all">All</string>
+    <string name="downloads_progress_format">Progress: %1$d%%</string>
+    <string name="downloads_failed_hint">Download failed. Tap retry.</string>
+    <string name="downloads_retry">Retry</string>
+    <string name="scene_preparing_progress_format">%1$d / %2$d</string>
 
     <!-- NEW -->
     <string name="notifications_settings_permission_denied">Permission denied</string>

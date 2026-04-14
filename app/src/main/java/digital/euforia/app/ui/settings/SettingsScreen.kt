@@ -560,6 +560,11 @@ private fun handleSettingClick(
             showSupportSheet()
         }
 
+        SettingType.DOWNLOADED -> {
+            analyticSender.settingsDownloadsClick()
+            navController.navigate(HomeDestination.Downloads)
+        }
+
         SettingType.SHARE_APP -> {
             analyticSender.settingsShare()
             shareApp()

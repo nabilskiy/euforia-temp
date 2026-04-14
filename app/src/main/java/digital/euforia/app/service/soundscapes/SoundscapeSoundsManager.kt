@@ -8,12 +8,16 @@ package digital.euforia.app.service.soundscapes
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import androidx.media3.common.MediaItem
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
-import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cache.CacheDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import digital.euforia.app.App
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -99,7 +103,15 @@ class SoundscapeSoundsManager @Inject constructor(
     }
 
     private fun createPlayer(audioUrl: String): ExoPlayer {
-        return ExoPlayer.Builder(context).build().apply {
+        val cache = App.getExoCache(context)
+        val upstream = DefaultDataSource.Factory(context)
+        val cacheFactory = CacheDataSource.Factory()
+            .setCache(cache)
+            .setUpstreamDataSourceFactory(upstream)
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+        return ExoPlayer.Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(cacheFactory))
+            .build().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)

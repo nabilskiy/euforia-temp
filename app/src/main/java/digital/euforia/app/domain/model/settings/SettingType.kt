@@ -27,4 +27,5 @@ enum class SettingType(val iconRes: Int, val titleRes: Int) {
     FAQ(iconRes = R.drawable.ic_faq, titleRes = R.string.profile_faq),
     FEEDBACK(iconRes = R.drawable.ic_feedback, titleRes = R.string.profile_feedback),
     SUPPORT(iconRes = R.drawable.ic_support, titleRes = R.string.profile_support),
+    DOWNLOADED(iconRes = R.drawable.ic_downloaded, titleRes = R.string.profile_downloads),
 }

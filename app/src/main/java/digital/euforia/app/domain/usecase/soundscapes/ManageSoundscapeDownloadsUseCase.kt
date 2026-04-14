@@ -22,3 +22,15 @@ class QueueSoundscapeDownloadUseCase @Inject constructor(
     suspend operator fun invoke(item: SoundscapeDownloadItem) = repository.queueDownload(item)
 }
 
+class RetrySoundscapeDownloadUseCase @Inject constructor(
+    private val repository: SoundscapesRepository
+) {
+    suspend operator fun invoke(item: SoundscapeDownloadItem) = repository.updateDownload(
+        item.copy(
+            status = SoundscapeDownloadItem.STATUS_QUEUED,
+            progress = 0,
+            updatedAt = System.currentTimeMillis()
+        )
+    )
+}
+

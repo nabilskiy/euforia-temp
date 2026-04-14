@@ -579,6 +579,11 @@
     <string name="profile_about_vibes">About Euforia Vibes</string>
     <string name="enter_email_alert_cancel">Later</string>
     <string name="downloads_management_title">Clear downloads</string>
+    <string name="downloads_filter_all">Усі</string>
+    <string name="downloads_progress_format">Прогрес: %1$d%%</string>
+    <string name="downloads_failed_hint">Не вдалося завантажити. Спробуйте ще раз.</string>
+    <string name="downloads_retry">Повторити</string>
+    <string name="scene_preparing_progress_format">%1$d / %2$d</string>
 
     <!-- NEW -->
     <string name="notifications_settings_permission_denied">Доступ заборонено</string>

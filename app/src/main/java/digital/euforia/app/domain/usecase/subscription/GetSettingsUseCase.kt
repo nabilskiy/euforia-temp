@@ -10,6 +10,13 @@ class GetSettingsUseCase @Inject constructor() {
     operator fun invoke(): List<SettingGroup> {
         return listOf(
             SettingGroup(
+                titleRes = R.string.profile_more,
+                subtitleRes = R.string.profile_more,
+                settingItems = listOf(
+                    SettingsItem(SettingType.DOWNLOADED),
+                )
+            ),
+            SettingGroup(
                 titleRes = R.string.profile_private_data,
                 subtitleRes = R.string.profile_settings,
                 settingItems = listOf(

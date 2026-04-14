@@ -51,6 +51,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -81,6 +82,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -549,6 +551,46 @@ fun SoundscapeSceneScreen(
                             detectTapGestures(onTap = { markInteraction() })
                         }
                 )
+            }
+
+            if (state.isPreparing) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.62f))
+                        .zIndex(30f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    ) {
+                        CircularProgressIndicator(color = White)
+                        val total = state.preparingTotal
+                        val done = state.preparingCompleted
+                        val progressText = if (total > 0) {
+                            stringResource(R.string.scene_preparing_progress_format, done, total)
+                        } else {
+                            stringResource(R.string.loading)
+                        }
+                        Text(
+                            text = stringResource(R.string.scene_preparing),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = White,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = progressText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = White.copy(alpha = 0.82f),
+                            textAlign = TextAlign.Center
+                        )
+                        TextButton(onClick = viewModel::onCancelPreparation) {
+                            Text(text = stringResource(R.string.cancel), color = White)
+                        }
+                    }
+                }
             }
         }
     }

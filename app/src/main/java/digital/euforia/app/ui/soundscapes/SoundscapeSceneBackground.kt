@@ -38,10 +38,14 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import digital.euforia.app.App
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.White
@@ -73,7 +77,9 @@ fun SoundscapeSceneBackground(
     }
 
     val videoExo = remember(videoUrl) {
-        if (videoUrl.isNullOrBlank()) null else ExoPlayer.Builder(context).build().apply {
+        if (videoUrl.isNullOrBlank()) null else ExoPlayer.Builder(context)
+            .setMediaSourceFactory(buildCachedMediaSourceFactory(context))
+            .build().apply {
             setMediaItem(MediaItem.fromUri(videoUrl))
             volume = 0f
             repeatMode = Player.REPEAT_MODE_ALL
@@ -101,7 +107,9 @@ fun SoundscapeSceneBackground(
     }
 
     val musicPlayer = remember(musicUrl) {
-        if (musicUrl.isNullOrBlank()) null else ExoPlayer.Builder(context).build().apply {
+        if (musicUrl.isNullOrBlank()) null else ExoPlayer.Builder(context)
+            .setMediaSourceFactory(buildCachedMediaSourceFactory(context))
+            .build().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
@@ -143,6 +151,15 @@ fun SoundscapeSceneBackground(
             delay(250)
         }
     }
+}
+
+@UnstableApi
+private fun buildCachedMediaSourceFactory(context: android.content.Context): DefaultMediaSourceFactory {
+    val cacheFactory = CacheDataSource.Factory()
+        .setCache(App.getExoCache(context))
+        .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context))
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+    return DefaultMediaSourceFactory(cacheFactory)
 }
 
 @Composable

@@ -21,6 +21,7 @@ import digital.euforia.app.domain.usecase.faq.SyncFAQUseCase
 import digital.euforia.app.domain.usecase.resources.SyncResourcesUseCase
 import digital.euforia.app.domain.usecase.translation.SyncTranslationsUseCase
 import digital.euforia.app.domain.usecase.feedback.SyncFeedbackFormUseCase
+import digital.euforia.app.service.soundscapes.SoundscapeDownloadsProcessor
 import digital.euforia.app.ui.subscription.Configuration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -63,6 +64,9 @@ class App : Application() {
 
     @Inject
     lateinit var syncFeedbackFormUseCase: SyncFeedbackFormUseCase
+
+    @Inject
+    lateinit var soundscapeDownloadsProcessor: SoundscapeDownloadsProcessor
 
     companion object {
         var exoDatabaseProvider: StandaloneDatabaseProvider? = null
@@ -111,6 +115,7 @@ class App : Application() {
         initTokens()
         syncFeedbackForm()
         shouldSync()
+        soundscapeDownloadsProcessor.start()
         initAppsFlyer()
     }
 
