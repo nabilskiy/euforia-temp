@@ -148,7 +148,6 @@ fun SoundscapeSceneScreen(
             selectedSoundLayerId = null
         }
     }
-
     LaunchedEffect(selectedSoundLayerId) {
         if (selectedSoundLayerId != null) {
             showMusicOptions = false
@@ -178,6 +177,7 @@ fun SoundscapeSceneScreen(
                 videoUrl = state.videoUrl,
                 musicUrl = state.sceneMusicUrl,
                 isPlaying = state.isPlaying,
+                isPreparing = state.isPreparing,
                 musicVolume = state.musicVolume * state.sceneMusicVolumeFactor,
                 onPlaybackProgress = { pos, dur ->
                     positionMs = pos
@@ -464,7 +464,10 @@ fun SoundscapeSceneScreen(
                     MusicPickerBottomSheetContent(
                         music = state.availableMusic,
                         categories = state.musicCategories,
+                        suggestedMusicIds = state.suggestedMusicIds,
+                        favoriteMusicIds = state.favoriteMusicIds,
                         initialSelectedId = state.selectedMusicId,
+                        onFavoriteClick = viewModel::onToggleMusicFavorite,
                         onMusicClick = viewModel::onPreviewMusicSelection,
                         onDismiss = { showMusicPicker = false },
                         onApply = { selectedId ->
@@ -527,6 +530,7 @@ fun SoundscapeSceneScreen(
                         sounds = state.availableSounds,
                         categories = state.soundCategories,
                         defaultSceneSoundIds = state.defaultSceneSoundIds,
+                        suggestedSoundIds = state.suggestedSoundIds,
                         sceneSoundButtons = state.soundFloatingButtons,
                         initialSelectedIds = state.layers.map { it.id }.toSet(),
                         onSelectionChanged = viewModel::onApplySoundsSelection,
@@ -594,4 +598,6 @@ fun SoundscapeSceneScreen(
             }
         }
     }
+
+
 }

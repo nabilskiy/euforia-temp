@@ -20,9 +20,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -45,6 +49,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import digital.euforia.app.App
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.Black
@@ -60,14 +65,21 @@ fun SoundscapeSceneBackground(
     videoUrl: String?,
     musicUrl: String?,
     isPlaying: Boolean,
+    isPreparing: Boolean,
     musicVolume: Float,
     onPlaybackProgress: (positionMs: Long, durationMs: Long) -> Unit,
 ) {
     val context = LocalContext.current
+    var displayImageUrl by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(imageUrl) {
+        if (!imageUrl.isNullOrBlank()) {
+            displayImageUrl = imageUrl
+        }
+    }
 
-    if (!imageUrl.isNullOrBlank()) {
+    if (!displayImageUrl.isNullOrBlank()) {
         AsyncImage(
-            model = imageUrl,
+            model = displayImageUrl,
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
@@ -84,6 +96,25 @@ fun SoundscapeSceneBackground(
             volume = 0f
             repeatMode = Player.REPEAT_MODE_ALL
             prepare()
+        }
+    }
+    var hasRenderedFirstFrame by remember(videoUrl) { mutableStateOf(videoUrl.isNullOrBlank()) }
+    DisposableEffect(videoExo) {
+        val player = videoExo
+        if (player == null) {
+            hasRenderedFirstFrame = true
+            onDispose { }
+        } else {
+            hasRenderedFirstFrame = false
+            val listener = object : Player.Listener {
+                override fun onRenderedFirstFrame() {
+                    hasRenderedFirstFrame = true
+                }
+            }
+            player.addListener(listener)
+            onDispose {
+                player.removeListener(listener)
+            }
         }
     }
     DisposableEffect(videoExo) { onDispose { videoExo?.release() } }
@@ -103,6 +134,27 @@ fun SoundscapeSceneBackground(
             },
             update = { it.player = videoExo },
             modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    val showBlurredPlaceholder = isPreparing || !hasRenderedFirstFrame
+    if (showBlurredPlaceholder && !displayImageUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(displayImageUrl)
+                .allowHardware(false)
+                .crossfade(false)
+                .build(),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(34.dp),
+            contentScale = ContentScale.Crop
+        )
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.38f))
         )
     }
 

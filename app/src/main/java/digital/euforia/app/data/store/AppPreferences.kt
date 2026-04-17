@@ -53,6 +53,7 @@ class AppPreferences(
     private val keySoundscapesEnabled = booleanPreferencesKey("soundscapes_enabled")
     private val keySoundscapesLevel = intPreferencesKey("soundscapes_level")
     private val keySoundscapesLastPreset = intPreferencesKey("soundscapes_last_preset")
+    private val keyFavoriteMusicIds = stringSetPreferencesKey("favorite_music_ids")
 
     // Rating app preferences
     private val keyRateAppLaunchCount = intPreferencesKey("rate_app_launch_count")
@@ -549,6 +550,28 @@ class AppPreferences(
 
     suspend fun getSoundscapesLastPreset(): Int {
         return store.data.firstOrNull()?.get(keySoundscapesLastPreset) ?: -1
+    }
+
+    suspend fun getFavoriteMusicIds(): Set<Int> {
+        return store.data.firstOrNull()?.get(keyFavoriteMusicIds)
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    fun getFavoriteMusicIdsFlow(): Flow<Set<Int>> {
+        return store.data.map { preferences ->
+            preferences[keyFavoriteMusicIds]
+                ?.mapNotNull { it.toIntOrNull() }
+                ?.toSet()
+                ?: emptySet()
+        }
+    }
+
+    suspend fun setFavoriteMusicIds(ids: Set<Int>) {
+        store.edit { preferences ->
+            preferences[keyFavoriteMusicIds] = ids.map(Int::toString).toSet()
+        }
     }
 
     private suspend fun checkDailyReset() {

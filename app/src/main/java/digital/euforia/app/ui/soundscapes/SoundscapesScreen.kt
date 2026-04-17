@@ -25,20 +25,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,6 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import digital.euforia.app.R
@@ -172,24 +173,126 @@ fun SoundscapesScreen(
     }
 
     if (showSearchDialog) {
-        AlertDialog(
+        Dialog(
             onDismissRequest = { showSearchDialog = false },
-            title = { Text(localizedRes.string(R.string.scenes_search)) },
-            text = {
-                OutlinedTextField(
-                    value = state.query,
-                    onValueChange = viewModel::onSearchQueryChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text(localizedRes.string(R.string.scenes_search)) }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showSearchDialog = false }) {
-                    Text(localizedRes.string(R.string.ok))
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = SoundscapesScreenBackground
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = state.query,
+                            onValueChange = viewModel::onSearchQueryChanged,
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            placeholder = { Text(localizedRes.string(R.string.scenes_search)) },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_search),
+                                    contentDescription = null,
+                                    tint = White.copy(alpha = 0.75f)
+                                )
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedTextColor = White,
+                                focusedTextColor = White,
+                                unfocusedBorderColor = White.copy(alpha = 0.2f),
+                                focusedBorderColor = White.copy(alpha = 0.45f),
+                                unfocusedContainerColor = White.copy(alpha = 0.08f),
+                                focusedContainerColor = White.copy(alpha = 0.12f)
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        TextButton(onClick = { showSearchDialog = false }) {
+                            Text(
+                                text = localizedRes.string(R.string.cancel),
+                                color = White
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    if (state.searchSuggestions.isNotEmpty()) {
+                        Text(
+                            text = localizedRes.string(R.string.search_suggestions),
+                            color = White,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        )
+                        state.searchSuggestions.chunked(2).forEach { row ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(18.dp)
+                            ) {
+                                row.forEach { suggestion ->
+                                    Row(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable {
+                                                viewModel.onSearchQueryChanged(suggestion)
+                                                showSearchDialog = false
+                                            }
+                                            .padding(vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_search),
+                                            contentDescription = null,
+                                            tint = SoundscapeColors[5],
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(10.dp))
+                                        Text(
+                                            text = suggestion,
+                                            color = SoundscapeColors[5],
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+                                    }
+                                }
+                                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+
+                    if (state.popularScenes.isNotEmpty()) {
+                        Spacer(Modifier.height(20.dp))
+                        Text(
+                            text = localizedRes.string(R.string.search_popular_scenes),
+                            color = White,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            items(state.popularScenes, key = { it.id }) { scene ->
+                                SceneCard(
+                                    scene = scene,
+                                    modifier = Modifier.size(width = 156.dp, height = 96.dp),
+                                    onClick = {
+                                        showSearchDialog = false
+                                        viewModel.onSceneClick(scene)
+                                    },
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 
 }

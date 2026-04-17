@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
@@ -186,6 +187,7 @@ fun SoundsPickerBottomSheetContent(
     sounds: List<AvailableSoundUi>,
     categories: List<SoundCategoryUi>,
     defaultSceneSoundIds: List<Int>,
+    suggestedSoundIds: List<Int>,
     sceneSoundButtons: List<SoundFloatingButtonUi>,
     initialSelectedIds: Set<Int>,
     onSelectionChanged: (Set<Int>) -> Unit,
@@ -219,6 +221,13 @@ fun SoundsPickerBottomSheetContent(
         }
     }
 
+    val suggestedIdSet = remember(suggestedSoundIds) { suggestedSoundIds.toSet() }
+    val suggestions = remember(sounds, suggestedSoundIds, query, defaultIdSet) {
+        val soundsById = sounds.associateBy { it.id }
+        suggestedSoundIds
+            .mapNotNull { soundsById[it] }
+            .filter { it.id !in defaultIdSet && soundMatchesQuery(it, query) }
+    }
     val orderedCategories = remember(categories) { categories.orderedForSoundPicker() }
 
     Column(modifier = modifier.fillMaxHeight(0.9f)) {
@@ -280,9 +289,42 @@ fun SoundsPickerBottomSheetContent(
                     }
                 }
             }
+            if (suggestions.isNotEmpty()) {
+                item("suggestions_title") {
+                    Text(
+                        text = "Suggestions",
+                        color = White.copy(alpha = 0.55f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                suggestions.chunked(4).forEachIndexed { idx, row ->
+                    item("suggestions_row_$idx") {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            row.forEach { sound ->
+                                SoundPickerItem(
+                                    title = sound.title,
+                                    imageUrl = sound.imageUrl,
+                                    subtitle = null,
+                                    selected = sound.id in selectedIds,
+                                    onClick = {
+                                        val updated = toggleSoundSelection(selectedIds, sound.id)
+                                        selectedIds = updated
+                                        onSelectionChanged(updated)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             orderedCategories.forEach { category ->
                 val categorySounds = sounds
-                    .filter { it.categoryId == category.id && it.id !in defaultIdSet && soundMatchesQuery(it, query) }
+                    .filter {
+                        it.categoryId == category.id &&
+                            it.id !in defaultIdSet &&
+                            it.id !in suggestedIdSet &&
+                            soundMatchesQuery(it, query)
+                    }
                     .sortedBy { it.title }
                 if (categorySounds.isEmpty()) return@forEach
                 item("cat_title_${category.id}") {
@@ -339,7 +381,10 @@ fun SoundsPickerBottomSheetContent(
 fun MusicPickerBottomSheetContent(
     music: List<SceneMusicUi>,
     categories: List<SceneMusicCategoryUi>,
+    suggestedMusicIds: List<Int>,
+    favoriteMusicIds: Set<Int>,
     initialSelectedId: Int?,
+    onFavoriteClick: (Int) -> Unit,
     onMusicClick: (Int?) -> Unit,
     onDismiss: () -> Unit,
     onApply: (Int?) -> Unit,
@@ -349,6 +394,19 @@ fun MusicPickerBottomSheetContent(
     var selectedId by remember(initialSelectedId, music) { mutableStateOf(initialSelectedId) }
     var expandedCategoryIds by remember(categories) {
         mutableStateOf(categories.map { it.id }.toSet())
+    }
+    var favoritesExpanded by remember(favoriteMusicIds) { mutableStateOf(favoriteMusicIds.isNotEmpty()) }
+    var popularExpanded by remember(suggestedMusicIds) { mutableStateOf(true) }
+    val suggestedMusicIdSet = remember(suggestedMusicIds) { suggestedMusicIds.toSet() }
+    val favoriteMusicIdSet = remember(favoriteMusicIds) { favoriteMusicIds }
+    val suggestions = remember(music, suggestedMusicIds, query) {
+        val musicById = music.associateBy { it.id }
+        suggestedMusicIds
+            .mapNotNull { musicById[it] }
+            .filter { musicMatchesQuery(it, query) }
+    }
+    val favoriteItems = remember(music, favoriteMusicIdSet, query) {
+        music.filter { it.id in favoriteMusicIdSet && musicMatchesQuery(it, query) }
     }
     val orderedCategories = remember(categories) { categories.orderedForMusicPicker() }
 
@@ -391,9 +449,89 @@ fun MusicPickerBottomSheetContent(
             modifier = Modifier.weight(1f, fill = true),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
+            if (suggestions.isNotEmpty()) {
+                item("music_suggestions_title") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { popularExpanded = !popularExpanded }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Popular",
+                            color = White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = if (popularExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = null,
+                            tint = White.copy(alpha = 0.75f)
+                        )
+                    }
+                }
+                if (popularExpanded) {
+                    items(suggestions, key = { it.id }) { musicItem ->
+                        MusicPickerRowItem(
+                            item = musicItem,
+                            selected = selectedId == musicItem.id,
+                            isFavorite = musicItem.id in favoriteMusicIdSet,
+                            onFavoriteClick = { onFavoriteClick(musicItem.id) },
+                            onClick = {
+                                selectedId = musicItem.id
+                                onMusicClick(musicItem.id)
+                            }
+                        )
+                    }
+                }
+            }
+            if (favoriteItems.isNotEmpty()) {
+                item("music_favorites_title") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .clickable { favoritesExpanded = !favoritesExpanded },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Favorites",
+                            color = White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = if (favoritesExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = null,
+                            tint = White.copy(alpha = 0.75f)
+                        )
+                    }
+                }
+                if (favoritesExpanded) {
+                    items(favoriteItems, key = { it.id }) { musicItem ->
+                        MusicPickerRowItem(
+                            item = musicItem,
+                            selected = selectedId == musicItem.id,
+                            isFavorite = true,
+                            onFavoriteClick = { onFavoriteClick(musicItem.id) },
+                            onClick = {
+                                selectedId = musicItem.id
+                                onMusicClick(musicItem.id)
+                            }
+                        )
+                    }
+                }
+            }
             orderedCategories.forEach { category ->
                 val categoryMusic = music
-                    .filter { it.categoryId == category.id && musicMatchesQuery(it, query) }
+                    .filter {
+                        it.categoryId == category.id &&
+                            it.id !in suggestedMusicIdSet &&
+                            it.id !in favoriteMusicIdSet &&
+                            musicMatchesQuery(it, query)
+                    }
                 if (categoryMusic.isEmpty()) return@forEach
                 val expanded = category.id in expandedCategoryIds
                 item("music_cat_header_${category.id}") {
@@ -426,50 +564,16 @@ fun MusicPickerBottomSheetContent(
                 }
                 if (expanded) {
                     items(categoryMusic, key = { it.id }) { musicItem ->
-                        val selected = selectedId == musicItem.id
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedId = musicItem.id
-                                    onMusicClick(musicItem.id)
-                                }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AsyncImage(
-                                    model = musicItem.imageUrl,
-                                    contentDescription = musicItem.title,
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(White.copy(alpha = 0.08f)),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Spacer(Modifier.width(14.dp))
-                                Text(
-                                    text = musicItem.title,
-                                    color = White,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Icon(
-                                    imageVector = Icons.Outlined.FavoriteBorder,
-                                    contentDescription = null,
-                                    tint = if (selected) White else White.copy(alpha = 0.9f),
-                                    modifier = Modifier.size(32.dp)
-                                )
+                        MusicPickerRowItem(
+                            item = musicItem,
+                            selected = selectedId == musicItem.id,
+                            isFavorite = musicItem.id in favoriteMusicIdSet,
+                            onFavoriteClick = { onFavoriteClick(musicItem.id) },
+                            onClick = {
+                                selectedId = musicItem.id
+                                onMusicClick(musicItem.id)
                             }
-                            HorizontalDivider(
-                                color = White.copy(alpha = if (selected) 0.25f else 0.14f),
-                                modifier = Modifier.padding(top = 10.dp)
-                            )
-                        }
+                        )
                     }
                 }
             }
@@ -487,6 +591,61 @@ fun MusicPickerBottomSheetContent(
                 Text("Apply", color = Black, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             }
         }
+    }
+}
+
+@Composable
+private fun MusicPickerRowItem(
+    item: SceneMusicUi,
+    selected: Boolean,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = item.imageUrl,
+                contentDescription = item.title,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(White.copy(alpha = 0.08f)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(Modifier.width(14.dp))
+            Text(
+                text = item.title,
+                color = White,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(
+                onClick = onFavoriteClick,
+                modifier = Modifier.size(34.dp)
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    tint = White.copy(alpha = if (isFavorite) 1f else 0.88f),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+        HorizontalDivider(
+            color = White.copy(alpha = if (selected) 0.25f else 0.14f),
+            modifier = Modifier.padding(top = 10.dp, start = 70.dp)
+        )
     }
 }
 

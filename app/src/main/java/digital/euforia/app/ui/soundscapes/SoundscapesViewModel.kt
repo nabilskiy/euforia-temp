@@ -8,6 +8,7 @@ package digital.euforia.app.ui.soundscapes
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
+import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapePreset
 import digital.euforia.app.data.store.AppPreferences
@@ -81,6 +82,7 @@ class SoundscapesViewModel @Inject constructor(
     private val appPreferences: AppPreferences,
     private val profilePreferences: ProfilePreferences,
     private val playbackController: SoundscapePlaybackController,
+    private val remoteConfigFetcher: EuforiaRemoteConfigFetcher,
     private val analyticSender: AnalyticSender,
 ) : ViewModel(), ContainerHost<SoundscapesState, SoundscapesSideEffect> {
 
@@ -165,6 +167,8 @@ class SoundscapesViewModel @Inject constructor(
                         scenes = catalog.scenes,
                         categorySections = nextSections,
                         playlists = catalog.playlists,
+                        searchSuggestions = remoteConfigFetcher.getScenesSearchSuggestions(),
+                        popularScenes = resolvePopularScenes(catalog.scenes),
                         displaySections = applyFiltersToSections(
                             nextSections,
                             state.query,
@@ -173,6 +177,18 @@ class SoundscapesViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    private fun resolvePopularScenes(allScenes: List<Scene>): List<Scene> {
+        if (allScenes.isEmpty()) return emptyList()
+        val byId = allScenes.associateBy { it.id }
+        val fromRemote = remoteConfigFetcher.getScenesPopularIds()
+            .mapNotNull(byId::get)
+        return if (fromRemote.isNotEmpty()) {
+            fromRemote
+        } else {
+            allScenes.shuffled().take(5)
         }
     }
 
@@ -223,6 +239,8 @@ data class SoundscapesState(
     val scenes: List<Scene> = emptyList(),
     val categorySections: List<SoundscapeCategorySection> = emptyList(),
     val displaySections: List<SoundscapeCategorySection> = emptyList(),
+    val searchSuggestions: List<String> = emptyList(),
+    val popularScenes: List<Scene> = emptyList(),
     val playlists: List<digital.euforia.app.data.db.entity.SoundscapePlaylist> = emptyList(),
     val presets: List<SoundscapePreset> = emptyList(),
     val miniPlayer: MiniPlayerUi = MiniPlayerUi(),

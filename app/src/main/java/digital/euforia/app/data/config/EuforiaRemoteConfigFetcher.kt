@@ -1,5 +1,10 @@
 package digital.euforia.app.data.config
 
+
+/**
+ * Developed by www.euforia.digital.
+ * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
+ */
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types.newParameterizedType
 import digital.euforia.app.domain.model.config.BannerConfig
@@ -207,6 +212,51 @@ class EuforiaRemoteConfigFetcher(
         return getListConfig(KEY_SEARCH_SUGGESTIONS).dataOrNull ?: emptyList()
     }
 
+    fun getScenesSearchSuggestions(): List<String> {
+        return getListConfig(KEY_SCENES_SEARCH_SUGGESTIONS).dataOrNull ?: emptyList()
+    }
+
+    fun getScenesPopularIds(): List<Int> {
+        return try {
+            val json = remoteConfig.getString(KEY_SCENES_POPULAR)
+            if (json.isBlank()) return emptyList()
+            val listType = newParameterizedType(MutableList::class.java, Int::class.javaObjectType)
+            moshi.adapter<List<Int>>(listType).fromJson(json) ?: emptyList()
+        } catch (e: Throwable) {
+            logError(TAG, e)
+            emptyList()
+        }
+    }
+
+    fun getSoundsSuggestionsMap(): Map<String, List<Int>> {
+        return try {
+            val json = remoteConfig.getString(KEY_SOUNDS_SUGGESTIONS)
+            if (json.isBlank()) return emptyMap()
+            val listType = newParameterizedType(MutableList::class.java, Int::class.javaObjectType)
+            val mapType = newParameterizedType(
+                Map::class.java,
+                String::class.java,
+                listType
+            )
+            moshi.adapter<Map<String, List<Int>>>(mapType).fromJson(json) ?: emptyMap()
+        } catch (e: Throwable) {
+            logError(TAG, e)
+            emptyMap()
+        }
+    }
+
+    fun getMusicSuggestionsIds(): List<Int> {
+        return try {
+            val json = remoteConfig.getString(KEY_MUSIC_SUGGESTIONS)
+            if (json.isBlank()) return emptyList()
+            val listType = newParameterizedType(MutableList::class.java, Int::class.javaObjectType)
+            moshi.adapter<List<Int>>(listType).fromJson(json) ?: emptyList()
+        } catch (e: Throwable) {
+            logError(TAG, e)
+            emptyList()
+        }
+    }
+
     fun getFeedbackFormConfig(): FeedbackFormConfig {
         return getConfig(
             key = KEY_FEEDBACK_FORM_CONFIG,
@@ -277,6 +327,10 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_EXERCISES_LIST_TEMPLATE = "exercises_list_template"
         private const val DEFAULT_LIBRARY_TEMPLATE_KEY = "library_2_list_template"
         private const val KEY_SEARCH_SUGGESTIONS = "search_suggestions"
+        private const val KEY_SCENES_SEARCH_SUGGESTIONS = "scenes_search_suggestions"
+        private const val KEY_SCENES_POPULAR = "scenes_popular"
+        private const val KEY_SOUNDS_SUGGESTIONS = "sounds_suggestions"
+        private const val KEY_MUSIC_SUGGESTIONS = "music_suggestions"
         private const val KEY_SHARE_MESSAGE = "share_message"
         private const val KEY_NOTIFICATION_SOUND_TYPE = "notification_sound_type"
         private const val KEY_FEEDBACK_FORM_CONFIG = "feedback_form_config"

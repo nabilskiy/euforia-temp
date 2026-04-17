@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
+import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.data.repository.MusicRepository
 import digital.euforia.app.data.repository.SoundscapesRepository
@@ -46,9 +47,11 @@ class SoundscapeSceneViewModel @Inject constructor(
     private val playbackController: SoundscapePlaybackController,
     private val audioCacheManager: SoundscapeAudioCacheManager,
     private val soundsManager: SoundscapeSoundsManager,
+    private val remoteConfigFetcher: EuforiaRemoteConfigFetcher,
     private val analyticSender: AnalyticSender,
 ) : ViewModel(), ContainerHost<SoundscapeSceneState, SoundscapeSceneSideEffect> {
     private val sceneId: Int = savedStateHandle["sceneId"] ?: 0
+    private var sceneCategoryAliasesById: Map<Int, String> = emptyMap()
 
     override val container = container<SoundscapeSceneState, SoundscapeSceneSideEffect>(
         initialState = SoundscapeSceneState(sceneId = sceneId),
@@ -58,7 +61,9 @@ class SoundscapeSceneViewModel @Inject constructor(
             observePlayback()
             observeDownloads()
             observeAvailableSounds()
+            observeSceneCategories()
             observeAvailableMusic()
+            observeFavoriteMusic()
         }
     )
 
@@ -66,9 +71,25 @@ class SoundscapeSceneViewModel @Inject constructor(
 
     private fun ensureSceneLoaded() {
         intent {
+            // Load local scene first to avoid black screen while network sync/details are pending.
+            val localScene = soundscapesRepository.getSceneById(sceneId)
+            if (localScene != null) {
+                val localAlias = localScene.categoryId?.let(sceneCategoryAliasesById::get)
+                reduce {
+                    state.copy(
+                        title = localScene.name,
+                        videoUrl = localScene.videoUrl,
+                        imageUrl = localScene.imagePreviewUrl ?: localScene.imageUrl,
+                        isPro = localScene.pro,
+                        sceneCategoryId = localScene.categoryId,
+                        sceneCategoryAlias = localAlias
+                    )
+                }
+            }
+
             syncSoundscapesCatalogUseCase()
             val remoteScene = soundscapesRepository.getSceneDetails(sceneId).dataOrNull
-            val scene = remoteScene?.toEntity() ?: soundscapesRepository.getSceneById(sceneId)
+            val scene = remoteScene?.toEntity() ?: soundscapesRepository.getSceneById(sceneId) ?: localScene
             if (scene == null) {
                 return@intent
             }
@@ -87,6 +108,7 @@ class SoundscapeSceneViewModel @Inject constructor(
             )
             playbackController.setMusicVolume(loaded.resolvedMusicVolume)
             reduce {
+                val sceneCategoryAlias = scene.categoryId?.let(sceneCategoryAliasesById::get)
                 state.copy(
                     title = scene.name,
                     subtitle = remoteScene?.subtitle.orEmpty(),
@@ -104,12 +126,19 @@ class SoundscapeSceneViewModel @Inject constructor(
                         ?: remoteScene?.sceneMusics?.firstOrNull()?.music?.name?.takeIf { !it.isNullOrBlank() },
                     sceneMusicVolumeFactor = loaded.musicFactor,
                     isPro = scene.pro,
+                    sceneCategoryId = scene.categoryId,
+                    sceneCategoryAlias = sceneCategoryAlias,
                     musicVolume = loaded.resolvedMusicVolume,
                     isPreparing = true,
                     preparingCompleted = 0,
                     preparingTotal = loaded.finalLayers.mapNotNull { it.audioUrl?.takeIf(String::isNotBlank) }.distinct().size,
                     soundFloatingButtons = loaded.finalButtons,
                     defaultSceneSoundIds = loaded.defaultSceneSoundIds,
+                    suggestedSoundIds = resolveSuggestedSoundIds(
+                        available = state.availableSounds,
+                        sceneCategoryAlias = sceneCategoryAlias,
+                        sceneCategoryId = scene.categoryId
+                    ),
                 )
             }
             startScenePreparation(scene.name, loaded.finalLayers)
@@ -183,6 +212,11 @@ class SoundscapeSceneViewModel @Inject constructor(
                 reduce {
                     state.copy(
                         availableSounds = available,
+                        suggestedSoundIds = resolveSuggestedSoundIds(
+                            available = available,
+                            sceneCategoryAlias = state.sceneCategoryAlias,
+                            sceneCategoryId = state.sceneCategoryId
+                        ),
                         soundFloatingButtons = state.soundFloatingButtons.map { button ->
                             val sound = availableById[button.id]
                             if (sound == null) button
@@ -213,21 +247,73 @@ class SoundscapeSceneViewModel @Inject constructor(
         }
     }
 
+    private fun observeSceneCategories() {
+        intent {
+            soundscapesRepository.getSceneCategoriesFlow().collectLatest { categories ->
+                sceneCategoryAliasesById = categories.associate { it.id to it.alias }
+                val alias = categories.firstOrNull { it.id == state.sceneCategoryId }?.alias
+                reduce {
+                    state.copy(
+                        sceneCategoryAlias = alias,
+                        suggestedSoundIds = resolveSuggestedSoundIds(
+                            available = state.availableSounds,
+                            sceneCategoryAlias = alias,
+                            sceneCategoryId = state.sceneCategoryId
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun resolveSuggestedSoundIds(
+        available: List<AvailableSoundUi>,
+        sceneCategoryAlias: String?,
+        sceneCategoryId: Int?,
+    ): List<Int> {
+        if (available.isEmpty()) return emptyList()
+        val suggestions = remoteConfigFetcher.getSoundsSuggestionsMap()
+        if (suggestions.isEmpty()) return emptyList()
+        val keys = listOfNotNull(
+            sceneCategoryAlias?.takeIf { it.isNotBlank() },
+            sceneCategoryId?.toString(),
+            "*"
+        )
+        val candidateIds = keys.firstNotNullOfOrNull { key ->
+            suggestions[key]?.takeIf { it.isNotEmpty() }
+        }.orEmpty()
+        if (candidateIds.isEmpty()) return emptyList()
+        val availableById = available.associateBy { it.id }
+        return candidateIds.distinct().mapNotNull { availableById[it]?.id }
+    }
+
+    private fun resolveSuggestedMusicIds(
+        available: List<SceneMusicUi>,
+    ): List<Int> {
+        if (available.isEmpty()) return emptyList()
+        val candidateIds = remoteConfigFetcher.getMusicSuggestionsIds()
+        if (candidateIds.isEmpty()) return emptyList()
+        val availableById = available.associateBy { it.id }
+        return candidateIds.distinct().mapNotNull { availableById[it]?.id }
+    }
+
     private fun observeAvailableMusic() {
         syncMusicCatalog()
         intent {
             musicRepository.getAllFlow().collectLatest { music ->
+                val available = music.map {
+                    SceneMusicUi(
+                        id = it.id,
+                        categoryId = it.categoryId,
+                        title = it.name.ifBlank { "Music ${it.id}" },
+                        imageUrl = it.imageUrl.takeIf { url -> url.isNotBlank() },
+                        fileUrl = it.fileUrl.takeIf { url -> !url.isNullOrBlank() } ?: it.file?.url,
+                    )
+                }
                 reduce {
                     state.copy(
-                        availableMusic = music.map {
-                            SceneMusicUi(
-                                id = it.id,
-                                categoryId = it.categoryId,
-                                title = it.name.ifBlank { "Music ${it.id}" },
-                                imageUrl = it.imageUrl.takeIf { url -> url.isNotBlank() },
-                                fileUrl = it.fileUrl.takeIf { url -> !url.isNullOrBlank() } ?: it.file?.url,
-                            )
-                        }
+                        availableMusic = available,
+                        suggestedMusicIds = resolveSuggestedMusicIds(available)
                     )
                 }
             }
@@ -247,6 +333,23 @@ class SoundscapeSceneViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    private fun observeFavoriteMusic() {
+        intent {
+            appPreferences.getFavoriteMusicIdsFlow().collectLatest { ids ->
+                reduce { state.copy(favoriteMusicIds = ids) }
+            }
+        }
+    }
+
+    fun onToggleMusicFavorite(musicId: Int) {
+        intent {
+            val current = state.favoriteMusicIds
+            val next = if (musicId in current) current - musicId else current + musicId
+            appPreferences.setFavoriteMusicIds(next)
+            reduce { state.copy(favoriteMusicIds = next) }
         }
     }
 
@@ -470,6 +573,8 @@ data class SoundscapeSceneState(
     val sceneMusicTitle: String? = null,
     val sceneMusicVolumeFactor: Float = 1f,
     val isPro: Boolean = false,
+    val sceneCategoryId: Int? = null,
+    val sceneCategoryAlias: String? = null,
     val isPlaying: Boolean = false,
     val musicVolume: Float = 0.35f,
     /** Positions + icons from API `scene_sounds` for floating controls. */
@@ -483,8 +588,11 @@ data class SoundscapeSceneState(
     val downloadState: String = SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED,
     val engineHealth: String = "OK",
     val availableSounds: List<AvailableSoundUi> = emptyList(),
+    val suggestedSoundIds: List<Int> = emptyList(),
     val soundCategories: List<SoundCategoryUi> = emptyList(),
     val availableMusic: List<SceneMusicUi> = emptyList(),
+    val suggestedMusicIds: List<Int> = emptyList(),
+    val favoriteMusicIds: Set<Int> = emptySet(),
     val musicCategories: List<SceneMusicCategoryUi> = emptyList(),
     val isPreparing: Boolean = false,
     val preparingCompleted: Int = 0,
