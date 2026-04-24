@@ -57,7 +57,7 @@ class SoundscapePlaylistViewModel @Inject constructor(
     }
 
     fun onSceneClick(sceneId: Int) {
-        intent { postSideEffect(SoundscapePlaylistSideEffect.OpenScene(sceneId)) }
+        intent { postSideEffect(SoundscapePlaylistSideEffect.OpenScene(sceneId, playlistId)) }
     }
 }
 
@@ -70,6 +70,6 @@ data class SoundscapePlaylistState(
 )
 
 sealed class SoundscapePlaylistSideEffect {
-    data class OpenScene(val sceneId: Int) : SoundscapePlaylistSideEffect()
+    data class OpenScene(val sceneId: Int, val playlistId: Int) : SoundscapePlaylistSideEffect()
 }
 

@@ -62,27 +62,20 @@ class ParseDeepLinkUseCase @Inject constructor(
             }
 
             // Audio scenes (audioscene://... + scenes://...)
-//            "audioscene" -> {
-//                val id = segLong(0)
-//                when {
-//                    id == null -> DeepLinkCommand.AudioSceneRoot
-//                    else -> DeepLinkCommand.AudioScene(id = id, action = actionOrNull())
-//                }
-//            }
+            "audioscene", "scenes" -> {
+                val id = segInt(0)
+                if (id == null) {
+                    HomeDestination.Soundscapes
+                } else {
+                    HomeDestination.SoundscapesScene(sceneId = id)
+                }
+            }
 
-//            "scenes" -> {
-//                val id = segLong(0)
-//                when {
-//                    id != null -> DeepLinkCommand.Scene(id = id, action = actionOrNull())
-//                    else -> DeepLinkCommand.ScenesRoot
-//                }
-//            }
-
-//            // Playlists
-//            "playlists" -> {
-//                val id = segLong(0)
-//                if (id == null) DeepLinkCommand.PlaylistsRoot else DeepLinkCommand.Playlist(id)
-//            }
+            "playlists" -> {
+                val id = segInt(0)
+                if (id == null) HomeDestination.Soundscapes
+                else HomeDestination.SoundscapesPlaylist(playlistId = id)
+            }
 
             // Meditations
             "meditations" -> {

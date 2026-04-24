@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -34,6 +35,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -66,22 +70,29 @@ fun SoundscapeSceneBackground(
     musicUrl: String?,
     isPlaying: Boolean,
     isPreparing: Boolean,
+    isParallaxEnabled: Boolean,
     musicVolume: Float,
     onPlaybackProgress: (positionMs: Long, durationMs: Long) -> Unit,
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var displayImageUrl by remember { mutableStateOf<String?>(null) }
+    var isAppForeground by remember { mutableStateOf(true) }
     LaunchedEffect(imageUrl) {
         if (!imageUrl.isNullOrBlank()) {
             displayImageUrl = imageUrl
         }
     }
 
+    val parallaxScale = if (isParallaxEnabled) 1.06f else 1f
+
     if (!displayImageUrl.isNullOrBlank()) {
         AsyncImage(
             model = displayImageUrl,
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale),
             contentScale = ContentScale.Crop
         )
     } else {
@@ -92,6 +103,13 @@ fun SoundscapeSceneBackground(
         if (videoUrl.isNullOrBlank()) null else ExoPlayer.Builder(context)
             .setMediaSourceFactory(buildCachedMediaSourceFactory(context))
             .build().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                    .setUsage(C.USAGE_MEDIA)
+                    .build(),
+                /* handleAudioFocus */ false
+            )
             setMediaItem(MediaItem.fromUri(videoUrl))
             volume = 0f
             repeatMode = Player.REPEAT_MODE_ALL
@@ -120,8 +138,9 @@ fun SoundscapeSceneBackground(
     DisposableEffect(videoExo) { onDispose { videoExo?.release() } }
     LaunchedEffect(videoExo, isPlaying) {
         val v = videoExo ?: return@LaunchedEffect
-        v.playWhenReady = isPlaying
-        if (isPlaying) v.play() else v.pause()
+        val shouldPlay = isPlaying && isAppForeground
+        v.playWhenReady = shouldPlay
+        if (shouldPlay) v.play() else v.pause()
     }
     if (videoExo != null) {
         AndroidView(
@@ -133,7 +152,9 @@ fun SoundscapeSceneBackground(
                 }
             },
             update = { it.player = videoExo },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale)
         )
     }
 
@@ -148,6 +169,7 @@ fun SoundscapeSceneBackground(
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale)
                 .blur(34.dp),
             contentScale = ContentScale.Crop
         )
@@ -162,12 +184,13 @@ fun SoundscapeSceneBackground(
         if (musicUrl.isNullOrBlank()) null else ExoPlayer.Builder(context)
             .setMediaSourceFactory(buildCachedMediaSourceFactory(context))
             .build().apply {
+            // Mix with multi-layer soundscape: do not take exclusive audio focus (would pause layers).
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                     .setUsage(C.USAGE_MEDIA)
                     .build(),
-                true
+                /* handleAudioFocus */ false
             )
             setMediaItem(MediaItem.fromUri(musicUrl))
             repeatMode = Player.REPEAT_MODE_ALL
@@ -177,8 +200,9 @@ fun SoundscapeSceneBackground(
     DisposableEffect(musicPlayer) { onDispose { musicPlayer?.release() } }
     LaunchedEffect(musicPlayer, isPlaying) {
         val p = musicPlayer ?: return@LaunchedEffect
-        p.playWhenReady = isPlaying
-        if (isPlaying) p.play() else p.pause()
+        val shouldPlay = isPlaying && isAppForeground
+        p.playWhenReady = shouldPlay
+        if (shouldPlay) p.play() else p.pause()
     }
     LaunchedEffect(musicPlayer, musicVolume) {
         musicPlayer?.volume = musicVolume.coerceIn(0f, 1f)
@@ -202,6 +226,22 @@ fun SoundscapeSceneBackground(
             onPlaybackProgress(pos.coerceAtLeast(0), dur.coerceAtLeast(0))
             delay(250)
         }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            isAppForeground = when (event) {
+                Lifecycle.Event.ON_START,
+                Lifecycle.Event.ON_RESUME -> true
+
+                Lifecycle.Event.ON_PAUSE,
+                Lifecycle.Event.ON_STOP -> false
+
+                else -> isAppForeground
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 }
 

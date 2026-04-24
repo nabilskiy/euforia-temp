@@ -15,6 +15,7 @@ import javax.inject.Singleton
 
 data class SoundscapeLayerState(
     val id: Int,
+    val instanceKey: String = id.toString(),
     val title: String,
     val audioUrl: String? = null,
     val volume: Float = 1f,
@@ -26,19 +27,39 @@ data class SoundscapePlaybackState(
     val sceneTitle: String = "",
     val isPlaying: Boolean = false,
     val musicVolume: Float = 0.35f,
+    val ambientMode: Boolean = false,
     val layers: List<SoundscapeLayerState> = emptyList(),
     val timerSeconds: Int? = null,
     val engineHealth: String = "OK",
+    val playlistSceneIds: List<Int> = emptyList(),
+    val sceneImageUrl: String? = null,
 )
+
+private const val MAX_SOUND_LAYERS = 12
 
 interface SoundEngine {
     val playback: StateFlow<SoundscapePlaybackState>
-    fun start(sceneId: Int, sceneTitle: String, layers: List<SoundscapeLayerState>)
+    fun start(
+        sceneId: Int,
+        sceneTitle: String,
+        layers: List<SoundscapeLayerState>,
+        sceneImageUrl: String? = null,
+        ambientMode: Boolean = false,
+    )
     fun playPause()
+    /** Sets transport playing state (used by MediaSession sync; avoids toggle races). */
+    fun setPlaying(playing: Boolean)
+    fun setAmbientMode(enabled: Boolean)
+    fun setPlaylist(sceneIds: List<Int>)
+    fun renameCurrentScene(title: String)
+    fun canPlayPrev(): Boolean
+    fun canPlayNext(): Boolean
+    fun prevSceneId(): Int?
+    fun nextSceneId(): Int?
     fun setMusicVolume(volume: Float)
-    fun setLayerVolume(layerId: Int, volume: Float)
-    fun muteLayer(layerId: Int, muted: Boolean)
-    fun removeLayer(layerId: Int)
+    fun setLayerVolume(layerKey: String, volume: Float)
+    fun muteLayer(layerKey: String, muted: Boolean)
+    fun removeLayer(layerKey: String)
     fun addLayer(layer: SoundscapeLayerState)
     fun setTimer(seconds: Int?)
 }
@@ -48,18 +69,26 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
     private val _playback = MutableStateFlow(SoundscapePlaybackState())
     override val playback: StateFlow<SoundscapePlaybackState> = _playback.asStateFlow()
 
-    override fun start(sceneId: Int, sceneTitle: String, layers: List<SoundscapeLayerState>) {
+    override fun start(
+        sceneId: Int,
+        sceneTitle: String,
+        layers: List<SoundscapeLayerState>,
+        sceneImageUrl: String?,
+        ambientMode: Boolean,
+    ) {
         val startedAt = System.currentTimeMillis()
         _playback.value = SoundscapePlaybackState(
             sceneId = sceneId,
             sceneTitle = sceneTitle,
             isPlaying = true,
-            layers = layers.take(10),
+            ambientMode = ambientMode,
+            sceneImageUrl = sceneImageUrl,
+            layers = layers.take(MAX_SOUND_LAYERS),
         )
         Timber.tag("SOUNDSCAPES_METRICS").d(
             "scene_start sceneId=%s layers=%s startupMs=%s",
             sceneId,
-            layers.size.coerceAtMost(10),
+            layers.size.coerceAtMost(MAX_SOUND_LAYERS),
             System.currentTimeMillis() - startedAt
         )
     }
@@ -68,41 +97,86 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
         _playback.update { it.copy(isPlaying = !it.isPlaying) }
     }
 
+    override fun setPlaying(playing: Boolean) {
+        _playback.update { state ->
+            if (state.isPlaying == playing) state else state.copy(isPlaying = playing)
+        }
+    }
+
+    override fun setAmbientMode(enabled: Boolean) {
+        _playback.update { it.copy(ambientMode = enabled) }
+    }
+
+    override fun setPlaylist(sceneIds: List<Int>) {
+        _playback.update { it.copy(playlistSceneIds = sceneIds.distinct()) }
+    }
+
+    override fun renameCurrentScene(title: String) {
+        _playback.update { it.copy(sceneTitle = title) }
+    }
+
+    override fun canPlayPrev(): Boolean = prevSceneId() != null
+
+    override fun canPlayNext(): Boolean = nextSceneId() != null
+
+    override fun prevSceneId(): Int? {
+        val state = _playback.value
+        val current = state.sceneId ?: return null
+        val index = state.playlistSceneIds.indexOf(current)
+        if (index <= 0) return null
+        return state.playlistSceneIds.getOrNull(index - 1)
+    }
+
+    override fun nextSceneId(): Int? {
+        val state = _playback.value
+        val current = state.sceneId ?: return null
+        val index = state.playlistSceneIds.indexOf(current)
+        if (index < 0 || index >= state.playlistSceneIds.lastIndex) return null
+        return state.playlistSceneIds.getOrNull(index + 1)
+    }
+
     override fun setMusicVolume(volume: Float) {
         _playback.update { it.copy(musicVolume = volume.coerceIn(0f, 1f)) }
     }
 
-    override fun setLayerVolume(layerId: Int, volume: Float) {
+    override fun setLayerVolume(layerKey: String, volume: Float) {
         _playback.update { state ->
-            state.copy(
-                layers = state.layers.map { layer ->
-                    if (layer.id == layerId) layer.copy(volume = volume.coerceIn(0f, 1f)) else layer
-                }
-            )
+            val idx = state.layers.indexOfFirst { it.instanceKey == layerKey }
+            if (idx < 0) state else {
+                val next = state.layers.toMutableList()
+                next[idx] = next[idx].copy(volume = volume.coerceIn(0f, 1f))
+                state.copy(layers = next)
+            }
         }
-        Timber.tag("SOUNDSCAPES_METRICS").d("layer_volume layerId=%s volume=%.2f", layerId, volume)
+        Timber.tag("SOUNDSCAPES_METRICS").d("layer_volume layerKey=%s volume=%.2f", layerKey, volume)
     }
 
-    override fun muteLayer(layerId: Int, muted: Boolean) {
+    override fun muteLayer(layerKey: String, muted: Boolean) {
         _playback.update { state ->
-            state.copy(
-                layers = state.layers.map { layer ->
-                    if (layer.id == layerId) layer.copy(muted = muted) else layer
-                }
-            )
+            val idx = state.layers.indexOfFirst { it.instanceKey == layerKey }
+            if (idx < 0) state else {
+                val next = state.layers.toMutableList()
+                next[idx] = next[idx].copy(muted = muted)
+                state.copy(layers = next)
+            }
         }
     }
 
-    override fun removeLayer(layerId: Int) {
+    override fun removeLayer(layerKey: String) {
         _playback.update { state ->
-            state.copy(layers = state.layers.filterNot { it.id == layerId })
+            val idx = state.layers.indexOfFirst { it.instanceKey == layerKey }
+            if (idx < 0) state else {
+                val next = state.layers.toMutableList()
+                next.removeAt(idx)
+                state.copy(layers = next)
+            }
         }
     }
 
     override fun addLayer(layer: SoundscapeLayerState) {
         _playback.update { state ->
-            if (state.layers.any { it.id == layer.id }) state
-            else state.copy(layers = (state.layers + layer).take(10))
+            if (state.layers.any { it.instanceKey == layer.instanceKey }) state
+            else state.copy(layers = (state.layers + layer).take(MAX_SOUND_LAYERS))
         }
     }
 

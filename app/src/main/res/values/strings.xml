@@ -6,6 +6,7 @@
     <string name="cancel">Cancel</string>
     <string name="text_load_again">Try again</string>
     <string name="next">Next</string>
+    <string name="prev">Previous</string>
     <string name="delete">Delete</string>
     <string name="delete_all">Delete all</string>
     <string name="select_all">Select all</string>
@@ -25,6 +26,9 @@
     <string name="copied">Copied</string>
     <string name="report_error">Report an error</string>
     <string name="save">Save</string>
+    <string name="discard">Discard</string>
+    <string name="unsaved_changes_title">Unsaved changes</string>
+    <string name="unsaved_changes_message">Do you want to save changes before leaving this scene?</string>
     <string name="email">Email</string>
     <string name="send">Send</string>
     <string name="edit">Edit</string>
@@ -43,6 +47,7 @@
     <string name="remove_from_favorites">Remove from Favorites</string>
     <string name="setup_language">Setup language…</string>
     <string name="play">Play</string>
+    <string name="pause">Pause</string>
     <string name="read_more">See more</string>
     <string name="faq">FAQs</string>
 
@@ -506,6 +511,7 @@
     <string name="scenes_category_favorites">Favorites</string>
     <string name="scenes_search">Search</string>
     <string name="scenes_playlists">Playlists</string>
+    <string name="scenes_default_playlist">Default Playlist</string>
     <string name="scenes_all">All</string>
     <string name="sounds_title">Sounds</string>
     <string name="sounds_category_favorites">Favorites</string>

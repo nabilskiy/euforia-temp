@@ -70,6 +70,7 @@ import digital.euforia.app.ui.theme.SoundscapesTileBorder
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_FALLBACK_ALL
+import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST
 import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_UNCATEGORIZED
 import digital.euforia.app.domain.usecase.soundscapes.SoundscapeCategorySection
 import digital.euforia.app.ui.util.LocalizedResources
@@ -130,6 +131,7 @@ fun SoundscapesScreen(
                             playlistsLabel = localizedRes.string(R.string.scenes_playlists),
                             playlistsActive = showPlaylists,
                             onSearchClick = {
+                                viewModel.onSearchOpened()
                                 showPlaylists = false
                                 showSearchDialog = true
                             },
@@ -244,6 +246,7 @@ fun SoundscapesScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clickable {
+                                                viewModel.onSearchSuggestionClick()
                                                 viewModel.onSearchQueryChanged(suggestion)
                                                 showSearchDialog = false
                                             }
@@ -283,6 +286,7 @@ fun SoundscapesScreen(
                                     scene = scene,
                                     modifier = Modifier.size(width = 156.dp, height = 96.dp),
                                     onClick = {
+                                        viewModel.onPopularSceneClick()
                                         showSearchDialog = false
                                         viewModel.onSceneClick(scene)
                                     },
@@ -302,6 +306,7 @@ private fun sectionTitle(
     localizedRes: LocalizedResources
 ): String {
     return when (section.categoryId) {
+        SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST -> localizedRes.string(R.string.scenes_default_playlist)
         SOUNDSCAPE_SECTION_UNCATEGORIZED -> localizedRes.string(R.string.soundscapes_section_other)
         SOUNDSCAPE_SECTION_FALLBACK_ALL -> localizedRes.string(R.string.scenes_all)
         else -> section.title.ifBlank { localizedRes.string(R.string.scenes_all) }

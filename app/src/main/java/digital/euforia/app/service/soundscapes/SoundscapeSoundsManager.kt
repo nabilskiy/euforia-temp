@@ -26,10 +26,13 @@ import javax.inject.Singleton
 class SoundscapeSoundsManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    private companion object {
+        const val MAX_SOUND_LAYERS = 12
+    }
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val players = LinkedHashMap<Int, ExoPlayer>()
-    private val playerUrls = LinkedHashMap<Int, String>()
-    private val fadeGeneration = LinkedHashMap<Int, Int>()
+    private val players = LinkedHashMap<String, ExoPlayer>()
+    private val playerUrls = LinkedHashMap<String, String>()
+    private val fadeGeneration = LinkedHashMap<String, Int>()
     private var currentSceneId: Int? = null
 
     fun render(playback: SoundscapePlaybackState) {
@@ -48,8 +51,8 @@ class SoundscapeSoundsManager @Inject constructor(
 
         val layersWithAudio = playback.layers
             .filter { !it.audioUrl.isNullOrBlank() }
-            .take(10)
-        val keepIds = layersWithAudio.map { it.id }.toSet()
+            .take(MAX_SOUND_LAYERS)
+        val keepIds = layersWithAudio.map { it.instanceKey }.toSet()
 
         // Release removed layers.
         val toRemove = players.keys.filter { it !in keepIds }
@@ -62,23 +65,32 @@ class SoundscapeSoundsManager @Inject constructor(
         // Create/update players for active layers.
         layersWithAudio.forEach { layer ->
             val layerUrl = layer.audioUrl.orEmpty()
-            val existing = players[layer.id]
-            val currentUrl = playerUrls[layer.id]
+            val existing = players[layer.instanceKey]
+            val currentUrl = playerUrls[layer.instanceKey]
             val player = if (existing == null || currentUrl != layerUrl) {
                 existing?.release()
                 createPlayer(layerUrl).also {
-                    players[layer.id] = it
-                    playerUrls[layer.id] = layerUrl
+                    players[layer.instanceKey] = it
+                    playerUrls[layer.instanceKey] = layerUrl
                 }
             } else existing
             val targetVolume = if (layer.muted) 0f else layer.volume.coerceIn(0f, 1f)
+            Timber.tag("SOUNDSCAPES_AUDIO").d(
+                "layer_render key=%s soundId=%s title=%s muted=%s targetVolume=%.2f hasPlayer=%s",
+                layer.instanceKey,
+                layer.id,
+                layer.title,
+                layer.muted,
+                targetVolume,
+                existing != null
+            )
             if (playback.isPlaying) {
-                cancelFade(layer.id)
+                cancelFade(layer.instanceKey)
                 player.volume = targetVolume
                 player.playWhenReady = true
                 player.play()
             } else {
-                startFadeOut(layer.id, player)
+                startFadeOut(layer.instanceKey, player)
             }
         }
         Timber.tag("SOUNDSCAPES_AUDIO").d(
@@ -112,12 +124,14 @@ class SoundscapeSoundsManager @Inject constructor(
         return ExoPlayer.Builder(context)
             .setMediaSourceFactory(DefaultMediaSourceFactory(cacheFactory))
             .build().apply {
+            // Multiple layer players must NOT each handle audio focus: they would compete and
+            // pause/duck each other whenever play() or volume-driven re-render runs.
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                     .setUsage(C.USAGE_MEDIA)
                     .build(),
-                false
+                /* handleAudioFocus */ false
             )
             setMediaItem(MediaItem.fromUri(audioUrl))
             repeatMode = Player.REPEAT_MODE_ALL
@@ -128,11 +142,11 @@ class SoundscapeSoundsManager @Inject constructor(
         }
     }
 
-    private fun cancelFade(layerId: Int) {
+    private fun cancelFade(layerId: String) {
         fadeGeneration[layerId] = (fadeGeneration[layerId] ?: 0) + 1
     }
 
-    private fun startFadeOut(layerId: Int, player: ExoPlayer) {
+    private fun startFadeOut(layerId: String, player: ExoPlayer) {
         val gen = (fadeGeneration[layerId] ?: 0) + 1
         fadeGeneration[layerId] = gen
         val startVolume = player.volume.coerceIn(0f, 1f)

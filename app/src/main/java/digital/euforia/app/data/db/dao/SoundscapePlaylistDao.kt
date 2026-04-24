@@ -23,6 +23,9 @@ interface SoundscapePlaylistDao {
     @Query("SELECT * FROM soundscape_playlists WHERE id = :id LIMIT 1")
     fun getByIdFlow(id: Int): Flow<SoundscapePlaylist?>
 
+    @Query("SELECT * FROM soundscape_playlists WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Int): SoundscapePlaylist?
+
     @Query("DELETE FROM soundscape_playlists WHERE id NOT IN (:ids)")
     suspend fun deleteAllExcept(ids: List<Int>)
 }

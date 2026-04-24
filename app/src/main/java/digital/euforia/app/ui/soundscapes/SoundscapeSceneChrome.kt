@@ -43,10 +43,13 @@ fun SoundscapeSceneTopBar(
     showMaxBadge: Boolean,
     onClose: () -> Unit,
     onSavePreset: () -> Unit,
+    onRenameScene: (String) -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showRename by remember { mutableStateOf(false) }
+    var renameValue by remember(title) { mutableStateOf(title) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -113,10 +116,36 @@ fun SoundscapeSceneTopBar(
                     onClick = { showMenu = false; onSavePreset() }
                 )
                 DropdownMenuItem(
+                    text = { Text("Rename scene") },
+                    onClick = { showMenu = false; showRename = true }
+                )
+                DropdownMenuItem(
                     text = { Text("Download") },
                     onClick = { showMenu = false; onDownload() }
                 )
             }
         }
+    }
+    if (showRename) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showRename = false },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    onRenameScene(renameValue)
+                    showRename = false
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showRename = false }) { Text("Cancel") }
+            },
+            title = { Text("Rename scene") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = renameValue,
+                    onValueChange = { renameValue = it },
+                    singleLine = true
+                )
+            }
+        )
     }
 }

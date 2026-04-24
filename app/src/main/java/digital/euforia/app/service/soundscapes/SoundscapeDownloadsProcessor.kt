@@ -5,7 +5,9 @@
 
 package digital.euforia.app.service.soundscapes
 
+import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
+import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.di.ApplicationCoroutineScopeIO
 import digital.euforia.app.domain.util.ResultWrapper
@@ -24,6 +26,7 @@ class SoundscapeDownloadsProcessor @Inject constructor(
     @ApplicationCoroutineScopeIO private val scope: CoroutineScope,
     private val repository: SoundscapesRepository,
     private val audioCacheManager: SoundscapeAudioCacheManager,
+    private val analyticSender: AnalyticSender,
 ) {
     @Volatile
     private var started = false
@@ -63,24 +66,18 @@ class SoundscapeDownloadsProcessor @Inject constructor(
 
         try {
             val scene = repository.getSceneDetails(item.sceneId).dataOrNull
-            val urls = scene?.sceneSounds
-                ?.mapNotNull { soundItem ->
-                    soundItem.soundFileUrl?.takeIf { it.isNotBlank() }
-                        ?: soundItem.sound?.fileUrl?.takeIf { it.isNotBlank() }
-                        ?: soundItem.sound?.file?.url?.takeIf { it.isNotBlank() }
-                }
-                ?.distinct()
-                .orEmpty()
+            val urls = buildOfflineAssetUrls(scene)
 
             if (urls.isEmpty()) {
                 repository.updateDownload(
                     startedItem.copy(
                         status = SoundscapeDownloadItem.STATUS_READY,
                         progress = 100,
-                        localPath = "scene_${item.sceneId}",
+                        localPath = "scene_${item.sceneId}|assets=${urls.size}",
                         updatedAt = System.currentTimeMillis()
                     )
                 )
+                analyticSender.soundscapeDownloadReady(item.sceneId)
                 return
             }
 
@@ -110,12 +107,14 @@ class SoundscapeDownloadsProcessor @Inject constructor(
                 startedItem.copy(
                     status = SoundscapeDownloadItem.STATUS_READY,
                     progress = 100,
-                    localPath = "scene_${item.sceneId}",
+                    localPath = "scene_${item.sceneId}|assets=${urls.size}",
                     updatedAt = System.currentTimeMillis()
                 )
             )
+            analyticSender.soundscapeDownloadReady(item.sceneId)
         } catch (t: Throwable) {
             Timber.tag("SOUNDSCAPES_DOWNLOADS").e(t, "Failed to download scene %s", item.sceneId)
+            analyticSender.soundscapeDownloadFailed(item.sceneId, t.javaClass.simpleName)
             repository.updateDownload(
                 startedItem.copy(
                     status = SoundscapeDownloadItem.STATUS_FAILED,
@@ -124,4 +123,24 @@ class SoundscapeDownloadsProcessor @Inject constructor(
             )
         }
     }
+}
+
+internal fun buildOfflineAssetUrls(scene: NetworkScene?): List<String> {
+    val soundUrls = scene?.sceneSounds
+        ?.mapNotNull { soundItem ->
+            soundItem.soundFileUrl?.takeIf { it.isNotBlank() }
+                ?: soundItem.sound?.fileUrl?.takeIf { it.isNotBlank() }
+                ?: soundItem.sound?.file?.url?.takeIf { it.isNotBlank() }
+        }.orEmpty()
+    val musicUrls = scene?.sceneMusics
+        ?.mapNotNull { m ->
+            m.musicFileUrl?.takeIf { it.isNotBlank() }
+                ?: m.music?.fileUrl?.takeIf { it.isNotBlank() }
+                ?: m.music?.file?.url?.takeIf { it.isNotBlank() }
+        }.orEmpty()
+    val backgroundUrls = listOfNotNull(
+        scene?.video?.url?.takeIf { it.isNotBlank() },
+        scene?.videoUrl?.takeIf { it.isNotBlank() }
+    )
+    return (soundUrls + musicUrls + backgroundUrls).distinct()
 }

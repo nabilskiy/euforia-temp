@@ -25,7 +25,7 @@ internal suspend fun buildLoadedSceneData(
     sceneId: Int,
     remoteScene: NetworkScene?,
     fallbackMusicVolume: Float,
-    createFloatingButton: (sound: AvailableSoundUi, index: Int, total: Int) -> SoundFloatingButtonUi,
+    createFloatingButton: (sound: AvailableSoundUi, index: Int, total: Int, instanceKey: String) -> SoundFloatingButtonUi,
 ): LoadedSceneData {
     val sceneLayers = remoteScene
         ?.sceneSounds
@@ -37,6 +37,7 @@ internal suspend fun buildLoadedSceneData(
                 ?: soundItem.sound?.file?.url?.takeIf { it.isNotBlank() }
             SoundscapeLayerState(
                 id = soundId,
+                instanceKey = "$soundId:$index",
                 title = soundItem.sound.name.orEmpty().ifBlank { "Layer ${index + 1}" },
                 audioUrl = soundUrl,
                 volume = ((soundItem.volume ?: 100).coerceIn(0, 100) / 100f),
@@ -55,6 +56,7 @@ internal suspend fun buildLoadedSceneData(
                 ?: (0.22f + index * 0.14f).coerceIn(0.15f, 0.85f)
             SoundFloatingButtonUi(
                 id = soundId,
+                instanceKey = "$soundId:$index",
                 title = s.name.orEmpty().ifBlank { "Sound ${index + 1}" },
                 imageUrl = s.imageUrl?.takeIf { it.isNotBlank() },
                 posXFraction = posXf,
@@ -62,10 +64,10 @@ internal suspend fun buildLoadedSceneData(
             )
         }
         .orEmpty()
-    val remoteButtonsById = floatingButtons.associateBy { it.id }
+    val remoteButtonsByLayerKey = floatingButtons.associateBy { it.instanceKey }
     val localState = repository.getLocalSceneState(sceneId)
     val localLayers = localState?.parseLayers().orEmpty()
-    val localButtons = localState?.parseButtons().orEmpty().associateBy { it.id }
+    val localButtons = localState?.parseButtons().orEmpty().associateBy { it.instanceKey }
     val allSoundsById = repository.getAllSounds().associateBy { it.id }
     val finalLayers = if (localLayers.isNotEmpty()) {
         localLayers.map {
@@ -73,6 +75,7 @@ internal suspend fun buildLoadedSceneData(
             val catalogLayerUrl = allSoundsById[it.id]?.fileUrl?.takeIf { url -> url.isNotBlank() }
             SoundscapeLayerState(
                 id = it.id,
+                instanceKey = "${it.id}:local",
                 title = it.title.ifBlank { allSoundsById[it.id]?.name ?: "Sound ${it.id}" },
                 audioUrl = sceneLayerUrl ?: catalogLayerUrl,
                 volume = it.volume,
@@ -81,23 +84,24 @@ internal suspend fun buildLoadedSceneData(
         }
     } else sceneLayers
 
-    val floatingById = floatingButtons.associateBy { it.id }
+    val floatingByKey = floatingButtons.associateBy { it.instanceKey }
     val finalButtons = finalLayers.mapIndexed { index, layer ->
-        val fromLocal = localButtons[layer.id]
+        val fromLocal = localButtons[layer.instanceKey]
         if (fromLocal != null) {
             val catalog = allSoundsById[layer.id]
             SoundFloatingButtonUi(
                 id = layer.id,
+                instanceKey = layer.instanceKey,
                 title = fromLocal.title.ifBlank { layer.title.ifBlank { catalog?.name.orEmpty() } },
                 imageUrl = fromLocal.imageUrl
-                    ?: remoteButtonsById[layer.id]?.imageUrl
+                    ?: remoteButtonsByLayerKey[layer.instanceKey]?.imageUrl
                     ?: catalog?.imageUrl?.takeIf { it.isNotBlank() },
                 posXFraction = fromLocal.posXFraction,
                 posYFraction = fromLocal.posYFraction,
             )
         } else {
             val catalog = allSoundsById[layer.id]
-            floatingById[layer.id] ?: createFloatingButton(
+            floatingByKey[layer.instanceKey] ?: createFloatingButton(
                 AvailableSoundUi(
                     id = layer.id,
                     categoryId = catalog?.categoryId ?: 0,
@@ -107,6 +111,7 @@ internal suspend fun buildLoadedSceneData(
                 ),
                 index,
                 finalLayers.size,
+                layer.instanceKey,
             )
         }
     }

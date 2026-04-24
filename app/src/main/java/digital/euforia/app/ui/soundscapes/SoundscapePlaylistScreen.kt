@@ -51,7 +51,12 @@ fun SoundscapePlaylistScreen(
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
             is SoundscapePlaylistSideEffect.OpenScene ->
-                navController.navigate(HomeDestination.SoundscapesScene(sideEffect.sceneId))
+                navController.navigate(
+                    HomeDestination.SoundscapesScene(
+                        sceneId = sideEffect.sceneId,
+                        playlistId = sideEffect.playlistId
+                    )
+                )
         }
     }
 

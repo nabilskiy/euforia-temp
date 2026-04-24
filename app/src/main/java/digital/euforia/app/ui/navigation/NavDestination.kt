@@ -47,7 +47,8 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     @Serializable
     @Keep
     data class SoundscapesScene(
-        val sceneId: Int
+        val sceneId: Int,
+        val playlistId: Int? = null,
     ) : HomeDestination(showNavBar = false)
 
     @Serializable

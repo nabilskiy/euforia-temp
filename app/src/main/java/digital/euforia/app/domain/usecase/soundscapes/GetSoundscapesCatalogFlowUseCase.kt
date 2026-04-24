@@ -15,6 +15,7 @@ import javax.inject.Inject
 
 const val SOUNDSCAPE_SECTION_FALLBACK_ALL = -2
 const val SOUNDSCAPE_SECTION_UNCATEGORIZED = -1
+const val SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST = -3
 
 data class SoundscapeCategorySection(
     val categoryId: Int,

@@ -857,6 +857,84 @@ class AnalyticSender @Inject constructor(
         logEvent(eventName = "scenes_item_longpress")
     }
 
+    fun soundscapeSearchOpen() {
+        logEvent(eventName = "soundscape_search_open")
+    }
+
+    fun soundscapeSearchQueryChanged(queryLength: Int) {
+        val params = Bundle().apply { putInt("query_length", queryLength) }
+        logEvent(eventName = "soundscape_search_query_changed", params = params)
+    }
+
+    fun soundscapeSearchSuggestionClick() {
+        logEvent(eventName = "soundscape_search_suggestion_click")
+    }
+
+    fun soundscapePopularSceneClick() {
+        logEvent(eventName = "soundscape_popular_scene_click")
+    }
+
+    fun soundscapePlaylistOpen(playlistId: Int) {
+        val params = Bundle().apply { putInt("playlist_id", playlistId) }
+        logEvent(eventName = "soundscape_playlist_open", params = params)
+    }
+
+    fun soundscapeLayerAdded() {
+        logEvent(eventName = "soundscape_layer_added")
+    }
+
+    fun soundscapeLayerRemoved() {
+        logEvent(eventName = "soundscape_layer_removed")
+    }
+
+    fun soundscapeLayerSettingsOpened(layerKey: String, soundId: Int, title: String) {
+        val params = Bundle().apply {
+            putString("layer_key", layerKey)
+            putInt("sound_id", soundId)
+            putString("title", title)
+        }
+        logEvent(eventName = "soundscape_layer_settings_opened", params = params)
+    }
+
+    fun soundscapeLayerVolumeChanged(layerKey: String, volume: Float) {
+        val params = Bundle().apply {
+            putString("layer_key", layerKey)
+            putInt("volume_percent", (volume.coerceIn(0f, 1f) * 100f).toInt())
+        }
+        logEvent(eventName = "soundscape_layer_volume_changed", params = params)
+    }
+
+    fun soundscapeLayerSettingsDeleted(layerKey: String) {
+        val params = Bundle().apply { putString("layer_key", layerKey) }
+        logEvent(eventName = "soundscape_layer_settings_deleted", params = params)
+    }
+
+    fun soundscapeMusicChanged() {
+        logEvent(eventName = "soundscape_music_changed")
+    }
+
+    fun soundscapePreparationCancelled() {
+        logEvent(eventName = "soundscape_preparation_cancelled")
+    }
+
+    fun soundscapeDownloadQueued(sceneId: Int) {
+        val params = Bundle().apply { putInt("scene_id", sceneId) }
+        logEvent(eventName = "soundscape_download_queued", params = params)
+    }
+
+    fun soundscapeDownloadReady(sceneId: Int) {
+        val params = Bundle().apply { putInt("scene_id", sceneId) }
+        logEvent(eventName = "soundscape_download_ready", params = params)
+    }
+
+    fun soundscapeDownloadFailed(sceneId: Int, reason: String) {
+        val params = Bundle().apply {
+            putInt("scene_id", sceneId)
+            putString("reason", reason)
+        }
+        logEvent(eventName = "soundscape_download_failed", params = params)
+    }
+
     fun packagesListShow() {
         logEvent(eventName = "packages_list_show")
     }

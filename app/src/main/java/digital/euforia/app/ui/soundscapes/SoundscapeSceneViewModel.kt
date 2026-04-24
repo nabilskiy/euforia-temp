@@ -18,6 +18,7 @@ import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.toEntity
+import digital.euforia.app.domain.model.config.ScenePlayerConfig
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapeDownloadsFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.QueueSoundscapeDownloadUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SaveSoundscapePresetUseCase
@@ -29,6 +30,7 @@ import digital.euforia.app.service.soundscapes.SoundscapeSoundsManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
+import timber.log.Timber
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
@@ -51,6 +53,7 @@ class SoundscapeSceneViewModel @Inject constructor(
     private val analyticSender: AnalyticSender,
 ) : ViewModel(), ContainerHost<SoundscapeSceneState, SoundscapeSceneSideEffect> {
     private val sceneId: Int = savedStateHandle["sceneId"] ?: 0
+    private val playlistId: Int? = savedStateHandle["playlistId"]
     private var sceneCategoryAliasesById: Map<Int, String> = emptyMap()
 
     override val container = container<SoundscapeSceneState, SoundscapeSceneSideEffect>(
@@ -91,6 +94,14 @@ class SoundscapeSceneViewModel @Inject constructor(
             val remoteScene = soundscapesRepository.getSceneDetails(sceneId).dataOrNull
             val scene = remoteScene?.toEntity() ?: soundscapesRepository.getSceneById(sceneId) ?: localScene
             if (scene == null) {
+                reduce {
+                    state.copy(
+                        error = SoundscapeError(
+                            type = SoundscapeErrorType.NETWORK,
+                            message = "Failed to load scene"
+                        )
+                    )
+                }
                 return@intent
             }
             val isPremium = profilePreferences.getIsPremium()
@@ -99,12 +110,20 @@ class SoundscapeSceneViewModel @Inject constructor(
                 return@intent
             }
             val level = appPreferences.getSoundscapesLevel() / 100f
+            val scenePlayerConfig = remoteConfigFetcher.getScenePlayerConfig()
+            playbackController.setAmbientMode(scenePlayerConfig.ambientMode)
+            val playlistSceneIds = playlistId
+                ?.let { id -> soundscapesRepository.getPlaylistById(id)?.sceneIds }
+                .orEmpty()
+            playbackController.setPlaylist(playlistSceneIds)
             val loaded = buildLoadedSceneData(
                 repository = soundscapesRepository,
                 sceneId = sceneId,
                 remoteScene = remoteScene,
                 fallbackMusicVolume = level,
-                createFloatingButton = ::createFloatingButton
+                createFloatingButton = { sound, index, total, instanceKey ->
+                    createFloatingButton(sound, index, total, instanceKey)
+                }
             )
             playbackController.setMusicVolume(loaded.resolvedMusicVolume)
             reduce {
@@ -129,6 +148,8 @@ class SoundscapeSceneViewModel @Inject constructor(
                     sceneCategoryId = scene.categoryId,
                     sceneCategoryAlias = sceneCategoryAlias,
                     musicVolume = loaded.resolvedMusicVolume,
+                    scenePlayerConfig = scenePlayerConfig,
+                    playlistId = playlistId,
                     isPreparing = true,
                     preparingCompleted = 0,
                     preparingTotal = loaded.finalLayers.mapNotNull { it.audioUrl?.takeIf(String::isNotBlank) }.distinct().size,
@@ -165,14 +186,35 @@ class SoundscapeSceneViewModel @Inject constructor(
             }
             val layersForPlayback = preparedLayers.ifEmpty {
                 listOf(
-                    SoundscapeLayerState(id = sceneId * 100 + 1, title = "Rain", audioUrl = null, volume = 0.55f),
-                    SoundscapeLayerState(id = sceneId * 100 + 2, title = "Forest", audioUrl = null, volume = 0.45f),
+                    SoundscapeLayerState(
+                        id = sceneId * 100 + 1,
+                        instanceKey = "${sceneId}:fallback:1",
+                        title = "Rain",
+                        audioUrl = null,
+                        volume = 0.55f
+                    ),
+                    SoundscapeLayerState(
+                        id = sceneId * 100 + 2,
+                        instanceKey = "${sceneId}:fallback:2",
+                        title = "Forest",
+                        audioUrl = null,
+                        volume = 0.45f
+                    ),
                 )
             }
+            Timber.tag("SOUNDSCAPES_AUDIO").d(
+                "scene_prepared sceneId=%s layers=%s withAudio=%s",
+                sceneId,
+                layersForPlayback.size,
+                layersForPlayback.count { !it.audioUrl.isNullOrBlank() }
+            )
             if (playbackController.playback.value.sceneId != sceneId) {
+                val ambientMode = container.stateFlow.value.scenePlayerConfig.ambientMode
                 playbackController.start(
                     sceneId = sceneId,
                     sceneTitle = sceneTitle,
+                    sceneImageUrl = container.stateFlow.value.imageUrl,
+                    ambientMode = ambientMode,
                     layers = layersForPlayback
                 )
             } else {
@@ -354,14 +396,32 @@ class SoundscapeSceneViewModel @Inject constructor(
     }
 
     fun onPlayPause() = playbackController.playPause()
-    fun onLayerVolume(layerId: Int, volume: Float) = playbackController.setLayerVolume(layerId, volume)
-    fun onLayerMute(layerId: Int, muted: Boolean) = playbackController.muteLayer(layerId, muted)
-    fun onLayerRemove(layerId: Int) = playbackController.removeLayer(layerId)
+    fun onLayerVolume(layerKey: String, volume: Float) {
+        analyticSender.soundscapeLayerVolumeChanged(layerKey = layerKey, volume = volume)
+        playbackController.setLayerVolume(layerKey, volume)
+        intent {
+            reduce { state.copy(isDirty = true) }
+            persistLocalSceneState()
+        }
+    }
+    fun onLayerMute(layerKey: String, muted: Boolean) = playbackController.muteLayer(layerKey, muted)
+    fun onLayerSettingsOpened(layerKey: String, soundId: Int, title: String) {
+        analyticSender.soundscapeLayerSettingsOpened(layerKey = layerKey, soundId = soundId, title = title)
+    }
+    fun onLayerRemove(layerKey: String) {
+        analyticSender.soundscapeLayerSettingsDeleted(layerKey = layerKey)
+        playbackController.removeLayer(layerKey)
+        intent {
+            analyticSender.soundscapeLayerRemoved()
+            reduce { state.copy(isDirty = true) }
+            persistLocalSceneState()
+        }
+    }
     fun onTimerChange(minutes: Int?) = playbackController.setTimer(minutes?.times(60))
 
     fun onApplySoundsSelection(selectedSoundIds: Set<Int>) {
         intent {
-            val selected = selectedSoundIds.take(10).toSet()
+            val selected = selectedSoundIds.take(12).toSet()
             val playback = playbackController.playback.value
             val existingById = playback.layers.associateBy { it.id }
             val availableById = state.availableSounds.associateBy { it.id }
@@ -369,13 +429,17 @@ class SoundscapeSceneViewModel @Inject constructor(
             // Remove deselected sounds.
             playback.layers
                 .asSequence()
-                .map { it.id }
-                .filter { it !in selected }
-                .forEach(playbackController::removeLayer)
+                .map { it.instanceKey to it.id }
+                .filter { (_, soundId) -> soundId !in selected }
+                .forEach {
+                    analyticSender.soundscapeLayerRemoved()
+                    playbackController.removeLayer(it.first)
+                }
 
             // Add newly selected sounds.
             selected.forEach { soundId ->
                 if (soundId !in existingById) {
+                    analyticSender.soundscapeLayerAdded()
                     val sound = availableById[soundId]
                     val resolvedUrl = runCatching {
                         audioCacheManager.ensureCached(sound?.fileUrl.orEmpty())
@@ -383,6 +447,7 @@ class SoundscapeSceneViewModel @Inject constructor(
                     playbackController.addLayer(
                         SoundscapeLayerState(
                             id = soundId,
+                            instanceKey = "$soundId:manual",
                             title = sound?.title ?: "Sound $soundId",
                             audioUrl = resolvedUrl.ifBlank { sound?.fileUrl },
                             volume = 0.6f,
@@ -392,10 +457,10 @@ class SoundscapeSceneViewModel @Inject constructor(
                 }
             }
 
-            val currentButtonsById = state.soundFloatingButtons.associateBy { it.id }
+            val currentButtonsByKey = state.soundFloatingButtons.associateBy { it.instanceKey }
             val nextButtons = selected.mapIndexedNotNull { index, soundId ->
-                currentButtonsById[soundId] ?: availableById[soundId]?.let { sound ->
-                    createFloatingButton(sound, index, selected.size)
+                currentButtonsByKey.values.firstOrNull { it.id == soundId } ?: availableById[soundId]?.let { sound ->
+                    createFloatingButton(sound, index, selected.size, "$soundId:manual")
                 }
             }
             reduce { state.copy(soundFloatingButtons = nextButtons, isDirty = true) }
@@ -407,6 +472,7 @@ class SoundscapeSceneViewModel @Inject constructor(
         sound: AvailableSoundUi,
         index: Int,
         total: Int,
+        instanceKey: String = sound.id.toString(),
     ): SoundFloatingButtonUi {
         val col = index % 4
         val row = index / 4
@@ -415,6 +481,7 @@ class SoundscapeSceneViewModel @Inject constructor(
         val yBase = if (rows == 1) 0.42f else 0.24f + (row * (0.5f / (rows - 1).coerceAtLeast(1)))
         return SoundFloatingButtonUi(
             id = sound.id,
+            instanceKey = instanceKey,
             title = sound.title,
             imageUrl = sound.imageUrl,
             posXFraction = x,
@@ -426,12 +493,14 @@ class SoundscapeSceneViewModel @Inject constructor(
         playbackController.setMusicVolume(volume)
         intent {
             appPreferences.setSoundscapesLevel((volume * 100).toInt())
+            reduce { state.copy(isDirty = true) }
             persistLocalSceneState()
         }
     }
 
     fun onApplyMusicSelection(musicId: Int?) {
         intent {
+            analyticSender.soundscapeMusicChanged()
             val selected = state.availableMusic.firstOrNull { it.id == musicId }
             reduce {
                 state.copy(
@@ -458,10 +527,10 @@ class SoundscapeSceneViewModel @Inject constructor(
         }
     }
 
-    fun onSoundButtonPositionChanged(soundId: Int, posXFraction: Float, posYFraction: Float) {
+    fun onSoundButtonPositionChanged(instanceKey: String, posXFraction: Float, posYFraction: Float) {
         intent {
             val updated = state.soundFloatingButtons.map { button ->
-                if (button.id == soundId) {
+                if (button.instanceKey == instanceKey) {
                     button.copy(
                         posXFraction = posXFraction.coerceIn(0f, 1f),
                         posYFraction = posYFraction.coerceIn(0f, 1f),
@@ -491,9 +560,26 @@ class SoundscapeSceneViewModel @Inject constructor(
         }
     }
 
+    fun onRenameScene(newTitle: String) {
+        val title = newTitle.trim()
+        if (title.isBlank()) return
+        playbackController.renameCurrentScene(title)
+        intent {
+            reduce { state.copy(title = title, isDirty = true) }
+            persistLocalSceneState()
+        }
+    }
+
+    fun onDiscardChangesAndExit() {
+        intent {
+            reduce { state.copy(isDirty = false) }
+        }
+    }
+
     fun onDownloadScene() {
         intent {
             val sceneTitle = state.title.ifBlank { "Scene $sceneId" }
+            analyticSender.soundscapeDownloadQueued(sceneId)
             queueDownloadUseCase(
                 SoundscapeDownloadItem(
                     id = "scene_$sceneId",
@@ -509,6 +595,7 @@ class SoundscapeSceneViewModel @Inject constructor(
 
     fun onCancelPreparation() {
         preparationJob?.cancel()
+        analyticSender.soundscapePreparationCancelled()
         intent {
             reduce { state.copy(isPreparing = false, preparingCompleted = 0, preparingTotal = 0) }
         }
@@ -523,7 +610,15 @@ class SoundscapeSceneViewModel @Inject constructor(
                     state.copy(
                         title = playback.sceneTitle,
                         isPlaying = playback.isPlaying,
-                        layers = playback.layers.map { SoundLayerUi(it.id, it.title, it.volume, it.muted) },
+                        layers = playback.layers.map {
+                            SoundLayerUi(
+                                id = it.id,
+                                instanceKey = it.instanceKey,
+                                title = it.title,
+                                volume = it.volume,
+                                muted = it.muted
+                            )
+                        },
                         musicVolume = playback.musicVolume,
                         timerSeconds = playback.timerSeconds
                     )
@@ -575,6 +670,8 @@ data class SoundscapeSceneState(
     val isPro: Boolean = false,
     val sceneCategoryId: Int? = null,
     val sceneCategoryAlias: String? = null,
+    val scenePlayerConfig: ScenePlayerConfig = ScenePlayerConfig(),
+    val playlistId: Int? = null,
     val isPlaying: Boolean = false,
     val musicVolume: Float = 0.35f,
     /** Positions + icons from API `scene_sounds` for floating controls. */
@@ -597,10 +694,12 @@ data class SoundscapeSceneState(
     val isPreparing: Boolean = false,
     val preparingCompleted: Int = 0,
     val preparingTotal: Int = 0,
+    val error: SoundscapeError? = null,
 )
 
 data class SoundLayerUi(
     val id: Int,
+    val instanceKey: String,
     val title: String,
     val volume: Float,
     val muted: Boolean,
@@ -608,6 +707,7 @@ data class SoundLayerUi(
 
 data class SoundFloatingButtonUi(
     val id: Int,
+    val instanceKey: String,
     val title: String,
     val imageUrl: String?,
     /** 0f..1f, maps from API `pos_x` 0–100 or fallback layout. */

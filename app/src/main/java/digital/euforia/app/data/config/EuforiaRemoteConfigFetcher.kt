@@ -19,6 +19,7 @@ import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
 import digital.euforia.app.domain.model.config.toDomain
 import digital.euforia.app.domain.model.config.EmailAlertConfig
+import digital.euforia.app.domain.model.config.ScenePlayerConfig
 import digital.euforia.app.domain.model.plan.TodayPresentType
 import digital.euforia.app.domain.model.plan.toTodayPresentType
 import timber.log.Timber
@@ -228,6 +229,24 @@ class EuforiaRemoteConfigFetcher(
         }
     }
 
+    fun getScenesDefaultIds(): List<Int> {
+        val json = remoteConfig.getString(KEY_SCENES_DEFAULT)
+        return SoundscapesRemoteConfigParser.parseScenesDefaultIds(
+            json = json,
+            moshi = moshi,
+            onError = { logError(TAG, it) }
+        )
+    }
+
+    fun getScenePlayerConfig(): ScenePlayerConfig {
+        val json = remoteConfig.getString(KEY_SCENE_PLAYER_CONFIG)
+        return SoundscapesRemoteConfigParser.parseScenePlayerConfig(
+            json = json,
+            moshi = moshi,
+            onError = { logError(TAG, it) }
+        )
+    }
+
     fun getSoundsSuggestionsMap(): Map<String, List<Int>> {
         return try {
             val json = remoteConfig.getString(KEY_SOUNDS_SUGGESTIONS)
@@ -329,6 +348,8 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_SEARCH_SUGGESTIONS = "search_suggestions"
         private const val KEY_SCENES_SEARCH_SUGGESTIONS = "scenes_search_suggestions"
         private const val KEY_SCENES_POPULAR = "scenes_popular"
+        private const val KEY_SCENES_DEFAULT = "scenes_default"
+        private const val KEY_SCENE_PLAYER_CONFIG = "scene_player_config"
         private const val KEY_SOUNDS_SUGGESTIONS = "sounds_suggestions"
         private const val KEY_MUSIC_SUGGESTIONS = "music_suggestions"
         private const val KEY_SHARE_MESSAGE = "share_message"

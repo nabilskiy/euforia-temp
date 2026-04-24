@@ -18,6 +18,7 @@ internal data class LocalLayer(
 
 internal data class LocalButton(
     val id: Int,
+    val instanceKey: String,
     val posXFraction: Float,
     val posYFraction: Float,
     val title: String,
@@ -41,11 +42,20 @@ internal fun SoundscapeSceneLocalState.parseButtons(): List<LocalButton> = butto
         val parts = item.split(":")
         if (parts.size < 5) return@mapNotNull null
         val id = parts[0].toIntOrNull() ?: return@mapNotNull null
-        val x = (parts[1].toIntOrNull() ?: 50).coerceIn(0, 100) / 100f
-        val y = (parts[2].toIntOrNull() ?: 50).coerceIn(0, 100) / 100f
-        val title = parts[3].ifBlank { "Sound $id" }
-        val image = parts.subList(4, parts.size).joinToString(":").replace("%7C", "|").ifBlank { null }
-        LocalButton(id = id, posXFraction = x, posYFraction = y, title = title, imageUrl = image)
+        if (parts.size >= 6) {
+            val key = parts[1].replace("~", ":")
+            val x = (parts[2].toIntOrNull() ?: 50).coerceIn(0, 100) / 100f
+            val y = (parts[3].toIntOrNull() ?: 50).coerceIn(0, 100) / 100f
+            val title = parts[4].ifBlank { "Sound $id" }
+            val image = parts.subList(5, parts.size).joinToString(":").replace("%7C", "|").ifBlank { null }
+            LocalButton(id = id, instanceKey = key, posXFraction = x, posYFraction = y, title = title, imageUrl = image)
+        } else {
+            val x = (parts[1].toIntOrNull() ?: 50).coerceIn(0, 100) / 100f
+            val y = (parts[2].toIntOrNull() ?: 50).coerceIn(0, 100) / 100f
+            val title = parts[3].ifBlank { "Sound $id" }
+            val image = parts.subList(4, parts.size).joinToString(":").replace("%7C", "|").ifBlank { null }
+            LocalButton(id = id, instanceKey = id.toString(), posXFraction = x, posYFraction = y, title = title, imageUrl = image)
+        }
     }
 
 internal suspend fun persistLocalSceneState(
@@ -59,8 +69,9 @@ internal suspend fun persistLocalSceneState(
     }
     val buttonsJson = sceneState.soundFloatingButtons.joinToString(separator = "|") { btn ->
         val safeTitle = btn.title.replace("|", " ").replace(":", " ")
+        val safeKey = btn.instanceKey.replace("|", " ").replace(":", "~")
         val safeImage = btn.imageUrl.orEmpty().replace("|", "%7C")
-        "${btn.id}:${(btn.posXFraction * 100f).roundToInt()}:${(btn.posYFraction * 100f).roundToInt()}:$safeTitle:$safeImage"
+        "${btn.id}:$safeKey:${(btn.posXFraction * 100f).roundToInt()}:${(btn.posYFraction * 100f).roundToInt()}:$safeTitle:$safeImage"
     }
     repository.upsertLocalSceneState(
         SoundscapeSceneLocalState(

@@ -21,6 +21,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.App.Starting"
         >
+        <meta-data
+            android:name="android.app.shortcuts"
+            android:resource="@xml/shortcuts" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
@@ -139,6 +142,16 @@
 
         <service
             android:name=".service.ExerciseVideoPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".service.soundscapes.SoundscapePlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback"
             android:enabled="true">

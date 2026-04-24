@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -123,33 +124,36 @@ fun SoundscapeSceneScreen(
 ) {
     val state by viewModel.collectAsState()
     val context = LocalContext.current
+    // Bind MediaSession while scene is shown (notification / remote); transport is driven by ViewModel.
+    BindSoundscapeMediaSession()
 
     var positionMs by remember { mutableLongStateOf(0L) }
     var durationMs by remember { mutableLongStateOf(0L) }
-    var selectedSoundLayerId by remember { mutableStateOf<Int?>(null) }
+    var selectedSoundLayerKey by remember { mutableStateOf<String?>(null) }
     var showMusicOptions by remember { mutableStateOf(false) }
     var showMusicPicker by remember { mutableStateOf(false) }
     var showSoundsPicker by remember { mutableStateOf(false) }
     var controlsVisible by remember { mutableStateOf(true) }
+    var showUnsavedExitDialog by remember { mutableStateOf(false) }
     var interactionNonce by remember { mutableLongStateOf(0L) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val musicSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val soundsPickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var soundDragOffsets by remember(state.sceneId) { mutableStateOf(mapOf<Int, Offset>()) }
-    val hasModalOpen = showMusicOptions || showMusicPicker || showSoundsPicker || selectedSoundLayerId != null
+    val hasModalOpen = showMusicOptions || showMusicPicker || showSoundsPicker || selectedSoundLayerKey != null
     fun markInteraction() {
         controlsVisible = true
         interactionNonce++
     }
 
-    LaunchedEffect(state.layers, selectedSoundLayerId) {
-        val id = selectedSoundLayerId ?: return@LaunchedEffect
-        if (state.layers.none { it.id == id }) {
-            selectedSoundLayerId = null
+    LaunchedEffect(state.layers, selectedSoundLayerKey) {
+        val key = selectedSoundLayerKey ?: return@LaunchedEffect
+        if (state.layers.none { it.instanceKey == key }) {
+            selectedSoundLayerKey = null
         }
     }
-    LaunchedEffect(selectedSoundLayerId) {
-        if (selectedSoundLayerId != null) {
+    LaunchedEffect(selectedSoundLayerKey) {
+        if (selectedSoundLayerKey != null) {
             showMusicOptions = false
             showMusicPicker = false
             showSoundsPicker = false
@@ -178,6 +182,7 @@ fun SoundscapeSceneScreen(
                 musicUrl = state.sceneMusicUrl,
                 isPlaying = state.isPlaying,
                 isPreparing = state.isPreparing,
+                isParallaxEnabled = state.scenePlayerConfig.isParallaxEnabled,
                 musicVolume = state.musicVolume * state.sceneMusicVolumeFactor,
                 onPlaybackProgress = { pos, dur ->
                     positionMs = pos
@@ -243,9 +248,9 @@ fun SoundscapeSceneScreen(
                 val maxHpx = with(density) { maxHeight.toPx() }
                 val btnPx = with(density) { btnSize.toPx() }
                 val tapSlopPx = with(density) { 12.dp.toPx() }
-                val visibleIds = state.layers.map { it.id }.toSet()
+                val visibleIds = state.layers.map { it.instanceKey }.toSet()
                 state.soundFloatingButtons
-                    .filter { it.id in visibleIds }
+                    .filter { it.instanceKey in visibleIds }
                     .forEach { btn ->
                         val extra = soundDragOffsets[btn.id] ?: Offset.Zero
                         val baseXpx = maxWpx * btn.posXFraction - btnPx / 2f
@@ -272,7 +277,14 @@ fun SoundscapeSceneScreen(
                                             if (change.changedToUp()) {
                                                 if (!dragging && hypot(dragTotal.x, dragTotal.y) < tapSlopPx) {
                                                     showMusicOptions = false
-                                                    selectedSoundLayerId = btn.id
+                                                    selectedSoundLayerKey = btn.instanceKey
+                                                    state.layers.firstOrNull { it.instanceKey == btn.instanceKey }?.let { layer ->
+                                                        viewModel.onLayerSettingsOpened(
+                                                            layerKey = layer.instanceKey,
+                                                            soundId = layer.id,
+                                                            title = layer.title
+                                                        )
+                                                    }
                                                 } else if (dragging) {
                                                     val savedOffset = soundDragOffsets[btn.id] ?: Offset.Zero
                                                     val finalX = (baseXpx + savedOffset.x)
@@ -286,7 +298,7 @@ fun SoundscapeSceneScreen(
                                                     val finalPosYFraction = ((finalY + btnPx / 2f) / safeMaxH)
                                                         .coerceIn(0f, 1f)
                                                     viewModel.onSoundButtonPositionChanged(
-                                                        soundId = btn.id,
+                                                        instanceKey = btn.instanceKey,
                                                         posXFraction = finalPosXFraction,
                                                         posYFraction = finalPosYFraction
                                                     )
@@ -334,8 +346,12 @@ fun SoundscapeSceneScreen(
                         title = state.title.ifBlank { "Scene ${state.sceneId}" },
                         subtitle = state.subtitle,
                         showMaxBadge = state.isPro,
-                        onClose = { navController.popBackStack() },
+                        onClose = {
+                            if (state.isDirty) showUnsavedExitDialog = true
+                            else navController.popBackStack()
+                        },
                         onSavePreset = viewModel::onSavePreset,
+                        onRenameScene = viewModel::onRenameScene,
                         onDownload = viewModel::onDownloadScene,
                         onShare = {
                             markInteraction()
@@ -365,7 +381,7 @@ fun SoundscapeSceneScreen(
                         isPlaying = state.isPlaying,
                         positionMs = positionMs,
                         durationMs = durationMs,
-                        onToggle = viewModel::onPlayPause,
+                        onToggle = { viewModel.onPlayPause() },
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
                     AnimatedAddSoundsButton(
@@ -373,7 +389,7 @@ fun SoundscapeSceneScreen(
                             markInteraction()
                             showMusicOptions = false
                             showMusicPicker = false
-                            selectedSoundLayerId = null
+                            selectedSoundLayerKey = null
                             showSoundsPicker = true
                         },
                         modifier = Modifier
@@ -385,7 +401,7 @@ fun SoundscapeSceneScreen(
                     IconButton(
                         onClick = {
                             markInteraction()
-                            selectedSoundLayerId = null
+                            selectedSoundLayerKey = null
                             showMusicPicker = false
                             showSoundsPicker = false
                             showMusicOptions = true
@@ -407,11 +423,11 @@ fun SoundscapeSceneScreen(
                 }
             }
 
-            val selectedLayer = selectedSoundLayerId?.let { id ->
-                state.layers.firstOrNull { it.id == id }
+            val selectedLayer = selectedSoundLayerKey?.let { key ->
+                state.layers.firstOrNull { it.instanceKey == key }
             }
-            val selectedButton = selectedSoundLayerId?.let { id ->
-                state.soundFloatingButtons.firstOrNull { it.id == id }
+            val selectedButton = selectedLayer?.let { layer ->
+                state.soundFloatingButtons.firstOrNull { it.instanceKey == layer.instanceKey }
             }
 
             if (showMusicOptions) {
@@ -480,9 +496,9 @@ fun SoundscapeSceneScreen(
                             .padding(horizontal = 20.dp, vertical = 8.dp)
                     )
                 }
-            } else if (selectedSoundLayerId != null && selectedLayer != null && selectedButton != null) {
+            } else if (selectedSoundLayerKey != null && selectedLayer != null && selectedButton != null) {
                 ModalBottomSheet(
-                    onDismissRequest = { selectedSoundLayerId = null },
+                    onDismissRequest = { selectedSoundLayerKey = null },
                     sheetState = sheetState,
                     shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                     containerColor = BottomSheetBackground,
@@ -499,10 +515,10 @@ fun SoundscapeSceneScreen(
                     SoundLayerBottomSheetContent(
                         title = selectedButton.title,
                         volume = selectedLayer.volume,
-                        onVolumeChange = { viewModel.onLayerVolume(selectedLayer.id, it) },
+                        onVolumeChange = { viewModel.onLayerVolume(selectedLayer.instanceKey, it) },
                         onDelete = {
-                            viewModel.onLayerRemove(selectedLayer.id)
-                            selectedSoundLayerId = null
+                            viewModel.onLayerRemove(selectedLayer.instanceKey)
+                            selectedSoundLayerKey = null
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -596,8 +612,43 @@ fun SoundscapeSceneScreen(
                     }
                 }
             }
+
+            if (showUnsavedExitDialog) {
+                AlertDialog(
+                    onDismissRequest = { showUnsavedExitDialog = false },
+                    title = { Text(text = stringResource(R.string.unsaved_changes_title)) },
+                    text = { Text(text = stringResource(R.string.unsaved_changes_message)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.onSavePreset()
+                            showUnsavedExitDialog = false
+                            navController.popBackStack()
+                        }) { Text(text = stringResource(R.string.save)) }
+                    },
+                    dismissButton = {
+                        Row {
+                            TextButton(onClick = { showUnsavedExitDialog = false }) {
+                                Text(text = stringResource(R.string.cancel))
+                            }
+                            TextButton(onClick = {
+                                viewModel.onDiscardChangesAndExit()
+                                showUnsavedExitDialog = false
+                                navController.popBackStack()
+                            }) {
+                                Text(text = stringResource(R.string.discard))
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 
 
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+private fun BindSoundscapeMediaSession() {
+    rememberSoundscapeMediaController()
 }

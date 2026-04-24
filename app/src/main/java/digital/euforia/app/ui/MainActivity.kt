@@ -18,6 +18,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.ui.navigation.AppNavigation
+import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.service.soundscapes.SoundscapeNavigationEvents
 import digital.euforia.app.ui.theme.EuforiaTheme
 import digital.euforia.app.ui.util.LocalizedScope
 import digital.euforia.app.ui.util.setupEdgeToEdge
@@ -26,12 +28,17 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import timber.log.Timber
 import java.util.Locale
+import javax.inject.Inject
+import kotlinx.coroutines.flow.collect
 
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+
+    @Inject
+    lateinit var soundscapeNavigationEvents: SoundscapeNavigationEvents
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +58,12 @@ class MainActivity : ComponentActivity() {
                             Timber.tag("NAVIGATION").d("Navigating to deep link destination: ${sideEffect.destination}")
                             navController.navigate(sideEffect.destination)
                         }
+                    }
+                }
+
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    soundscapeNavigationEvents.openScene.collect { sceneId ->
+                        navController.navigate(HomeDestination.SoundscapesScene(sceneId = sceneId))
                     }
                 }
 
