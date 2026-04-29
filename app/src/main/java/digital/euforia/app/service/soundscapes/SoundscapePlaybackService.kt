@@ -15,6 +15,9 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -23,6 +26,7 @@ import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
+import digital.euforia.app.App
 import digital.euforia.app.R
 import digital.euforia.app.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
@@ -42,12 +46,18 @@ class SoundscapePlaybackService : MediaSessionService() {
     @Inject
     lateinit var navigationEvents: SoundscapeNavigationEvents
 
+    @Inject
+    lateinit var soundsManager: SoundscapeSoundsManager
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var observeJob: Job? = null
     private var mediaSession: MediaSession? = null
     private var player: ExoPlayer? = null
+    private var musicPlayer: ExoPlayer? = null
     private var syncingFromPlaybackState = false
     private var lastMediaId: String? = null
+    private var lastSessionStreamUrl: String? = null
+    private var lastMusicUrl: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -76,6 +86,19 @@ class SoundscapePlaybackService : MediaSessionService() {
             }
         })
         player = exo
+        musicPlayer = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(buildCachedMediaSourceFactory())
+            .setHandleAudioBecomingNoisy(false)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .setUsage(C.USAGE_MEDIA)
+                    .build(),
+                /* handleAudioFocus */ false
+            )
+            .build().apply {
+                repeatMode = Player.REPEAT_MODE_ALL
+            }
         val notificationProvider = DefaultMediaNotificationProvider.Builder(this)
             .setChannelId(CHANNEL_ID)
             .setChannelName(R.string.app_name)
@@ -121,14 +144,23 @@ class SoundscapePlaybackService : MediaSessionService() {
                         else -> super.onCustomCommand(session, controller, customCommand, args)
                     }
                 }
+
             })
             .build()
         observeJob = serviceScope.launch {
             playbackController.playback.collectLatest { playback ->
                 if (playback.sceneId == null) {
+                    lastMediaId = null
+                    lastSessionStreamUrl = null
+                    lastMusicUrl = null
+                    soundsManager.releaseAll()
+                    musicPlayer?.stop()
+                    musicPlayer?.clearMediaItems()
                     stopSelf()
                     return@collectLatest
                 }
+                soundsManager.render(playback)
+                syncMusicPlayback(playback)
                 updateSessionMediaItem(exo, playback)
                 syncingFromPlaybackState = true
                 try {
@@ -154,36 +186,74 @@ class SoundscapePlaybackService : MediaSessionService() {
         mediaSession = null
         player?.release()
         player = null
+        soundsManager.releaseAll()
+        musicPlayer?.release()
+        musicPlayer = null
         super.onDestroy()
+    }
+
+    private fun syncMusicPlayback(playback: SoundscapePlaybackState) {
+        val p = musicPlayer ?: return
+        val musicUrl = playback.sceneMusicUrl?.takeIf(String::isNotBlank)
+        if (musicUrl.isNullOrBlank()) {
+            lastMusicUrl = null
+            p.stop()
+            p.clearMediaItems()
+            return
+        }
+        if (lastMusicUrl != musicUrl || p.mediaItemCount == 0) {
+            p.setMediaItem(MediaItem.fromUri(musicUrl))
+            p.prepare()
+            lastMusicUrl = musicUrl
+        }
+        p.volume = (playback.musicVolume * playback.sceneMusicVolumeFactor).coerceIn(0f, 1f)
+        if (playback.isPlaying) p.play() else p.pause()
     }
 
     private fun updateSessionMediaItem(exo: ExoPlayer, playback: SoundscapePlaybackState) {
         val sceneId = playback.sceneId ?: return
         val mediaId = "soundscape:$sceneId"
         val artworkUri = playback.sceneImageUrl?.takeIf { it.isNotBlank() }?.let(Uri::parse)
+        val sessionStreamUrl = playback.layers
+            .firstNotNullOfOrNull { it.audioUrl?.takeIf(String::isNotBlank) }
         val metadata = MediaMetadata.Builder()
             .setTitle(playback.sceneTitle.ifBlank { getString(R.string.scenes_title) })
             .setArtist(getString(R.string.scenes_title))
             .setArtworkUri(artworkUri)
             .build()
-        if (lastMediaId != mediaId || exo.mediaItemCount == 0) {
+        if (sessionStreamUrl.isNullOrBlank()) {
+            exo.stop()
+            exo.clearMediaItems()
+            lastMediaId = mediaId
+            lastSessionStreamUrl = null
+            return
+        }
+        val shouldReplaceItem =
+            lastMediaId != mediaId ||
+                exo.mediaItemCount == 0 ||
+                lastSessionStreamUrl != sessionStreamUrl
+        if (shouldReplaceItem) {
             exo.setMediaItem(
                 MediaItem.Builder()
                     .setMediaId(mediaId)
-                    .setUri(Uri.EMPTY)
+                    .setUri(Uri.parse(sessionStreamUrl))
                     .setMediaMetadata(metadata)
                     .build()
             )
             lastMediaId = mediaId
+            lastSessionStreamUrl = sessionStreamUrl
         } else {
             exo.replaceMediaItem(
                 0,
                 MediaItem.Builder()
                     .setMediaId(mediaId)
-                    .setUri(Uri.EMPTY)
+                    .setUri(Uri.parse(sessionStreamUrl))
                     .setMediaMetadata(metadata)
                     .build()
             )
+        }
+        if (exo.playbackState == Player.STATE_IDLE) {
+            exo.prepare()
         }
     }
 
@@ -197,6 +267,14 @@ class SoundscapePlaybackService : MediaSessionService() {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+    }
+
+    private fun buildCachedMediaSourceFactory(): DefaultMediaSourceFactory {
+        val cacheFactory = CacheDataSource.Factory()
+            .setCache(App.getExoCache(this))
+            .setUpstreamDataSourceFactory(DefaultDataSource.Factory(this))
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+        return DefaultMediaSourceFactory(cacheFactory)
     }
 
     companion object {

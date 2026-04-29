@@ -179,11 +179,9 @@ fun SoundscapeSceneScreen(
             SoundscapeSceneBackground(
                 imageUrl = state.imageUrl,
                 videoUrl = state.videoUrl,
-                musicUrl = state.sceneMusicUrl,
                 isPlaying = state.isPlaying,
                 isPreparing = state.isPreparing,
                 isParallaxEnabled = state.scenePlayerConfig.isParallaxEnabled,
-                musicVolume = state.musicVolume * state.sceneMusicVolumeFactor,
                 onPlaybackProgress = { pos, dur ->
                     positionMs = pos
                     durationMs = dur

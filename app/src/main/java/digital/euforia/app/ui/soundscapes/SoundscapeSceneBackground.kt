@@ -35,9 +35,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -67,17 +64,13 @@ import kotlin.math.min
 fun SoundscapeSceneBackground(
     imageUrl: String?,
     videoUrl: String?,
-    musicUrl: String?,
     isPlaying: Boolean,
     isPreparing: Boolean,
     isParallaxEnabled: Boolean,
-    musicVolume: Float,
     onPlaybackProgress: (positionMs: Long, durationMs: Long) -> Unit,
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     var displayImageUrl by remember { mutableStateOf<String?>(null) }
-    var isAppForeground by remember { mutableStateOf(true) }
     LaunchedEffect(imageUrl) {
         if (!imageUrl.isNullOrBlank()) {
             displayImageUrl = imageUrl
@@ -138,7 +131,7 @@ fun SoundscapeSceneBackground(
     DisposableEffect(videoExo) { onDispose { videoExo?.release() } }
     LaunchedEffect(videoExo, isPlaying) {
         val v = videoExo ?: return@LaunchedEffect
-        val shouldPlay = isPlaying && isAppForeground
+        val shouldPlay = isPlaying
         v.playWhenReady = shouldPlay
         if (shouldPlay) v.play() else v.pause()
     }
@@ -180,68 +173,17 @@ fun SoundscapeSceneBackground(
         )
     }
 
-    val musicPlayer = remember(musicUrl) {
-        if (musicUrl.isNullOrBlank()) null else ExoPlayer.Builder(context)
-            .setMediaSourceFactory(buildCachedMediaSourceFactory(context))
-            .build().apply {
-            // Mix with multi-layer soundscape: do not take exclusive audio focus (would pause layers).
-            setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                    .setUsage(C.USAGE_MEDIA)
-                    .build(),
-                /* handleAudioFocus */ false
-            )
-            setMediaItem(MediaItem.fromUri(musicUrl))
-            repeatMode = Player.REPEAT_MODE_ALL
-            prepare()
-        }
-    }
-    DisposableEffect(musicPlayer) { onDispose { musicPlayer?.release() } }
-    LaunchedEffect(musicPlayer, isPlaying) {
-        val p = musicPlayer ?: return@LaunchedEffect
-        val shouldPlay = isPlaying && isAppForeground
-        p.playWhenReady = shouldPlay
-        if (shouldPlay) p.play() else p.pause()
-    }
-    LaunchedEffect(musicPlayer, musicVolume) {
-        musicPlayer?.volume = musicVolume.coerceIn(0f, 1f)
-    }
-    LaunchedEffect(musicPlayer, videoExo) {
-        if (musicPlayer == null && videoExo == null) {
+    LaunchedEffect(videoExo) {
+        if (videoExo == null) {
             onPlaybackProgress(0L, 0L)
             return@LaunchedEffect
         }
         while (true) {
-            val pos = when {
-                musicPlayer != null -> musicPlayer.currentPosition
-                videoExo != null -> videoExo.currentPosition
-                else -> 0L
-            }
-            val dur = when {
-                musicPlayer != null -> musicPlayer.duration
-                videoExo != null -> videoExo.duration
-                else -> 0L
-            }
+            val pos = videoExo.currentPosition
+            val dur = videoExo.duration
             onPlaybackProgress(pos.coerceAtLeast(0), dur.coerceAtLeast(0))
             delay(250)
         }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            isAppForeground = when (event) {
-                Lifecycle.Event.ON_START,
-                Lifecycle.Event.ON_RESUME -> true
-
-                Lifecycle.Event.ON_PAUSE,
-                Lifecycle.Event.ON_STOP -> false
-
-                else -> isAppForeground
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 }
 

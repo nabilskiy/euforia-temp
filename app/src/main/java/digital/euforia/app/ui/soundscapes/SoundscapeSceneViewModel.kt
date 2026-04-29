@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
+import digital.euforia.app.data.analytics.soundscapeLayerSettingsOpenedCompat
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.data.repository.MusicRepository
@@ -26,7 +27,6 @@ import digital.euforia.app.domain.usecase.soundscapes.SyncSoundscapesCatalogUseC
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.service.soundscapes.SoundscapeAudioCacheManager
-import digital.euforia.app.service.soundscapes.SoundscapeSoundsManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -48,7 +48,6 @@ class SoundscapeSceneViewModel @Inject constructor(
     private val profilePreferences: ProfilePreferences,
     private val playbackController: SoundscapePlaybackController,
     private val audioCacheManager: SoundscapeAudioCacheManager,
-    private val soundsManager: SoundscapeSoundsManager,
     private val remoteConfigFetcher: EuforiaRemoteConfigFetcher,
     private val analyticSender: AnalyticSender,
 ) : ViewModel(), ContainerHost<SoundscapeSceneState, SoundscapeSceneSideEffect> {
@@ -126,6 +125,10 @@ class SoundscapeSceneViewModel @Inject constructor(
                 }
             )
             playbackController.setMusicVolume(loaded.resolvedMusicVolume)
+            playbackController.setSceneMusic(
+                musicUrl = loaded.selectedMusicUrl ?: remoteScene.resolveDefaultSceneMusicUrl(),
+                musicVolumeFactor = loaded.musicFactor
+            )
             reduce {
                 val sceneCategoryAlias = scene.categoryId?.let(sceneCategoryAliasesById::get)
                 state.copy(
@@ -214,6 +217,8 @@ class SoundscapeSceneViewModel @Inject constructor(
                     sceneId = sceneId,
                     sceneTitle = sceneTitle,
                     sceneImageUrl = container.stateFlow.value.imageUrl,
+                    sceneMusicUrl = container.stateFlow.value.sceneMusicUrl,
+                    sceneMusicVolumeFactor = container.stateFlow.value.sceneMusicVolumeFactor,
                     ambientMode = ambientMode,
                     layers = layersForPlayback
                 )
@@ -406,7 +411,11 @@ class SoundscapeSceneViewModel @Inject constructor(
     }
     fun onLayerMute(layerKey: String, muted: Boolean) = playbackController.muteLayer(layerKey, muted)
     fun onLayerSettingsOpened(layerKey: String, soundId: Int, title: String) {
-        analyticSender.soundscapeLayerSettingsOpened(layerKey = layerKey, soundId = soundId, title = title)
+        analyticSender.soundscapeLayerSettingsOpenedCompat(
+            layerKey = layerKey,
+            soundId = soundId,
+            title = title
+        )
     }
     fun onLayerRemove(layerKey: String) {
         analyticSender.soundscapeLayerSettingsDeleted(layerKey = layerKey)
@@ -502,6 +511,10 @@ class SoundscapeSceneViewModel @Inject constructor(
         intent {
             analyticSender.soundscapeMusicChanged()
             val selected = state.availableMusic.firstOrNull { it.id == musicId }
+            playbackController.setSceneMusic(
+                musicUrl = selected?.fileUrl,
+                musicVolumeFactor = state.sceneMusicVolumeFactor
+            )
             reduce {
                 state.copy(
                     selectedMusicId = selected?.id,
@@ -517,6 +530,10 @@ class SoundscapeSceneViewModel @Inject constructor(
     fun onPreviewMusicSelection(musicId: Int?) {
         intent {
             val selected = state.availableMusic.firstOrNull { it.id == musicId }
+            playbackController.setSceneMusic(
+                musicUrl = selected?.fileUrl,
+                musicVolumeFactor = state.sceneMusicVolumeFactor
+            )
             reduce {
                 state.copy(
                     selectedMusicId = selected?.id,
@@ -605,7 +622,6 @@ class SoundscapeSceneViewModel @Inject constructor(
         intent {
             playbackController.playback.collectLatest { playback ->
                 if (playback.sceneId != sceneId) return@collectLatest
-                soundsManager.render(playback)
                 reduce {
                     state.copy(
                         title = playback.sceneTitle,
@@ -620,6 +636,8 @@ class SoundscapeSceneViewModel @Inject constructor(
                             )
                         },
                         musicVolume = playback.musicVolume,
+                        sceneMusicUrl = playback.sceneMusicUrl,
+                        sceneMusicVolumeFactor = playback.sceneMusicVolumeFactor,
                         timerSeconds = playback.timerSeconds
                     )
                 }
@@ -650,7 +668,6 @@ class SoundscapeSceneViewModel @Inject constructor(
 
     override fun onCleared() {
         preparationJob?.cancel()
-        soundsManager.releaseAll()
         super.onCleared()
     }
 }

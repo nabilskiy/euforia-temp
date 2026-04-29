@@ -27,6 +27,8 @@ data class SoundscapePlaybackState(
     val sceneTitle: String = "",
     val isPlaying: Boolean = false,
     val musicVolume: Float = 0.35f,
+    val sceneMusicUrl: String? = null,
+    val sceneMusicVolumeFactor: Float = 1f,
     val ambientMode: Boolean = false,
     val layers: List<SoundscapeLayerState> = emptyList(),
     val timerSeconds: Int? = null,
@@ -44,6 +46,8 @@ interface SoundEngine {
         sceneTitle: String,
         layers: List<SoundscapeLayerState>,
         sceneImageUrl: String? = null,
+        sceneMusicUrl: String? = null,
+        sceneMusicVolumeFactor: Float = 1f,
         ambientMode: Boolean = false,
     )
     fun playPause()
@@ -57,6 +61,7 @@ interface SoundEngine {
     fun prevSceneId(): Int?
     fun nextSceneId(): Int?
     fun setMusicVolume(volume: Float)
+    fun setSceneMusic(musicUrl: String?, musicVolumeFactor: Float = 1f)
     fun setLayerVolume(layerKey: String, volume: Float)
     fun muteLayer(layerKey: String, muted: Boolean)
     fun removeLayer(layerKey: String)
@@ -74,6 +79,8 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
         sceneTitle: String,
         layers: List<SoundscapeLayerState>,
         sceneImageUrl: String?,
+        sceneMusicUrl: String?,
+        sceneMusicVolumeFactor: Float,
         ambientMode: Boolean,
     ) {
         val startedAt = System.currentTimeMillis()
@@ -81,6 +88,8 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
             sceneId = sceneId,
             sceneTitle = sceneTitle,
             isPlaying = true,
+            sceneMusicUrl = sceneMusicUrl,
+            sceneMusicVolumeFactor = sceneMusicVolumeFactor.coerceIn(0f, 1f),
             ambientMode = ambientMode,
             sceneImageUrl = sceneImageUrl,
             layers = layers.take(MAX_SOUND_LAYERS),
@@ -137,6 +146,15 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
 
     override fun setMusicVolume(volume: Float) {
         _playback.update { it.copy(musicVolume = volume.coerceIn(0f, 1f)) }
+    }
+
+    override fun setSceneMusic(musicUrl: String?, musicVolumeFactor: Float) {
+        _playback.update {
+            it.copy(
+                sceneMusicUrl = musicUrl?.takeIf(String::isNotBlank),
+                sceneMusicVolumeFactor = musicVolumeFactor.coerceIn(0f, 1f)
+            )
+        }
     }
 
     override fun setLayerVolume(layerKey: String, volume: Float) {
