@@ -21,6 +21,7 @@ import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.toEntity
 import digital.euforia.app.domain.model.config.ScenePlayerConfig
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapeDownloadsFlowUseCase
+import digital.euforia.app.domain.usecase.soundscapes.DeleteSoundscapeDownloadUseCase
 import digital.euforia.app.domain.usecase.soundscapes.QueueSoundscapeDownloadUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SaveSoundscapePresetUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SyncSoundscapesCatalogUseCase
@@ -43,6 +44,7 @@ class SoundscapeSceneViewModel @Inject constructor(
     private val syncSoundscapesCatalogUseCase: SyncSoundscapesCatalogUseCase,
     private val savePresetUseCase: SaveSoundscapePresetUseCase,
     private val queueDownloadUseCase: QueueSoundscapeDownloadUseCase,
+    private val deleteDownloadUseCase: DeleteSoundscapeDownloadUseCase,
     private val getDownloadsFlowUseCase: GetSoundscapeDownloadsFlowUseCase,
     private val appPreferences: AppPreferences,
     private val profilePreferences: ProfilePreferences,
@@ -224,6 +226,7 @@ class SoundscapeSceneViewModel @Inject constructor(
                 )
             } else {
                 layersForPlayback.forEach { playbackController.addLayer(it) }
+                playbackController.setPlaying(true)
             }
         }
     }
@@ -409,7 +412,13 @@ class SoundscapeSceneViewModel @Inject constructor(
             persistLocalSceneState()
         }
     }
-    fun onLayerMute(layerKey: String, muted: Boolean) = playbackController.muteLayer(layerKey, muted)
+    fun onLayerMute(layerKey: String, muted: Boolean) {
+        playbackController.muteLayer(layerKey, muted)
+        intent {
+            reduce { state.copy(isDirty = true) }
+            persistLocalSceneState()
+        }
+    }
     fun onLayerSettingsOpened(layerKey: String, soundId: Int, title: String) {
         analyticSender.soundscapeLayerSettingsOpenedCompat(
             layerKey = layerKey,
@@ -426,7 +435,31 @@ class SoundscapeSceneViewModel @Inject constructor(
             persistLocalSceneState()
         }
     }
-    fun onTimerChange(minutes: Int?) = playbackController.setTimer(minutes?.times(60))
+    fun onTimerChange(minutes: Int?) {
+        playbackController.setTimer(minutes?.times(60))
+        intent {
+            reduce { state.copy(isDirty = true) }
+            persistLocalSceneState()
+        }
+    }
+
+    fun onSaveAndDownload() {
+        onSavePreset()
+        onDownloadScene()
+    }
+
+    fun onDeleteDownloadedScene() {
+        val downloadItemId = container.stateFlow.value.downloadItemId ?: return
+        intent {
+            deleteDownloadUseCase(downloadItemId)
+            reduce {
+                state.copy(
+                    downloadState = SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED,
+                    downloadItemId = null
+                )
+            }
+        }
+    }
 
     fun onApplySoundsSelection(selectedSoundIds: Set<Int>) {
         intent {
@@ -652,7 +685,8 @@ class SoundscapeSceneViewModel @Inject constructor(
                 val item = items.firstOrNull { it.sceneId == sceneId }
                 reduce {
                     state.copy(
-                        downloadState = item?.status ?: SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED
+                        downloadState = item?.status ?: SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED,
+                        downloadItemId = item?.id
                     )
                 }
             }
@@ -700,6 +734,7 @@ data class SoundscapeSceneState(
     val isDirty: Boolean = false,
     val isPremiumLocked: Boolean = false,
     val downloadState: String = SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED,
+    val downloadItemId: String? = null,
     val engineHealth: String = "OK",
     val availableSounds: List<AvailableSoundUi> = emptyList(),
     val suggestedSoundIds: List<Int> = emptyList(),

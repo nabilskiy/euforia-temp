@@ -365,10 +365,11 @@ fun AppNavigation(
                     popEnterTransition = NavAnimations.popEnter,
                     popExitTransition = NavAnimations.popExit
                 ) {
-                    isBottomBarShown.value = false
                     DownloadsScreen(
                         navController = navController,
-                        viewModel = hiltViewModel()
+                        viewModel = hiltViewModel(),
+                        navBarVisibilityState = isBottomBarShown,
+                        animatedVisibilityScope = this
                     )
                 }
                 composable<HomeDestination.ProgramDetails>(

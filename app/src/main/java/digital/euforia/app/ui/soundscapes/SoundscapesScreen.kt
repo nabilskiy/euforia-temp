@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +60,7 @@ import coil.compose.AsyncImage
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
+import digital.euforia.app.ui.home.NavBarHeight
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
@@ -71,6 +74,7 @@ import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_FALLBACK_ALL
 import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST
+import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_MY
 import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_UNCATEGORIZED
 import digital.euforia.app.domain.usecase.soundscapes.SoundscapeCategorySection
 import digital.euforia.app.ui.util.LocalizedResources
@@ -115,6 +119,8 @@ fun SoundscapesScreen(
                     contentPadding = PaddingValues(bottom = 56.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    val sectionsToRender = state.displaySections
+                        .filterNot { it.categoryId == SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST }
                     item {
                         SoundscapesHeader(
                             title = localizedRes.string(R.string.scenes_title),
@@ -149,26 +155,19 @@ fun SoundscapesScreen(
                         }
                     }
                     items(
-                        items = state.displaySections,
+                        items = sectionsToRender,
                         key = { sec -> "${sec.categoryId}_${sec.scenes.joinToString { it.id.toString() }}" }
                     ) { section ->
                         SectionBlock(
                             title = sectionTitle(section, localizedRes),
                             scenes = section.scenes,
+                            singleRow = section.categoryId == SOUNDSCAPE_SECTION_MY,
                             onSceneClick = viewModel::onSceneClick,
                         )
                     }
                     item {
                         Spacer(modifier = Modifier.height(160.dp).navigationBarsPadding())
                     }
-                }
-                if (state.miniPlayer.isVisible) {
-                    SoundscapesMiniPlayer(
-                        title = state.miniPlayer.title,
-                        isPlaying = state.miniPlayer.isPlaying,
-                        onClick = viewModel::onMiniPlayerClick,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
                 }
             }
         }
@@ -307,6 +306,7 @@ private fun sectionTitle(
 ): String {
     return when (section.categoryId) {
         SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST -> localizedRes.string(R.string.scenes_default_playlist)
+        SOUNDSCAPE_SECTION_MY -> localizedRes.string(R.string.playlist_type_my_scenes)
         SOUNDSCAPE_SECTION_UNCATEGORIZED -> localizedRes.string(R.string.soundscapes_section_other)
         SOUNDSCAPE_SECTION_FALLBACK_ALL -> localizedRes.string(R.string.scenes_all)
         else -> section.title.ifBlank { localizedRes.string(R.string.scenes_all) }
@@ -431,10 +431,10 @@ private fun SearchPlaylistsRow(
 private fun SectionBlock(
     title: String,
     scenes: List<Scene>,
+    singleRow: Boolean,
     onSceneClick: (Scene) -> Unit,
 ) {
     val sortedScenes = scenes.sortedBy { it.pro }
-    val sceneColumns = sortedScenes.chunked(2)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -449,17 +449,28 @@ private fun SectionBlock(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(
-                items = sceneColumns,
-                key = { columnScenes -> columnScenes.joinToString(separator = "_") { it.id.toString() } }
-            ) { columnScenes ->
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    columnScenes.forEach { scene ->
-                        SceneCard(
-                            scene = scene,
-                            modifier = Modifier.size(width = 156.dp, height = 96.dp),
-                            onClick = { onSceneClick(scene) },
-                        )
+            if (singleRow) {
+                items(sortedScenes, key = { it.id }) { scene ->
+                    SceneCard(
+                        scene = scene,
+                        modifier = Modifier.size(width = 156.dp, height = 96.dp),
+                        onClick = { onSceneClick(scene) },
+                    )
+                }
+            } else {
+                val sceneColumns = sortedScenes.chunked(2)
+                items(
+                    items = sceneColumns,
+                    key = { columnScenes -> columnScenes.joinToString(separator = "_") { it.id.toString() } }
+                ) { columnScenes ->
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        columnScenes.forEach { scene ->
+                            SceneCard(
+                                scene = scene,
+                                modifier = Modifier.size(width = 156.dp, height = 96.dp),
+                                onClick = { onSceneClick(scene) },
+                            )
+                        }
                     }
                 }
             }
@@ -606,36 +617,69 @@ private fun PlaylistsInlineBlock(
 @Composable
 fun SoundscapesMiniPlayer(
     title: String,
+    imageUrl: String?,
     isPlaying: Boolean,
     onClick: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = PrimaryBackground)
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        color = NavBarBackground.copy(alpha = 0.98f)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = title.ifBlank { "Soundscape" },
-                style = MaterialTheme.typography.titleSmall,
-                color = White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = if (isPlaying) "▶" else "❚❚",
-                style = MaterialTheme.typography.labelLarge,
-                color = White.copy(alpha = 0.85f)
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(White.copy(alpha = 0.15f)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = title.ifBlank { stringResource(R.string.soundscape_title_fallback) },
+                    style = MaterialTheme.typography.titleSmall,
+                    color = White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onTogglePlayPause) {
+                    Icon(
+                        painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                        contentDescription = stringResource(
+                            if (isPlaying) R.string.soundscape_miniplayer_pause else R.string.soundscape_miniplayer_play
+                        ),
+                        tint = White.copy(alpha = 0.85f)
+                    )
+                }
+                IconButton(onClick = onClose) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_close),
+                        contentDescription = stringResource(R.string.next),
+                        tint = White.copy(alpha = 0.85f)
+                    )
+                }
+            }
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(NavBarHeight)
+                    .navigationBarsPadding()
             )
         }
     }

@@ -38,6 +38,7 @@ import digital.euforia.app.R
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.domain.model.home.NavBarItem
 import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.soundscapes.SoundscapesMiniPlayer
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.NavBarIcon
 import digital.euforia.app.ui.theme.White
@@ -64,8 +65,12 @@ fun HomeScreen(
         isBottomBarShown = isBottomBarShown,
         navItems = state.navBarItems,
         selectedIndex = state.selectedItemIndex,
+        miniPlayer = state.soundscapeMiniPlayer,
         analyticSender = viewModel.analyticSender,
-        onNavItemSelected = viewModel::onNavBarItemSelected
+        onNavItemSelected = viewModel::onNavBarItemSelected,
+        onMiniPlayerOpen = viewModel::onSoundscapeMiniPlayerOpen,
+        onMiniPlayerTogglePlayPause = viewModel::onSoundscapeMiniPlayerTogglePlayPause,
+        onMiniPlayerClose = viewModel::onSoundscapeMiniPlayerClose
     )
 }
 
@@ -75,10 +80,30 @@ private fun HomeContent(
     isBottomBarShown: MutableState<Boolean>,
     navItems: List<NavBarItem>,
     selectedIndex: Int,
+    miniPlayer: HomeSoundscapeMiniPlayer,
     analyticSender: AnalyticSender,
-    onNavItemSelected: (Int) -> Unit
+    onNavItemSelected: (Int) -> Unit,
+    onMiniPlayerOpen: () -> Unit,
+    onMiniPlayerTogglePlayPause: () -> Unit,
+    onMiniPlayerClose: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedVisibility(
+            visible = isBottomBarShown.value && miniPlayer.isVisible,
+            enter = fadeIn(animationSpec = tween(durationMillis = 250)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 250)),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            SoundscapesMiniPlayer(
+                title = miniPlayer.title,
+                imageUrl = miniPlayer.imageUrl,
+                isPlaying = miniPlayer.isPlaying,
+                onClick = onMiniPlayerOpen,
+                onTogglePlayPause = onMiniPlayerTogglePlayPause,
+                onClose = onMiniPlayerClose,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         // Shared NavHost handles the screens now.
         // We only show the BottomNavigation here.
         AnimatedVisibility(
@@ -129,7 +154,6 @@ fun BoxScope.BottomNavigation(
                     color = NavBarBackground,
                     shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
                 )
-//                .padding(160.dp)
                 .navigationBarsPadding()
 //                .height(50.dp)
             ,
@@ -197,6 +221,8 @@ fun RowScope.BottomNavigationItem(item: NavBarItem, isSelected: Boolean, onClick
 
 private fun handleSideEffect(sideEffect: HomeSideEffect, navController: NavHostController) {
     when (sideEffect) {
-        else -> {}
+        is HomeSideEffect.OpenSoundscapeScene -> {
+            navController.navigate(HomeDestination.SoundscapesScene(sideEffect.sceneId))
+        }
     }
 }

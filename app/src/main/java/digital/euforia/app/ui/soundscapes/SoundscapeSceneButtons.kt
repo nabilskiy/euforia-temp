@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.White
@@ -91,7 +92,7 @@ fun AnimatedAddSoundsButton(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_sounds_scene_add),
-            contentDescription = "Add sounds",
+            contentDescription = stringResource(R.string.sound_add_to_scene),
             tint = White,
             modifier = Modifier
                 .size(22.dp)

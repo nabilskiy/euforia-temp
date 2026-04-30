@@ -32,6 +32,7 @@ import digital.euforia.app.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -58,6 +59,9 @@ class SoundscapePlaybackService : MediaSessionService() {
     private var lastMediaId: String? = null
     private var lastSessionStreamUrl: String? = null
     private var lastMusicUrl: String? = null
+    private var sleepTimerJob: Job? = null
+    private var sleepDeadlineMs: Long? = null
+    private var sleepTimerSeconds: Int? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -75,8 +79,6 @@ class SoundscapePlaybackService : MediaSessionService() {
             .build()
         exo.volume = 0f
         exo.addListener(object : Player.Listener {
-            // Session ExoPlayer uses a non-playable placeholder item; isPlaying may not toggle.
-            // playWhenReady still reflects transport from MediaController / notification controls.
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 if (syncingFromPlaybackState) return
                 val current = playbackController.playback.value.isPlaying
@@ -150,6 +152,7 @@ class SoundscapePlaybackService : MediaSessionService() {
         observeJob = serviceScope.launch {
             playbackController.playback.collectLatest { playback ->
                 if (playback.sceneId == null) {
+                    cancelSleepTimer()
                     lastMediaId = null
                     lastSessionStreamUrl = null
                     lastMusicUrl = null
@@ -161,6 +164,7 @@ class SoundscapePlaybackService : MediaSessionService() {
                 }
                 soundsManager.render(playback)
                 syncMusicPlayback(playback)
+                syncSleepTimer(playback)
                 updateSessionMediaItem(exo, playback)
                 syncingFromPlaybackState = true
                 try {
@@ -181,6 +185,7 @@ class SoundscapePlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        cancelSleepTimer()
         observeJob?.cancel()
         mediaSession?.release()
         mediaSession = null
@@ -190,6 +195,35 @@ class SoundscapePlaybackService : MediaSessionService() {
         musicPlayer?.release()
         musicPlayer = null
         super.onDestroy()
+    }
+
+    private fun syncSleepTimer(playback: SoundscapePlaybackState) {
+        val seconds = playback.timerSeconds
+        if (seconds == null || seconds <= 0) {
+            cancelSleepTimer()
+            return
+        }
+        val expectedDeadline = if (sleepTimerSeconds == seconds && sleepDeadlineMs != null) {
+            sleepDeadlineMs!!
+        } else {
+            System.currentTimeMillis() + seconds * 1000L
+        }
+        if (sleepTimerJob != null && sleepDeadlineMs == expectedDeadline) return
+        sleepTimerSeconds = seconds
+        sleepDeadlineMs = expectedDeadline
+        sleepTimerJob?.cancel()
+        sleepTimerJob = serviceScope.launch {
+            val delayMs = (expectedDeadline - System.currentTimeMillis()).coerceAtLeast(0L)
+            delay(delayMs)
+            playbackController.stop()
+        }
+    }
+
+    private fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        sleepDeadlineMs = null
+        sleepTimerSeconds = null
     }
 
     private fun syncMusicPlayback(playback: SoundscapePlaybackState) {

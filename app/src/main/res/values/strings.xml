@@ -624,6 +624,7 @@
     <string name="downloads_delete_hint">You can selectively delete downloads</string>
     <string name="downloads_delete_all_alert_title">Confirm action</string>
     <string name="downloads_delete_all_alert_message">Are you sure you want to clear all downloads?</string>
+    <string name="downloads_clear_all">Clear all downloads</string>
     <string name="favorites_menu_delete_all">Clear all favorites</string>
     <string name="favorites_delete_all_alert_title">Confirm action</string>
     <string name="favorites_delete_all_alert_message">Are you sure you want to clear all favorites?</string>
@@ -643,6 +644,16 @@
     <string name="notifications_settings_permission_denied_button">Turn on notifications</string>
     <string name="audio_scene_sound_hint">Customize sounds in Soundscape</string>
     <string name="audio_scene_music_hint">Control the music on the Soundscape</string>
+    <string name="soundscape_title_fallback">Soundscape</string>
+    <string name="soundscape_scene_title_fallback">Scene %1$d</string>
+    <string name="soundscape_scene_failed_load">Failed to load scene</string>
+    <string name="soundscape_more_actions">More actions</string>
+    <string name="sleep_timer_60m">60m</string>
+    <string name="sleep_timer_30m">30m</string>
+    <string name="soundscape_miniplayer_play">Play Soundscape</string>
+    <string name="soundscape_miniplayer_pause">Pause Soundscape</string>
+    <string name="soundscape_miniplayer_close">Stop Soundscape</string>
+    <string name="soundscape_collapse">Collapse Soundscape</string>
     <!-- vibes_welcome_subtitle = "Welcome"; -->
     <!-- vibes_manage_notifications_hint = "Manage notifications"; -->
     <string name="publication_downloaded_menu_open">Open Downloads</string>
@@ -701,6 +712,10 @@
     <string name="audio_scene_unsaved_changes_alert_message">This scene contains unsaved changes. Do you want to save them?</string>
     <string name="audio_scene_unsaved_changes_alert_save">Save</string>
     <string name="audio_scene_unsaved_changes_alert_discard">Discard</string>
+    <string name="scenes_preferences">Preferences</string>
+    <string name="scenes_rename">Rename</string>
+    <string name="scenes_save_download">Save &amp; Download</string>
+    <string name="scenes_delete">Delete</string>
     <string name="audio_scene_change_music">Change music</string>
     <string name="audio_scene_no_music">Without music</string>
     <string name="audio_scene_import_music">Import</string>

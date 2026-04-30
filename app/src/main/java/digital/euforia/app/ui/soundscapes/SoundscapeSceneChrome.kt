@@ -13,9 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,23 +27,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.theme.Red
+import digital.euforia.app.ui.util.widget.MenuItem
 import digital.euforia.app.ui.util.widget.MaxView
+import digital.euforia.app.ui.util.widget.OptionsMenu
 
 @Composable
 fun SoundscapeSceneTopBar(
     title: String,
     subtitle: String,
     showMaxBadge: Boolean,
-    onClose: () -> Unit,
-    onSavePreset: () -> Unit,
+    isDownloaded: Boolean,
+    onCollapse: () -> Unit,
+    onSaveChanges: () -> Unit,
+    onSaveAndDownload: () -> Unit,
     onRenameScene: (String) -> Unit,
-    onDownload: () -> Unit,
+    onDeleteDownloaded: () -> Unit,
+    onTimerClick: () -> Unit,
+    onPreferencesClick: () -> Unit,
     onShare: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -57,10 +64,10 @@ fun SoundscapeSceneTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconButton(onClick = onClose) {
+        IconButton(onClick = onCollapse) {
             Icon(
-                painter = painterResource(R.drawable.ic_close),
-                contentDescription = null,
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = stringResource(R.string.soundscape_collapse),
                 tint = White
             )
         }
@@ -99,31 +106,65 @@ fun SoundscapeSceneTopBar(
             IconButton(onClick = { showMenu = true }) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "More",
+                    contentDescription = stringResource(R.string.soundscape_more_actions),
                     tint = White
                 )
             }
-            DropdownMenu(
+            OptionsMenu(
                 expanded = showMenu,
-                onDismissRequest = { showMenu = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Share") },
-                    onClick = { showMenu = false; onShare() }
-                )
-                DropdownMenuItem(
-                    text = { Text("Save preset") },
-                    onClick = { showMenu = false; onSavePreset() }
-                )
-                DropdownMenuItem(
-                    text = { Text("Rename scene") },
-                    onClick = { showMenu = false; showRename = true }
-                )
-                DropdownMenuItem(
-                    text = { Text("Download") },
-                    onClick = { showMenu = false; onDownload() }
-                )
-            }
+                onExpandedChange = { showMenu = it },
+                menuItems = if (isDownloaded) {
+                    listOf(
+                        MenuItem(
+                            titleRes = R.string.timer,
+                            iconRes = R.drawable.ic_timer,
+                            onClick = onTimerClick
+                        ),
+                        MenuItem(
+                            titleRes = R.string.scenes_preferences,
+                            iconRes = R.drawable.ic_nav_settings,
+                            onClick = onPreferencesClick
+                        ),
+                        MenuItem(
+                            titleRes = R.string.scenes_rename,
+                            onClick = { showRename = true }
+                        ),
+                        MenuItem(
+                            titleRes = R.string.audio_scene_save_changes,
+                            iconRes = R.drawable.ic_done,
+                            onClick = onSaveChanges
+                        ),
+                        MenuItem(
+                            titleRes = R.string.scenes_delete,
+                            color = Red,
+                            onClick = onDeleteDownloaded
+                        ),
+                    )
+                } else {
+                    listOf(
+                        MenuItem(
+                            titleRes = R.string.timer,
+                            iconRes = R.drawable.ic_timer,
+                            onClick = onTimerClick
+                        ),
+                        MenuItem(
+                            titleRes = R.string.share,
+                            iconRes = R.drawable.ic_share,
+                            onClick = onShare
+                        ),
+                        MenuItem(
+                            titleRes = R.string.scenes_preferences,
+                            iconRes = R.drawable.ic_nav_settings,
+                            onClick = onPreferencesClick
+                        ),
+                        MenuItem(
+                            titleRes = R.string.scenes_save_download,
+                            iconRes = R.drawable.ic_done,
+                            onClick = onSaveAndDownload
+                        ),
+                    )
+                }
+            )
         }
     }
     if (showRename) {
@@ -133,12 +174,12 @@ fun SoundscapeSceneTopBar(
                 androidx.compose.material3.TextButton(onClick = {
                     onRenameScene(renameValue)
                     showRename = false
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.save)) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showRename = false }) { Text("Cancel") }
+                androidx.compose.material3.TextButton(onClick = { showRename = false }) { Text(stringResource(R.string.cancel)) }
             },
-            title = { Text("Rename scene") },
+            title = { Text(stringResource(R.string.scenes_rename)) },
             text = {
                 androidx.compose.material3.OutlinedTextField(
                     value = renameValue,

@@ -17,7 +17,19 @@ class ParseDeepLinkUseCase @Inject constructor(
 ) {
 
     suspend operator fun invoke(uri: Uri): HomeDestination {
-        if (uri.scheme != "euforia") return HomeDestination.Plan
+        val isCustomScheme = uri.scheme == "euforia"
+        val isSupportedWebLink = uri.scheme == "https" && uri.host.equals("euforia.digital", ignoreCase = true)
+        if (!isCustomScheme && !isSupportedWebLink) return HomeDestination.Plan
+
+        if (isSupportedWebLink) {
+            val segments = uri.pathSegments
+            if (segments.firstOrNull().equals("scenes", ignoreCase = true)) {
+                val sceneId = segments.getOrNull(1)?.toIntOrNull()
+                return if (sceneId == null) HomeDestination.Soundscapes
+                else HomeDestination.SoundscapesScene(sceneId = sceneId)
+            }
+            return HomeDestination.Plan
+        }
 
         val host = uri.host.orEmpty()           // meditations part
         val segments = uri.pathSegments         // /10

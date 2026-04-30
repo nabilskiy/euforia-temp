@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,7 +92,11 @@ fun MusicOptionsBottomSheetContent(
             }
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("Music options", color = White, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Text(
+                    stringResource(R.string.audio_scene_background_music_settings),
+                    color = White,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
                 if (musicTitle.isNotBlank()) {
                     Text(
                         text = musicTitle,
@@ -104,7 +109,12 @@ fun MusicOptionsBottomSheetContent(
             }
         }
         Spacer(Modifier.height(20.dp))
-        Text("Volume", color = White.copy(alpha = 0.55f), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            stringResource(R.string.audio_scene_volume),
+            color = White.copy(alpha = 0.55f),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         Slider(
             value = volume,
             onValueChange = onVolumeChange,
@@ -122,7 +132,7 @@ fun MusicOptionsBottomSheetContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Change music", color = White, style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.audio_scene_change_music), color = White, style = MaterialTheme.typography.titleSmall)
             Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = null, tint = White)
         }
         Spacer(Modifier.height(12.dp))
@@ -133,7 +143,7 @@ fun MusicOptionsBottomSheetContent(
             colors = ButtonDefaults.buttonColors(containerColor = White, contentColor = Black)
         ) {
             Text(
-                "Done",
+                stringResource(R.string.done),
                 color = Black,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
@@ -168,7 +178,12 @@ fun SoundLayerBottomSheetContent(
             }
         }
         HorizontalDivider(color = White.copy(alpha = 0.15f), modifier = Modifier.padding(vertical = 12.dp))
-        Text("Volume", color = White.copy(alpha = 0.55f), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            stringResource(R.string.audio_scene_volume),
+            color = White.copy(alpha = 0.55f),
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         Slider(
             value = volume,
             onValueChange = onVolumeChange,
@@ -236,7 +251,11 @@ fun SoundsPickerBottomSheetContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Sounds", color = White, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            Text(
+                stringResource(R.string.sounds_title),
+                color = White,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            )
             IconButton(onClick = onDismiss) {
                 Icon(painter = painterResource(R.drawable.ic_close), contentDescription = null, tint = White)
             }
@@ -245,7 +264,7 @@ fun SoundsPickerBottomSheetContent(
             value = query,
             onValueChange = { query = it },
             singleLine = true,
-            placeholder = { Text("Search", color = White.copy(alpha = 0.5f)) },
+            placeholder = { Text(stringResource(R.string.scenes_search), color = White.copy(alpha = 0.5f)) },
             trailingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_search),
@@ -270,7 +289,7 @@ fun SoundsPickerBottomSheetContent(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item("playing_now_title") {
-                Text("Playing now", color = White.copy(alpha = 0.55f), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.sounds_section_play_now), color = White.copy(alpha = 0.55f), style = MaterialTheme.typography.bodySmall)
             }
             item("playing_now_items") {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -292,7 +311,7 @@ fun SoundsPickerBottomSheetContent(
             if (suggestions.isNotEmpty()) {
                 item("suggestions_title") {
                     Text(
-                        text = "Suggestions",
+                        text = stringResource(R.string.sounds_category_suggestions),
                         color = White.copy(alpha = 0.55f),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -363,7 +382,7 @@ fun SoundsPickerBottomSheetContent(
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Clear", color = White)
+                Text(stringResource(R.string.sounds_picker_clear), color = White)
             }
             Button(
                 onClick = { onApply(selectedIds) },
@@ -371,7 +390,11 @@ fun SoundsPickerBottomSheetContent(
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = White, contentColor = Black)
             ) {
-                Text("Apply", color = Black, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Text(
+                    stringResource(R.string.sounds_picker_apply),
+                    color = Black,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
             }
         }
     }
@@ -416,7 +439,11 @@ fun MusicPickerBottomSheetContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Choose music", color = White, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            Text(
+                stringResource(R.string.audio_scene_select_background_sound),
+                color = White,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            )
             IconButton(onClick = onDismiss) {
                 Icon(painter = painterResource(R.drawable.ic_close), contentDescription = null, tint = White)
             }
@@ -425,7 +452,7 @@ fun MusicPickerBottomSheetContent(
             value = query,
             onValueChange = { query = it },
             singleLine = true,
-            placeholder = { Text("Search", color = White.copy(alpha = 0.5f)) },
+            placeholder = { Text(stringResource(R.string.scenes_search), color = White.copy(alpha = 0.5f)) },
             trailingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_search),
@@ -460,7 +487,7 @@ fun MusicPickerBottomSheetContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Popular",
+                            text = stringResource(R.string.music_category_suggestions),
                             color = White.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f)
@@ -497,7 +524,7 @@ fun MusicPickerBottomSheetContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Favorites",
+                            text = stringResource(R.string.sounds_category_favorites),
                             color = White.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f)
@@ -580,7 +607,7 @@ fun MusicPickerBottomSheetContent(
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = { selectedId = null }, modifier = Modifier.weight(1f)) {
-                Text("Clear", color = White)
+                Text(stringResource(R.string.sounds_picker_clear), color = White)
             }
             Button(
                 onClick = { onApply(selectedId) },
@@ -588,7 +615,11 @@ fun MusicPickerBottomSheetContent(
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = White, contentColor = Black)
             ) {
-                Text("Apply", color = Black, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Text(
+                    stringResource(R.string.sounds_picker_apply),
+                    color = Black,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
             }
         }
     }

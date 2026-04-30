@@ -105,6 +105,7 @@ import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import digital.euforia.app.R
+import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
@@ -135,6 +136,7 @@ fun SoundscapeSceneScreen(
     var showSoundsPicker by remember { mutableStateOf(false) }
     var controlsVisible by remember { mutableStateOf(true) }
     var showUnsavedExitDialog by remember { mutableStateOf(false) }
+    var showTimerDialog by remember { mutableStateOf(false) }
     var interactionNonce by remember { mutableLongStateOf(0L) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val musicSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -341,16 +343,32 @@ fun SoundscapeSceneScreen(
             ) {
                 Column {
                     SoundscapeSceneTopBar(
-                        title = state.title.ifBlank { "Scene ${state.sceneId}" },
-                        subtitle = state.subtitle,
+                        title = state.title.ifBlank {
+                            stringResource(R.string.soundscape_scene_title_fallback, state.sceneId)
+                        },
+                        subtitle = if (state.isDirty) {
+                            stringResource(R.string.audio_scene_unsaved_changes)
+                        } else {
+                            state.subtitle
+                        },
                         showMaxBadge = state.isPro,
-                        onClose = {
+                        isDownloaded = state.downloadState == SoundscapeDownloadItem.STATUS_READY,
+                        onCollapse = {
                             if (state.isDirty) showUnsavedExitDialog = true
                             else navController.popBackStack()
                         },
-                        onSavePreset = viewModel::onSavePreset,
+                        onSaveChanges = viewModel::onSavePreset,
+                        onSaveAndDownload = viewModel::onSaveAndDownload,
                         onRenameScene = viewModel::onRenameScene,
-                        onDownload = viewModel::onDownloadScene,
+                        onDeleteDownloaded = viewModel::onDeleteDownloadedScene,
+                        onTimerClick = { showTimerDialog = true },
+                        onPreferencesClick = {
+                            markInteraction()
+                            selectedSoundLayerKey = null
+                            showMusicPicker = false
+                            showSoundsPicker = false
+                            showMusicOptions = true
+                        },
                         onShare = {
                             markInteraction()
                             val send = Intent(Intent.ACTION_SEND).apply {
@@ -614,14 +632,14 @@ fun SoundscapeSceneScreen(
             if (showUnsavedExitDialog) {
                 AlertDialog(
                     onDismissRequest = { showUnsavedExitDialog = false },
-                    title = { Text(text = stringResource(R.string.unsaved_changes_title)) },
-                    text = { Text(text = stringResource(R.string.unsaved_changes_message)) },
+                    title = { Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_title)) },
+                    text = { Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_message)) },
                     confirmButton = {
                         TextButton(onClick = {
                             viewModel.onSavePreset()
                             showUnsavedExitDialog = false
                             navController.popBackStack()
-                        }) { Text(text = stringResource(R.string.save)) }
+                        }) { Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_save)) }
                     },
                     dismissButton = {
                         Row {
@@ -633,8 +651,34 @@ fun SoundscapeSceneScreen(
                                 showUnsavedExitDialog = false
                                 navController.popBackStack()
                             }) {
-                                Text(text = stringResource(R.string.discard))
+                                Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_discard))
                             }
+                        }
+                    }
+                )
+            }
+
+            if (showTimerDialog) {
+                AlertDialog(
+                    onDismissRequest = { showTimerDialog = false },
+                    title = { Text(text = stringResource(R.string.sleep_timer_title)) },
+                    text = { Text(text = stringResource(R.string.sleep_timer_message)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.onTimerChange(60)
+                            showTimerDialog = false
+                        }) { Text(text = stringResource(R.string.sleep_timer_60m)) }
+                    },
+                    dismissButton = {
+                        Row {
+                            TextButton(onClick = {
+                                viewModel.onTimerChange(30)
+                                showTimerDialog = false
+                            }) { Text(text = stringResource(R.string.sleep_timer_30m)) }
+                            TextButton(onClick = {
+                                viewModel.onTimerChange(null)
+                                showTimerDialog = false
+                            }) { Text(text = stringResource(R.string.sleep_timer_disable_button)) }
                         }
                     }
                 )

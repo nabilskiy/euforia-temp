@@ -14,10 +14,12 @@ import digital.euforia.app.data.db.entity.SoundscapePreset
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.usecase.soundscapes.GetDefaultSoundscapeScenesUseCase
+import digital.euforia.app.domain.usecase.soundscapes.GetReadyDownloadedScenesFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapePresetsFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapesCatalogFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SoundscapeCategorySection
 import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST
+import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_MY
 import digital.euforia.app.domain.usecase.soundscapes.SaveSoundscapePresetUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SyncSoundscapesCatalogUseCase
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
@@ -78,19 +80,30 @@ private fun applyFiltersToSections(
 private fun buildDisplaySections(
     sections: List<SoundscapeCategorySection>,
     defaultScenes: List<Scene>,
+    myScenes: List<Scene>,
     query: String,
     quickFilter: SoundscapeQuickFilter?,
 ): List<SoundscapeCategorySection> {
     val filteredSections = applyFiltersToSections(sections, query, quickFilter)
     val filteredDefault = applySceneFilters(defaultScenes, query, quickFilter)
-    if (filteredDefault.isEmpty()) return filteredSections
-    return listOf(
-        SoundscapeCategorySection(
+    val filteredMy = applySceneFilters(myScenes, query, quickFilter)
+    val result = mutableListOf<SoundscapeCategorySection>()
+    if (filteredDefault.isNotEmpty()) {
+        result += SoundscapeCategorySection(
             categoryId = SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST,
             title = "",
             scenes = filteredDefault
         )
-    ) + filteredSections
+    }
+    if (filteredMy.isNotEmpty()) {
+        result += SoundscapeCategorySection(
+            categoryId = SOUNDSCAPE_SECTION_MY,
+            title = "",
+            scenes = filteredMy
+        )
+    }
+    result += filteredSections
+    return result
 }
 
 @HiltViewModel
@@ -98,6 +111,7 @@ class SoundscapesViewModel @Inject constructor(
     private val syncSoundscapesCatalogUseCase: SyncSoundscapesCatalogUseCase,
     private val getSoundscapesCatalogFlowUseCase: GetSoundscapesCatalogFlowUseCase,
     private val getDefaultSoundscapeScenesUseCase: GetDefaultSoundscapeScenesUseCase,
+    private val getReadyDownloadedScenesFlowUseCase: GetReadyDownloadedScenesFlowUseCase,
     private val getSoundscapePresetsFlowUseCase: GetSoundscapePresetsFlowUseCase,
     private val saveSoundscapePresetUseCase: SaveSoundscapePresetUseCase,
     private val appPreferences: AppPreferences,
@@ -113,6 +127,7 @@ class SoundscapesViewModel @Inject constructor(
             observeCatalog()
             observePresets()
             observePlayback()
+            observeReadyDownloads()
             refresh()
         }
     )
@@ -134,6 +149,7 @@ class SoundscapesViewModel @Inject constructor(
                 displaySections = buildDisplaySections(
                     sections = categorySections,
                     defaultScenes = defaultScenes,
+                    myScenes = myScenes,
                     query = query,
                     quickFilter = quickFilter
                 )
@@ -148,6 +164,7 @@ class SoundscapesViewModel @Inject constructor(
                 displaySections = buildDisplaySections(
                     sections = categorySections,
                     defaultScenes = defaultScenes,
+                    myScenes = myScenes,
                     query = query,
                     quickFilter = filter
                 )
@@ -188,6 +205,8 @@ class SoundscapesViewModel @Inject constructor(
             sceneId = scene.id,
             sceneTitle = scene.name,
             sceneImageUrl = scene.imagePreviewUrl ?: scene.imageUrl,
+                    sceneMusicUrl = null,
+                    sceneMusicVolumeFactor = 1f,
             ambientMode = false,
             layers = listOf(
                 SoundscapeLayerState(id = scene.id * 100 + 1, title = "Rain", volume = 0.6f),
@@ -221,9 +240,19 @@ class SoundscapesViewModel @Inject constructor(
                         playlists = catalog.playlists,
                         searchSuggestions = remoteConfigFetcher.getScenesSearchSuggestions(),
                         popularScenes = resolvePopularScenes(catalog.scenes),
+                        myScenes = resolveMyScenes(
+                            allScenes = catalog.scenes,
+                            presets = state.presets,
+                            downloadedScenes = state.downloadedScenes
+                        ),
                         displaySections = buildDisplaySections(
                             sections = nextSections,
                             defaultScenes = defaultScenes,
+                            myScenes = resolveMyScenes(
+                                allScenes = catalog.scenes,
+                                presets = state.presets,
+                                downloadedScenes = state.downloadedScenes
+                            ),
                             query = state.query,
                             quickFilter = state.quickFilter
                         )
@@ -248,9 +277,63 @@ class SoundscapesViewModel @Inject constructor(
     private fun observePresets() {
         intent {
             getSoundscapePresetsFlowUseCase().collectLatest { presets ->
-                reduce { state.copy(presets = presets) }
+                reduce {
+                    val nextMy = resolveMyScenes(
+                        allScenes = state.scenes,
+                        presets = presets,
+                        downloadedScenes = state.downloadedScenes
+                    )
+                    state.copy(
+                        presets = presets,
+                        myScenes = nextMy,
+                        displaySections = buildDisplaySections(
+                            sections = state.categorySections,
+                            defaultScenes = state.defaultScenes,
+                            myScenes = nextMy,
+                            query = state.query,
+                            quickFilter = state.quickFilter
+                        )
+                    )
+                }
             }
         }
+    }
+
+    private fun observeReadyDownloads() {
+        intent {
+            getReadyDownloadedScenesFlowUseCase().collectLatest { downloaded ->
+                reduce {
+                    val nextMy = resolveMyScenes(
+                        allScenes = state.scenes,
+                        presets = state.presets,
+                        downloadedScenes = downloaded
+                    )
+                    state.copy(
+                        downloadedScenes = downloaded,
+                        myScenes = nextMy,
+                        displaySections = buildDisplaySections(
+                            sections = state.categorySections,
+                            defaultScenes = state.defaultScenes,
+                            myScenes = nextMy,
+                            query = state.query,
+                            quickFilter = state.quickFilter
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun resolveMyScenes(
+        allScenes: List<Scene>,
+        presets: List<SoundscapePreset>,
+        downloadedScenes: List<Scene>
+    ): List<Scene> {
+        if (allScenes.isEmpty()) return emptyList()
+        val byId = allScenes.associateBy { it.id }
+        val presetScenes = presets.mapNotNull { byId[it.sceneId] }
+        return (downloadedScenes + presetScenes)
+            .distinctBy { it.id }
     }
 
     private fun observePlayback() {
@@ -297,6 +380,8 @@ data class SoundscapesState(
     val popularScenes: List<Scene> = emptyList(),
     val playlists: List<digital.euforia.app.data.db.entity.SoundscapePlaylist> = emptyList(),
     val presets: List<SoundscapePreset> = emptyList(),
+    val downloadedScenes: List<Scene> = emptyList(),
+    val myScenes: List<Scene> = emptyList(),
     val miniPlayer: MiniPlayerUi = MiniPlayerUi(),
 )
 

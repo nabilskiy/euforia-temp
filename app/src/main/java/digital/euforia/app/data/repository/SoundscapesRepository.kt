@@ -150,6 +150,7 @@ class SoundscapesRepository @Inject constructor(
     suspend fun updateDownload(item: SoundscapeDownloadItem) = downloadDao.upsert(item)
     suspend fun getDownload(id: String): SoundscapeDownloadItem? = downloadDao.getById(id)
     suspend fun deleteDownload(id: String) = downloadDao.deleteById(id)
+    suspend fun clearDownloads() = downloadDao.deleteAll()
 
     suspend fun reconcileDownloads(existingPaths: Set<String>) {
         val current = downloadDao.getAllFlow().firstOrNull().orEmpty()

@@ -67,6 +67,7 @@ interface SoundEngine {
     fun removeLayer(layerKey: String)
     fun addLayer(layer: SoundscapeLayerState)
     fun setTimer(seconds: Int?)
+    fun stop()
 }
 
 @Singleton
@@ -200,6 +201,10 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
 
     override fun setTimer(seconds: Int?) {
         _playback.update { it.copy(timerSeconds = seconds) }
+    }
+
+    override fun stop() {
+        _playback.value = SoundscapePlaybackState()
     }
 }
 
