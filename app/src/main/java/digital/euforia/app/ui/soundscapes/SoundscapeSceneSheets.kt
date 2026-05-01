@@ -57,7 +57,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +65,7 @@ import coil.compose.AsyncImage
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 
 @Composable
 fun MusicOptionsBottomSheetContent(
@@ -76,6 +76,7 @@ fun MusicOptionsBottomSheetContent(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     Column(modifier = modifier) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -93,7 +94,7 @@ fun MusicOptionsBottomSheetContent(
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    stringResource(R.string.audio_scene_background_music_settings),
+                    localizedRes.string(R.string.audio_scene_background_music_settings),
                     color = White,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
@@ -110,7 +111,7 @@ fun MusicOptionsBottomSheetContent(
         }
         Spacer(Modifier.height(20.dp))
         Text(
-            stringResource(R.string.audio_scene_volume),
+            localizedRes.string(R.string.audio_scene_volume),
             color = White.copy(alpha = 0.55f),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -132,7 +133,7 @@ fun MusicOptionsBottomSheetContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(stringResource(R.string.audio_scene_change_music), color = White, style = MaterialTheme.typography.titleSmall)
+            Text(localizedRes.string(R.string.audio_scene_change_music), color = White, style = MaterialTheme.typography.titleSmall)
             Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = null, tint = White)
         }
         Spacer(Modifier.height(12.dp))
@@ -143,7 +144,7 @@ fun MusicOptionsBottomSheetContent(
             colors = ButtonDefaults.buttonColors(containerColor = White, contentColor = Black)
         ) {
             Text(
-                stringResource(R.string.done),
+                localizedRes.string(R.string.done),
                 color = Black,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
@@ -159,6 +160,7 @@ fun SoundLayerBottomSheetContent(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -179,7 +181,7 @@ fun SoundLayerBottomSheetContent(
         }
         HorizontalDivider(color = White.copy(alpha = 0.15f), modifier = Modifier.padding(vertical = 12.dp))
         Text(
-            stringResource(R.string.audio_scene_volume),
+            localizedRes.string(R.string.audio_scene_volume),
             color = White.copy(alpha = 0.55f),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -210,6 +212,7 @@ fun SoundsPickerBottomSheetContent(
     onApply: (Set<Int>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val playingNowScroll = rememberScrollState()
     var query by remember(sounds) { mutableStateOf("") }
     var selectedIds by remember(initialSelectedIds, sounds) { mutableStateOf(initialSelectedIds) }
@@ -252,7 +255,7 @@ fun SoundsPickerBottomSheetContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                stringResource(R.string.sounds_title),
+                localizedRes.string(R.string.sounds_title),
                 color = White,
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
@@ -264,7 +267,7 @@ fun SoundsPickerBottomSheetContent(
             value = query,
             onValueChange = { query = it },
             singleLine = true,
-            placeholder = { Text(stringResource(R.string.scenes_search), color = White.copy(alpha = 0.5f)) },
+            placeholder = { Text(localizedRes.string(R.string.scenes_search), color = White.copy(alpha = 0.5f)) },
             trailingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_search),
@@ -289,7 +292,7 @@ fun SoundsPickerBottomSheetContent(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item("playing_now_title") {
-                Text(stringResource(R.string.sounds_section_play_now), color = White.copy(alpha = 0.55f), style = MaterialTheme.typography.bodySmall)
+                Text(localizedRes.string(R.string.sounds_section_play_now), color = White.copy(alpha = 0.55f), style = MaterialTheme.typography.bodySmall)
             }
             item("playing_now_items") {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -311,7 +314,7 @@ fun SoundsPickerBottomSheetContent(
             if (suggestions.isNotEmpty()) {
                 item("suggestions_title") {
                     Text(
-                        text = stringResource(R.string.sounds_category_suggestions),
+                        text = localizedRes.string(R.string.sounds_category_suggestions),
                         color = White.copy(alpha = 0.55f),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -382,7 +385,7 @@ fun SoundsPickerBottomSheetContent(
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(stringResource(R.string.sounds_picker_clear), color = White)
+                Text(localizedRes.string(R.string.sounds_picker_clear), color = White)
             }
             Button(
                 onClick = { onApply(selectedIds) },
@@ -391,7 +394,7 @@ fun SoundsPickerBottomSheetContent(
                 colors = ButtonDefaults.buttonColors(containerColor = White, contentColor = Black)
             ) {
                 Text(
-                    stringResource(R.string.sounds_picker_apply),
+                    localizedRes.string(R.string.sounds_picker_apply),
                     color = Black,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
@@ -413,6 +416,7 @@ fun MusicPickerBottomSheetContent(
     onApply: (Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     var query by remember(music) { mutableStateOf("") }
     var selectedId by remember(initialSelectedId, music) { mutableStateOf(initialSelectedId) }
     var expandedCategoryIds by remember(categories) {
@@ -440,7 +444,7 @@ fun MusicPickerBottomSheetContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                stringResource(R.string.audio_scene_select_background_sound),
+                localizedRes.string(R.string.audio_scene_select_background_sound),
                 color = White,
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
@@ -452,7 +456,7 @@ fun MusicPickerBottomSheetContent(
             value = query,
             onValueChange = { query = it },
             singleLine = true,
-            placeholder = { Text(stringResource(R.string.scenes_search), color = White.copy(alpha = 0.5f)) },
+            placeholder = { Text(localizedRes.string(R.string.scenes_search), color = White.copy(alpha = 0.5f)) },
             trailingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_search),
@@ -487,7 +491,7 @@ fun MusicPickerBottomSheetContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.music_category_suggestions),
+                            text = localizedRes.string(R.string.music_category_suggestions),
                             color = White.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f)
@@ -524,7 +528,7 @@ fun MusicPickerBottomSheetContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.sounds_category_favorites),
+                            text = localizedRes.string(R.string.sounds_category_favorites),
                             color = White.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f)
@@ -607,7 +611,7 @@ fun MusicPickerBottomSheetContent(
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = { selectedId = null }, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.sounds_picker_clear), color = White)
+                Text(localizedRes.string(R.string.sounds_picker_clear), color = White)
             }
             Button(
                 onClick = { onApply(selectedId) },
@@ -616,7 +620,7 @@ fun MusicPickerBottomSheetContent(
                 colors = ButtonDefaults.buttonColors(containerColor = White, contentColor = Black)
             ) {
                 Text(
-                    stringResource(R.string.sounds_picker_apply),
+                    localizedRes.string(R.string.sounds_picker_apply),
                     color = Black,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )

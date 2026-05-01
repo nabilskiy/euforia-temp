@@ -8,6 +8,9 @@ package digital.euforia.app.domain.usecase.soundscapes
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.data.repository.SoundscapesRepository
+import digital.euforia.app.service.soundscapes.SoundscapeAssetType
+import digital.euforia.app.service.soundscapes.SoundscapeOfflineManifest
+import digital.euforia.app.service.soundscapes.SoundscapeAudioCacheManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
@@ -36,7 +39,10 @@ class GetSoundscapeDownloadCardsFlowUseCase @Inject constructor(
             val scenesById = scenes.associateBy { it.id }
             downloads.map { item ->
                 val scene = scenesById[item.sceneId]
-                val imageUrl = scene?.imagePreviewUrl?.takeIf { it.isNotBlank() }
+                val manifest = SoundscapeOfflineManifest.fromJsonOrNull(item.localPath)
+                val imageUrl = manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_PREVIEW)
+                    ?: manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_BACKGROUND)
+                    ?: scene?.imagePreviewUrl?.takeIf { it.isNotBlank() }
                     ?: scene?.imageUrl?.takeIf { it.isNotBlank() }
                 SoundscapeDownloadCard(
                     download = item,
@@ -86,14 +92,31 @@ class RetrySoundscapeDownloadUseCase @Inject constructor(
 }
 
 class DeleteSoundscapeDownloadUseCase @Inject constructor(
-    private val repository: SoundscapesRepository
+    private val repository: SoundscapesRepository,
+    private val audioCacheManager: SoundscapeAudioCacheManager,
 ) {
-    suspend operator fun invoke(id: String) = repository.deleteDownload(id)
+    suspend operator fun invoke(id: String) {
+        val item = repository.getDownload(id)
+        val manifest = SoundscapeOfflineManifest.fromJsonOrNull(item?.localPath)
+        if (manifest != null) {
+            audioCacheManager.deleteByManifest(manifest)
+        }
+        repository.deleteDownload(id)
+    }
 }
 
 class ClearSoundscapeDownloadsUseCase @Inject constructor(
-    private val repository: SoundscapesRepository
+    private val repository: SoundscapesRepository,
+    private val audioCacheManager: SoundscapeAudioCacheManager,
 ) {
-    suspend operator fun invoke() = repository.clearDownloads()
+    suspend operator fun invoke() {
+        repository.getDownloadsSnapshot().forEach { item ->
+            val manifest = SoundscapeOfflineManifest.fromJsonOrNull(item.localPath)
+            if (manifest != null) {
+                audioCacheManager.deleteByManifest(manifest)
+            }
+        }
+        repository.clearDownloads()
+    }
 }
 

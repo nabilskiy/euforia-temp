@@ -34,11 +34,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.theme.SoundscapesActionButtonBackground
 import digital.euforia.app.ui.theme.SoundscapesScreenBackground
 import digital.euforia.app.ui.theme.SoundscapesTileBorder
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -86,7 +88,9 @@ fun SoundscapePlaylistScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(132.dp),
-                    onClick = { viewModel.onSceneClick(scene.id) }
+                    onClick = { viewModel.onSceneClick(scene.id) },
+                    isPremium = state.isPremium,
+                    isActive = state.isPlaybackActive && state.activeSceneId == scene.id,
                 )
             }
         }
@@ -100,6 +104,7 @@ private fun PlaylistHeader(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             modifier = Modifier
@@ -124,7 +129,7 @@ private fun PlaylistHeader(
             }
         }
         Text(
-            text = title.ifBlank { "Playlist" },
+            text = title.ifBlank { localizedRes.string(R.string.playlist_title) },
             color = White,
             style = MaterialTheme.typography.headlineLarge
         )

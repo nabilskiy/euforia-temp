@@ -146,6 +146,7 @@ class SoundscapesRepository @Inject constructor(
     suspend fun deletePreset(id: Int) = presetDao.deleteById(id)
 
     fun getDownloadsFlow(): Flow<List<SoundscapeDownloadItem>> = downloadDao.getAllFlow()
+    suspend fun getDownloadsSnapshot(): List<SoundscapeDownloadItem> = downloadDao.getAll()
     suspend fun queueDownload(item: SoundscapeDownloadItem) = downloadDao.upsert(item)
     suspend fun updateDownload(item: SoundscapeDownloadItem) = downloadDao.upsert(item)
     suspend fun getDownload(id: String): SoundscapeDownloadItem? = downloadDao.getById(id)

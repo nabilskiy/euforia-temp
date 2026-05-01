@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.AudioAttributes
@@ -56,6 +55,7 @@ import digital.euforia.app.App
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.formatDuration
 import kotlinx.coroutines.delay
 import kotlin.math.min
@@ -71,7 +71,7 @@ fun SoundscapeSceneBackground(
     onPlaybackProgress: (positionMs: Long, durationMs: Long) -> Unit,
 ) {
     val context = LocalContext.current
-    var displayImageUrl by remember { mutableStateOf<String?>(null) }
+    var displayImageUrl by remember(imageUrl) { mutableStateOf(imageUrl) }
     LaunchedEffect(imageUrl) {
         if (!imageUrl.isNullOrBlank()) {
             displayImageUrl = imageUrl
@@ -80,23 +80,16 @@ fun SoundscapeSceneBackground(
 
     val parallaxScale = if (isParallaxEnabled) 1.06f else 1f
 
-    if (!displayImageUrl.isNullOrBlank()) {
-        AsyncImage(
-            model = displayImageUrl,
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale),
-            contentScale = ContentScale.Crop
-        )
-    } else {
-        Box(Modifier.fillMaxSize().background(Black))
-    }
+    // Base layer: keep only neutral background under video.
+    Box(Modifier.fillMaxSize().background(Black))
 
     val videoExo = remember(videoUrl) {
-        if (videoUrl.isNullOrBlank()) null else ExoPlayer.Builder(context)
-            .setMediaSourceFactory(buildCachedMediaSourceFactory(context))
-            .build().apply {
+        if (videoUrl.isNullOrBlank()) null else {
+            val builder = ExoPlayer.Builder(context)
+            if (!isLocalUri(videoUrl)) {
+                builder.setMediaSourceFactory(buildCachedMediaSourceFactory(context))
+            }
+            builder.build().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
@@ -109,18 +102,37 @@ fun SoundscapeSceneBackground(
             repeatMode = Player.REPEAT_MODE_ALL
             prepare()
         }
+        }
     }
     var hasRenderedFirstFrame by remember(videoUrl) { mutableStateOf(videoUrl.isNullOrBlank()) }
+    var isVideoReady by remember(videoUrl) { mutableStateOf(videoUrl.isNullOrBlank()) }
+    var playbackState by remember(videoUrl) { mutableStateOf(Player.STATE_IDLE) }
     DisposableEffect(videoExo) {
         val player = videoExo
         if (player == null) {
             hasRenderedFirstFrame = true
+            isVideoReady = true
             onDispose { }
         } else {
             hasRenderedFirstFrame = false
+            isVideoReady = false
             val listener = object : Player.Listener {
                 override fun onRenderedFirstFrame() {
                     hasRenderedFirstFrame = true
+                    isVideoReady = true
+                }
+
+                override fun onPlaybackStateChanged(state: Int) {
+                    when (state) {
+                        Player.STATE_READY -> {
+                            // Fallback for devices/streams where onRenderedFirstFrame is flaky.
+                            isVideoReady = true
+                        }
+                        Player.STATE_IDLE, Player.STATE_BUFFERING -> {
+                            isVideoReady = false
+                        }
+                    }
+                    playbackState = state
                 }
             }
             player.addListener(listener)
@@ -134,6 +146,7 @@ fun SoundscapeSceneBackground(
         val v = videoExo ?: return@LaunchedEffect
         val shouldPlay = isPlaying
         v.playWhenReady = shouldPlay
+        playbackState = v.playbackState
         if (shouldPlay) v.play() else v.pause()
     }
     if (videoExo != null) {
@@ -152,8 +165,9 @@ fun SoundscapeSceneBackground(
         )
     }
 
-    val showBlurredPlaceholder = isPreparing || !hasRenderedFirstFrame
-    if (showBlurredPlaceholder && !displayImageUrl.isNullOrBlank()) {
+    val playerReadyNow = videoExo?.playbackState == Player.STATE_READY || playbackState == Player.STATE_READY
+    val showBlurredPlaceholder = !(hasRenderedFirstFrame || isVideoReady || playerReadyNow)
+    if (showBlurredPlaceholder && videoExo != null && !displayImageUrl.isNullOrBlank()) {
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(displayImageUrl)
@@ -197,6 +211,13 @@ private fun buildCachedMediaSourceFactory(context: android.content.Context): Def
     return DefaultMediaSourceFactory(cacheFactory)
 }
 
+private fun isLocalUri(url: String): Boolean {
+    return url.startsWith("file:/") || runCatching {
+        val uri = java.net.URI(url)
+        uri.scheme.equals("content", ignoreCase = true)
+    }.getOrDefault(false)
+}
+
 @Composable
 fun SoundscapeScenePlayControl(
     isPlaying: Boolean,
@@ -205,6 +226,7 @@ fun SoundscapeScenePlayControl(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val progress = if (durationMs > 0) min(1f, positionMs.toFloat() / durationMs.toFloat()) else 0f
     val ringColor = White.copy(alpha = 0.9f)
     val trackColor = White.copy(alpha = 0.25f)
@@ -248,7 +270,7 @@ fun SoundscapeScenePlayControl(
             }
             Icon(
                 painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                contentDescription = stringResource(if (isPlaying) R.string.pause else R.string.play),
+                contentDescription = localizedRes.string(if (isPlaying) R.string.pause else R.string.play),
                 tint = White,
                 modifier = Modifier.size(36.dp)
             )

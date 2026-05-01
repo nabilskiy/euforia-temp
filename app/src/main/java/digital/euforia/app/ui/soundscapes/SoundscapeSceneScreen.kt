@@ -83,7 +83,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -110,6 +109,7 @@ import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.formatDuration
 import digital.euforia.app.ui.util.widget.MaxView
 import org.orbitmvi.orbit.compose.collectAsState
@@ -125,6 +125,7 @@ fun SoundscapeSceneScreen(
 ) {
     val state by viewModel.collectAsState()
     val context = LocalContext.current
+    val localizedRes = LocalLocalizedRes.current
     // Bind MediaSession while scene is shown (notification / remote); transport is driven by ViewModel.
     BindSoundscapeMediaSession()
 
@@ -344,10 +345,10 @@ fun SoundscapeSceneScreen(
                 Column {
                     SoundscapeSceneTopBar(
                         title = state.title.ifBlank {
-                            stringResource(R.string.soundscape_scene_title_fallback, state.sceneId)
+                            localizedRes.string(R.string.soundscape_scene_title_fallback, state.sceneId)
                         },
                         subtitle = if (state.isDirty) {
-                            stringResource(R.string.audio_scene_unsaved_changes)
+                            localizedRes.string(R.string.audio_scene_unsaved_changes)
                         } else {
                             state.subtitle
                         },
@@ -373,9 +374,9 @@ fun SoundscapeSceneScreen(
                             markInteraction()
                             val send = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, state.title.ifBlank { context.getString(R.string.app_name) })
+                                putExtra(Intent.EXTRA_TEXT, state.title.ifBlank { localizedRes.string(R.string.app_name) })
                             }
-                            context.startActivity(Intent.createChooser(send, context.getString(R.string.share)))
+                            context.startActivity(Intent.createChooser(send, localizedRes.string(R.string.share)))
                         }
                     )
                 }
@@ -589,7 +590,7 @@ fun SoundscapeSceneScreen(
                 )
             }
 
-            if (state.isPreparing) {
+            if (state.isPreparing || state.isSceneDownloadInProgress) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -603,15 +604,23 @@ fun SoundscapeSceneScreen(
                         modifier = Modifier.padding(horizontal = 24.dp)
                     ) {
                         CircularProgressIndicator(color = White)
-                        val total = state.preparingTotal
-                        val done = state.preparingCompleted
-                        val progressText = if (total > 0) {
-                            stringResource(R.string.scene_preparing_progress_format, done, total)
+                        val progressText = if (state.isSceneDownloadInProgress) {
+                            localizedRes.string(R.string.downloads_progress_format, state.downloadProgress)
                         } else {
-                            stringResource(R.string.loading)
+                            val total = state.preparingTotal
+                            val done = state.preparingCompleted
+                            if (total > 0) {
+                                localizedRes.string(R.string.scene_preparing_progress_format, done, total)
+                            } else {
+                                localizedRes.string(R.string.loading)
+                            }
                         }
                         Text(
-                            text = stringResource(R.string.scene_preparing),
+                            text = if (state.isSceneDownloadInProgress) {
+                                localizedRes.string(R.string.audio_scene_saving)
+                            } else {
+                                localizedRes.string(R.string.scene_preparing)
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             color = White,
                             textAlign = TextAlign.Center
@@ -622,8 +631,10 @@ fun SoundscapeSceneScreen(
                             color = White.copy(alpha = 0.82f),
                             textAlign = TextAlign.Center
                         )
-                        TextButton(onClick = viewModel::onCancelPreparation) {
-                            Text(text = stringResource(R.string.cancel), color = White)
+                        if (!state.isSceneDownloadInProgress) {
+                            TextButton(onClick = viewModel::onCancelPreparation) {
+                                Text(text = localizedRes.string(R.string.cancel), color = White)
+                            }
                         }
                     }
                 }
@@ -632,26 +643,26 @@ fun SoundscapeSceneScreen(
             if (showUnsavedExitDialog) {
                 AlertDialog(
                     onDismissRequest = { showUnsavedExitDialog = false },
-                    title = { Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_title)) },
-                    text = { Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_message)) },
+                    title = { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_title)) },
+                    text = { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_message)) },
                     confirmButton = {
                         TextButton(onClick = {
                             viewModel.onSavePreset()
                             showUnsavedExitDialog = false
                             navController.popBackStack()
-                        }) { Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_save)) }
+                        }) { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_save)) }
                     },
                     dismissButton = {
                         Row {
                             TextButton(onClick = { showUnsavedExitDialog = false }) {
-                                Text(text = stringResource(R.string.cancel))
+                                Text(text = localizedRes.string(R.string.cancel))
                             }
                             TextButton(onClick = {
                                 viewModel.onDiscardChangesAndExit()
                                 showUnsavedExitDialog = false
                                 navController.popBackStack()
                             }) {
-                                Text(text = stringResource(R.string.audio_scene_unsaved_changes_alert_discard))
+                                Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_discard))
                             }
                         }
                     }
@@ -661,24 +672,24 @@ fun SoundscapeSceneScreen(
             if (showTimerDialog) {
                 AlertDialog(
                     onDismissRequest = { showTimerDialog = false },
-                    title = { Text(text = stringResource(R.string.sleep_timer_title)) },
-                    text = { Text(text = stringResource(R.string.sleep_timer_message)) },
+                    title = { Text(text = localizedRes.string(R.string.sleep_timer_title)) },
+                    text = { Text(text = localizedRes.string(R.string.sleep_timer_message)) },
                     confirmButton = {
                         TextButton(onClick = {
                             viewModel.onTimerChange(60)
                             showTimerDialog = false
-                        }) { Text(text = stringResource(R.string.sleep_timer_60m)) }
+                        }) { Text(text = localizedRes.string(R.string.sleep_timer_60m)) }
                     },
                     dismissButton = {
                         Row {
                             TextButton(onClick = {
                                 viewModel.onTimerChange(30)
                                 showTimerDialog = false
-                            }) { Text(text = stringResource(R.string.sleep_timer_30m)) }
+                            }) { Text(text = localizedRes.string(R.string.sleep_timer_30m)) }
                             TextButton(onClick = {
                                 viewModel.onTimerChange(null)
                                 showTimerDialog = false
-                            }) { Text(text = stringResource(R.string.sleep_timer_disable_button)) }
+                            }) { Text(text = localizedRes.string(R.string.sleep_timer_disable_button)) }
                         }
                     }
                 )

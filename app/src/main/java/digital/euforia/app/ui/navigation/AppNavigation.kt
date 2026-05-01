@@ -445,6 +445,18 @@ fun AppNavigation(
                         navBarVisibilityState = isBottomBarShown,
                     )
                 }
+                composable<HomeDestination.DevOptions>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
+                    isBottomBarShown.value = true
+                    DevOptionsScreen(
+                        navController = navController,
+                        viewModel = hiltViewModel()
+                    )
+                }
             }
 
             HomeScreen(navController, hiltViewModel(), isBottomBarShown)

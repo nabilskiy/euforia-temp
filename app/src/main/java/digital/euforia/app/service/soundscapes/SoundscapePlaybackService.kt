@@ -162,6 +162,13 @@ class SoundscapePlaybackService : MediaSessionService() {
                     stopSelf()
                     return@collectLatest
                 }
+                if (playback.stopWithFadeOut) {
+                    cancelSleepTimer()
+                    fadeOutAndStopMusic()
+                    soundsManager.fadeOutAndReleaseAll()
+                    playbackController.stop()
+                    return@collectLatest
+                }
                 soundsManager.render(playback)
                 syncMusicPlayback(playback)
                 syncSleepTimer(playback)
@@ -215,7 +222,7 @@ class SoundscapePlaybackService : MediaSessionService() {
         sleepTimerJob = serviceScope.launch {
             val delayMs = (expectedDeadline - System.currentTimeMillis()).coerceAtLeast(0L)
             delay(delayMs)
-            playbackController.stop()
+            playbackController.stop(fadeOut = true)
         }
     }
 
@@ -224,6 +231,29 @@ class SoundscapePlaybackService : MediaSessionService() {
         sleepTimerJob = null
         sleepDeadlineMs = null
         sleepTimerSeconds = null
+    }
+
+
+
+    private suspend fun fadeOutAndStopMusic(durationMs: Long = 320L) {
+        val p = musicPlayer ?: return
+        val startVolume = p.volume.coerceIn(0f, 1f)
+        if (startVolume <= 0.0001f) {
+            p.stop()
+            p.clearMediaItems()
+            return
+        }
+        val steps = 10
+        val stepDelayMs = (durationMs / steps).coerceAtLeast(1L)
+        for (step in 1..steps) {
+            val t = step / steps.toFloat()
+            val volume = startVolume * (1f - t)
+            p.volume = volume.coerceIn(0f, 1f)
+            delay(stepDelayMs)
+        }
+        p.stop()
+        p.clearMediaItems()
+        p.volume = startVolume
     }
 
     private fun syncMusicPlayback(playback: SoundscapePlaybackState) {

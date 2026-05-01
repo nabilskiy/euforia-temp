@@ -18,6 +18,7 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import digital.euforia.app.App
+import kotlinx.coroutines.delay
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -100,6 +101,35 @@ class SoundscapeSoundsManager @Inject constructor(
             players.size,
             playback.isPlaying
         )
+    }
+
+
+
+    suspend fun fadeOutAndReleaseAll(durationMs: Long = 320L) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            releaseAll()
+            return
+        }
+        val currentPlayers = players.values.toList()
+        if (currentPlayers.isEmpty()) {
+            releaseAll()
+            return
+        }
+        players.keys.forEach { key ->
+            fadeGeneration[key] = (fadeGeneration[key] ?: 0) + 1
+        }
+        val startVolumes = currentPlayers.map { it.volume.coerceIn(0f, 1f) }
+        val steps = 10
+        val stepDelayMs = (durationMs / steps).coerceAtLeast(1L)
+        for (step in 1..steps) {
+            val t = step / steps.toFloat()
+            currentPlayers.forEachIndexed { idx, player ->
+                val v = startVolumes[idx] * (1f - t)
+                player.volume = v.coerceIn(0f, 1f)
+            }
+            delay(stepDelayMs)
+        }
+        releaseAll()
     }
 
     fun releaseAll() {

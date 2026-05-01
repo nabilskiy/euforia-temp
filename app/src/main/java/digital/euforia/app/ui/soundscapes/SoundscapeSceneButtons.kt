@@ -25,10 +25,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 
 @Composable
 fun AnimatedAddSoundsButton(
@@ -36,6 +36,7 @@ fun AnimatedAddSoundsButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     val transition = rememberInfiniteTransition(label = "add_sounds_button_transition")
     val scale by transition.animateFloat(
         initialValue = 1f,
@@ -92,7 +93,7 @@ fun AnimatedAddSoundsButton(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_sounds_scene_add),
-            contentDescription = stringResource(R.string.sound_add_to_scene),
+            contentDescription = localizedRes.string(R.string.sound_add_to_scene),
             tint = White,
             modifier = Modifier
                 .size(22.dp)

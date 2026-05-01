@@ -66,14 +66,21 @@ class SoundscapeDownloadsProcessor @Inject constructor(
 
         try {
             val scene = repository.getSceneDetails(item.sceneId).dataOrNull
-            val urls = buildOfflineAssetUrls(scene)
+            val localState = repository.getLocalSceneState(item.sceneId)
+            val assetsToDownload = buildOfflineAssetRefs(
+                scene = scene,
+                localLayerSoundIds = parseLocalLayerSoundIds(localState?.layersJson),
+                localSelectedMusicUrl = localState?.selectedMusicUrl,
+                localSoundFileUrlsById = repository.getAllSounds()
+                    .associate { sound -> sound.id to sound.fileUrl.takeIf { it.isNotBlank() } }
+            )
 
-            if (urls.isEmpty()) {
+            if (assetsToDownload.isEmpty()) {
                 repository.updateDownload(
                     startedItem.copy(
                         status = SoundscapeDownloadItem.STATUS_READY,
                         progress = 100,
-                        localPath = "scene_${item.sceneId}|assets=${urls.size}",
+                        localPath = SoundscapeOfflineManifest(sceneId = item.sceneId, assets = emptyList()).toJson(),
                         updatedAt = System.currentTimeMillis()
                     )
                 )
@@ -81,10 +88,11 @@ class SoundscapeDownloadsProcessor @Inject constructor(
                 return
             }
 
-            urls.forEachIndexed { index, url ->
+            val downloadedAssets = mutableListOf<SoundscapeOfflineAsset>()
+            assetsToDownload.forEachIndexed { index, asset ->
                 val result = retry(retries = 2, delayMillis = 500L) {
                     runCatching {
-                        audioCacheManager.ensureCached(url)
+                        audioCacheManager.ensureCached(asset.url, asset.type)
                     }.fold(
                         onSuccess = { ResultWrapper.success(it) },
                         onFailure = { ResultWrapper.failure(it) }
@@ -93,7 +101,12 @@ class SoundscapeDownloadsProcessor @Inject constructor(
                 if (!result.isSuccess) {
                     throw result.throwableOrNull ?: IllegalStateException("Download failed")
                 }
-                val progress = (((index + 1).toFloat() / urls.size.toFloat()) * 100f).toInt().coerceIn(0, 100)
+                downloadedAssets += SoundscapeOfflineAsset(
+                    type = asset.type,
+                    remoteUrl = asset.url,
+                    localUrl = result.dataOrNull.orEmpty()
+                )
+                val progress = (((index + 1).toFloat() / assetsToDownload.size.toFloat()) * 100f).toInt().coerceIn(0, 100)
                 repository.updateDownload(
                     startedItem.copy(
                         status = SoundscapeDownloadItem.STATUS_DOWNLOADING,
@@ -107,7 +120,10 @@ class SoundscapeDownloadsProcessor @Inject constructor(
                 startedItem.copy(
                     status = SoundscapeDownloadItem.STATUS_READY,
                     progress = 100,
-                    localPath = "scene_${item.sceneId}|assets=${urls.size}",
+                    localPath = SoundscapeOfflineManifest(
+                        sceneId = item.sceneId,
+                        assets = downloadedAssets
+                    ).toJson(),
                     updatedAt = System.currentTimeMillis()
                 )
             )
@@ -125,22 +141,68 @@ class SoundscapeDownloadsProcessor @Inject constructor(
     }
 }
 
-internal fun buildOfflineAssetUrls(scene: NetworkScene?): List<String> {
-    val soundUrls = scene?.sceneSounds
+internal data class OfflineAssetRef(
+    val type: SoundscapeAssetType,
+    val url: String,
+)
+
+internal fun buildOfflineAssetRefs(
+    scene: NetworkScene?,
+    localLayerSoundIds: List<Int> = emptyList(),
+    localSelectedMusicUrl: String? = null,
+    localSoundFileUrlsById: Map<Int, String?> = emptyMap(),
+): List<OfflineAssetRef> {
+    val soundAssets = scene?.sceneSounds
         ?.mapNotNull { soundItem ->
             soundItem.soundFileUrl?.takeIf { it.isNotBlank() }
                 ?: soundItem.sound?.fileUrl?.takeIf { it.isNotBlank() }
                 ?: soundItem.sound?.file?.url?.takeIf { it.isNotBlank() }
+        }
+        .orEmpty()
+        .map { OfflineAssetRef(type = SoundscapeAssetType.SOUND, url = it) }
+    val localEditedSoundAssets = localLayerSoundIds
+        .mapNotNull { soundId -> localSoundFileUrlsById[soundId]?.takeIf { it.isNotBlank() } }
+        .map { OfflineAssetRef(type = SoundscapeAssetType.SOUND, url = it) }
+    val musicAssets = scene?.sceneMusics
+        ?.mapNotNull { music ->
+            music.musicFileUrl?.takeIf { it.isNotBlank() }
+                ?: music.music?.fileUrl?.takeIf { it.isNotBlank() }
+                ?: music.music?.file?.url?.takeIf { it.isNotBlank() }
         }.orEmpty()
-    val musicUrls = scene?.sceneMusics
-        ?.mapNotNull { m ->
-            m.musicFileUrl?.takeIf { it.isNotBlank() }
-                ?: m.music?.fileUrl?.takeIf { it.isNotBlank() }
-                ?: m.music?.file?.url?.takeIf { it.isNotBlank() }
-        }.orEmpty()
-    val backgroundUrls = listOfNotNull(
+        .map { OfflineAssetRef(type = SoundscapeAssetType.MUSIC, url = it) }
+    val localEditedMusicAssets = listOfNotNull(
+        localSelectedMusicUrl?.takeIf { it.isNotBlank() }?.let {
+            OfflineAssetRef(type = SoundscapeAssetType.MUSIC, url = it)
+        }
+    )
+    val videoAssets = listOfNotNull(
         scene?.video?.url?.takeIf { it.isNotBlank() },
         scene?.videoUrl?.takeIf { it.isNotBlank() }
-    )
-    return (soundUrls + musicUrls + backgroundUrls).distinct()
+    ).map { OfflineAssetRef(type = SoundscapeAssetType.VIDEO, url = it) }
+    val previewAssets = listOfNotNull(
+        scene?.imagePreviewUrl?.takeIf { it.isNotBlank() },
+        scene?.imageCoverUrl?.takeIf { it.isNotBlank() }
+    ).map { OfflineAssetRef(type = SoundscapeAssetType.IMAGE_PREVIEW, url = it) }
+    val backgroundAssets = listOfNotNull(
+        scene?.imageUrl?.takeIf { it.isNotBlank() }
+    ).map { OfflineAssetRef(type = SoundscapeAssetType.IMAGE_BACKGROUND, url = it) }
+    return (
+        soundAssets +
+            localEditedSoundAssets +
+            musicAssets +
+            localEditedMusicAssets +
+            videoAssets +
+            previewAssets +
+            backgroundAssets
+        )
+        .distinctBy { "${it.type}:${it.url}" }
+}
+
+private fun parseLocalLayerSoundIds(layersJson: String?): List<Int> {
+    if (layersJson.isNullOrBlank()) return emptyList()
+    return layersJson.split("|")
+        .mapNotNull { item ->
+            val idPart = item.substringBefore(":", missingDelimiterValue = "").trim()
+            idPart.toIntOrNull()
+        }
 }

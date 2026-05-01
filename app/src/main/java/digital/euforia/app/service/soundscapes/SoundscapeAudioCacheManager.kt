@@ -36,8 +36,8 @@ class SoundscapeAudioCacheManager @Inject constructor(
     private val inFlightMutex = Mutex()
     private val inFlight = LinkedHashMap<String, kotlinx.coroutines.Deferred<String>>()
 
-    private val soundsDirectory: File by lazy {
-        File(context.filesDir, "soundscapes/sounds").apply { mkdirs() }
+    private val soundscapeDirectory: File by lazy {
+        File(context.filesDir, "soundscapes").apply { mkdirs() }
     }
 
     suspend fun prepareSceneLayers(
@@ -70,29 +70,36 @@ class SoundscapeAudioCacheManager @Inject constructor(
         }
     }
 
-    suspend fun ensureCached(url: String): String {
+    suspend fun ensureCached(url: String): String = ensureCached(url, SoundscapeAssetType.SOUND)
+
+    suspend fun ensureCached(url: String, type: SoundscapeAssetType): String {
         if (url.isBlank() || isLocalUrl(url)) return url
-        val existing = findExistingFile(url)
+        if (shouldBypassFileCaching(url, type)) return url
+        val existing = findExistingFile(url, type)
         if (existing != null) return existing.toURI().toString()
+        val key = "${type.name}:$url"
         val deferred = inFlightMutex.withLock {
-            inFlight[url] ?: coroutineScope {
-                async(ioDispatcher) { downloadToCache(url) }
-            }.also { inFlight[url] = it }
+            inFlight[key] ?: coroutineScope {
+                async(ioDispatcher) { downloadToCache(url, type) }
+            }.also { inFlight[key] = it }
         }
         return try {
             deferred.await()
         } finally {
             inFlightMutex.withLock {
-                if (inFlight[url] === deferred) {
-                    inFlight.remove(url)
+                if (inFlight[key] === deferred) {
+                    inFlight.remove(key)
                 }
             }
         }
     }
 
-    suspend fun resolvePlaybackUrl(url: String?): String? {
+    suspend fun resolvePlaybackUrl(url: String?): String? = resolvePlaybackUrl(url, SoundscapeAssetType.SOUND)
+
+    suspend fun resolvePlaybackUrl(url: String?, type: SoundscapeAssetType): String? {
         if (url.isNullOrBlank() || isLocalUrl(url)) return url
-        val existing = findExistingFile(url) ?: return url
+        if (shouldBypassFileCaching(url, type)) return url
+        val existing = findExistingFile(url, type) ?: return url
         return existing.toURI().toString()
     }
 
@@ -101,7 +108,7 @@ class SoundscapeAudioCacheManager @Inject constructor(
         val playback = if (isLocalUrl(url)) {
             url
         } else {
-            val existing = findExistingFile(url)
+            val existing = findExistingFile(url, SoundscapeAssetType.SOUND)
             existing?.toURI()?.toString() ?: url
         }
         return PreparedAudioUrl(
@@ -111,9 +118,51 @@ class SoundscapeAudioCacheManager @Inject constructor(
         )
     }
 
-    private suspend fun downloadToCache(url: String): String = withContext(ioDispatcher) {
-        soundsDirectory.mkdirs()
-        val target = fileForUrl(url)
+    suspend fun resolveForPlayback(url: String?, type: SoundscapeAssetType): PreparedAudioUrl? {
+        if (url.isNullOrBlank()) return null
+        val playback = if (isLocalUrl(url)) {
+            url
+        } else {
+            if (shouldBypassFileCaching(url, type)) return PreparedAudioUrl(
+                remoteUrl = url,
+                playbackUrl = url,
+                fromCache = false
+            )
+            val existing = findExistingFile(url, type)
+            existing?.toURI()?.toString() ?: url
+        }
+        return PreparedAudioUrl(
+            remoteUrl = url,
+            playbackUrl = playback,
+            fromCache = playback != url
+        )
+    }
+
+    suspend fun deleteCached(url: String, type: SoundscapeAssetType): Boolean = withContext(ioDispatcher) {
+        val file = findExistingFile(url, type) ?: return@withContext false
+        file.delete()
+    }
+
+    suspend fun deleteByManifest(manifest: SoundscapeOfflineManifest) {
+        withContext(ioDispatcher) {
+            manifest.assets.forEach { asset ->
+                runCatching {
+                    val uri = java.net.URI(asset.localUrl)
+                    if (uri.scheme.equals("file", ignoreCase = true)) {
+                        File(uri).delete()
+                    } else {
+                        findExistingFile(asset.remoteUrl, asset.type)?.delete()
+                    }
+                }.onFailure {
+                    findExistingFile(asset.remoteUrl, asset.type)?.delete()
+                }
+            }
+        }
+    }
+
+    private suspend fun downloadToCache(url: String, type: SoundscapeAssetType): String = withContext(ioDispatcher) {
+        val target = fileForUrl(url, type)
+        target.parentFile?.mkdirs()
         if (target.exists()) {
             return@withContext target.toURI().toString()
         }
@@ -121,7 +170,7 @@ class SoundscapeAudioCacheManager @Inject constructor(
         val request = Request.Builder().url(url).build()
         okHttpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw IllegalStateException("Failed to download sound: ${response.code}")
+                throw IllegalStateException("Failed to download asset: ${response.code}")
             }
             val body = response.body ?: throw IllegalStateException("Empty response body")
             tmp.outputStream().use { output ->
@@ -137,16 +186,27 @@ class SoundscapeAudioCacheManager @Inject constructor(
         target.toURI().toString()
     }
 
-    private fun findExistingFile(url: String): File? {
-        val file = fileForUrl(url)
+    private fun findExistingFile(url: String, type: SoundscapeAssetType): File? {
+        val file = fileForUrl(url, type)
         return file.takeIf { it.exists() }
     }
 
-    private fun fileForUrl(url: String): File {
+    private fun fileForUrl(url: String, type: SoundscapeAssetType): File {
         val ext = extractExtension(url)
         val digest = sha256(url)
         val fileName = if (ext.isNotBlank()) "$digest.$ext" else digest
-        return File(soundsDirectory, fileName)
+        return File(directoryForType(type), fileName)
+    }
+
+    private fun directoryForType(type: SoundscapeAssetType): File {
+        val child = when (type) {
+            SoundscapeAssetType.SOUND -> "sounds"
+            SoundscapeAssetType.MUSIC -> "music"
+            SoundscapeAssetType.VIDEO -> "video"
+            SoundscapeAssetType.IMAGE_PREVIEW -> "images/preview"
+            SoundscapeAssetType.IMAGE_BACKGROUND -> "images/background"
+        }
+        return File(soundscapeDirectory, child).apply { mkdirs() }
     }
 
     private fun extractExtension(url: String): String {
@@ -167,5 +227,11 @@ class SoundscapeAudioCacheManager @Inject constructor(
             val uri = java.net.URI(url)
             uri.scheme.equals("content", ignoreCase = true)
         }.getOrDefault(false)
+    }
+
+    private fun shouldBypassFileCaching(url: String, type: SoundscapeAssetType): Boolean {
+        if (type != SoundscapeAssetType.VIDEO && type != SoundscapeAssetType.MUSIC) return false
+        val path = runCatching { java.net.URI(url).path.orEmpty().lowercase() }.getOrDefault(url.lowercase())
+        return path.endsWith(".m3u8") || path.endsWith(".mpd")
     }
 }

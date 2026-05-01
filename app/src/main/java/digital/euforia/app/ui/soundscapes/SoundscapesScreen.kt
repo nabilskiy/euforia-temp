@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Card
@@ -37,17 +38,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,11 +61,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
+import dev.chrisbanes.haze.hazeSource
 import coil.compose.AsyncImage
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
 import digital.euforia.app.ui.home.NavBarHeight
+import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
@@ -79,10 +86,16 @@ import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_UNCATEG
 import digital.euforia.app.domain.usecase.soundscapes.SoundscapeCategorySection
 import digital.euforia.app.ui.util.LocalizedResources
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
+import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.MaxView
+import digital.euforia.app.ui.util.widget.PremiumButtonState
+import digital.euforia.app.ui.util.widget.titleItem
 import digital.euforia.app.ui.util.widget.UpgradeView
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+
+private const val ActiveSceneBackgroundDimAlpha = 0.55f
+private val ActiveSceneBackgroundBlurRadiusDp = 16.dp
 
 @Composable
 fun SoundscapesScreen(
@@ -93,6 +106,25 @@ fun SoundscapesScreen(
     var showSearchDialog by rememberSaveable { mutableStateOf(false) }
     var showPlaylists by rememberSaveable { mutableStateOf(false) }
     val localizedRes = LocalLocalizedRes.current
+    val listState = rememberLazyListState()
+    val hazeState = dev.chrisbanes.haze.rememberHazeState()
+    val density = LocalDensity.current
+    val thresholdPx = with(density) { 16.dp.roundToPx() }
+    val shouldBlur by remember(listState) {
+        derivedStateOf {
+            val firstIndex = listState.firstVisibleItemIndex
+            val firstOffset = listState.firstVisibleItemScrollOffset
+            firstIndex > 0 || firstOffset > thresholdPx
+        }
+    }
+    val activeScene = remember(state.activeSceneId, state.scenes) {
+        val activeId = state.activeSceneId ?: return@remember null
+        state.scenes.firstOrNull { it.id == activeId }
+    }
+    val activeSceneBackgroundUrl = activeScene
+        ?.imageUrl
+        ?.takeIf { it.isNotBlank() }
+        ?: activeScene?.imagePreviewUrl?.takeIf { it.isNotBlank() }
 
     SubscriptionActivityLauncher { launchSubscription ->
         viewModel.collectSideEffect { sideEffect ->
@@ -109,28 +141,49 @@ fun SoundscapesScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SoundscapesScreenBackground)
+                .background(PrimaryBackground)
         ) {
+            if (!activeSceneBackgroundUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = activeSceneBackgroundUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(ActiveSceneBackgroundBlurRadiusDp),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = ActiveSceneBackgroundDimAlpha))
+                )
+            }
+
+            BlurredAppBar(
+                shouldBlur = shouldBlur,
+                titleRes = R.string.scenes_title,
+                isBackAllowed = false,
+                hazeState = hazeState,
+                navController = navController,
+                premiumButtonState = if (state.isPremium) PremiumButtonState.NONE else PremiumButtonState.UPGRADE,
+                onUpgradeClick = launchSubscription,
+            )
             Column(Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(bottom = 56.dp),
+                        .fillMaxWidth()
+                        .hazeSource(hazeState),
+                    state = listState,
+                    contentPadding = PaddingValues(top = AppBarHeightMedium + 16.dp, bottom = 56.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     val sectionsToRender = state.displaySections
                         .filterNot { it.categoryId == SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST }
-                    item {
-                        SoundscapesHeader(
-                            title = localizedRes.string(R.string.scenes_title),
-                            onUpgradeClick = launchSubscription,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .statusBarsPadding()
-                                .padding(horizontal = 20.dp, vertical = 8.dp)
-                        )
-                    }
+                    titleItem(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        titleRes = R.string.scenes_title
+                    )
                     item {
                         SearchPlaylistsRow(
                             searchLabel = localizedRes.string(R.string.scenes_search),
@@ -162,6 +215,9 @@ fun SoundscapesScreen(
                             title = sectionTitle(section, localizedRes),
                             scenes = section.scenes,
                             singleRow = section.categoryId == SOUNDSCAPE_SECTION_MY,
+                            isPremium = state.isPremium,
+                            activeSceneId = state.activeSceneId,
+                            isPlaybackActive = state.isPlaybackActive,
                             onSceneClick = viewModel::onSceneClick,
                         )
                     }
@@ -289,6 +345,8 @@ fun SoundscapesScreen(
                                         showSearchDialog = false
                                         viewModel.onSceneClick(scene)
                                     },
+                                    isPremium = state.isPremium,
+                                    isActive = state.isPlaybackActive && state.activeSceneId == scene.id,
                                 )
                             }
                         }
@@ -316,6 +374,7 @@ private fun sectionTitle(
 @Composable
 private fun SoundscapesHeader(
     title: String,
+    isPremium: Boolean,
     onUpgradeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -333,11 +392,13 @@ private fun SoundscapesHeader(
             ),
             modifier = Modifier.weight(1f)
         )
-        UpgradeView(
-            modifier = Modifier
-                .padding(8.dp),
-            onClick = onUpgradeClick
-        )
+        if (!isPremium) {
+            UpgradeView(
+                modifier = Modifier
+                    .padding(8.dp),
+                onClick = onUpgradeClick
+            )
+        }
     }
 }
 
@@ -357,7 +418,7 @@ private fun SearchPlaylistsRow(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(72.dp)
+                .height(55.dp)
                 .clip(RoundedCornerShape(22.dp))
                 .clickable(onClick = onSearchClick)
         ) {
@@ -392,7 +453,7 @@ private fun SearchPlaylistsRow(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(72.dp)
+                .height(55.dp)
                 .clip(RoundedCornerShape(22.dp))
                 .clickable(onClick = onPlaylistsClick)
         ) {
@@ -432,6 +493,9 @@ private fun SectionBlock(
     title: String,
     scenes: List<Scene>,
     singleRow: Boolean,
+    isPremium: Boolean,
+    activeSceneId: Int?,
+    isPlaybackActive: Boolean,
     onSceneClick: (Scene) -> Unit,
 ) {
     val sortedScenes = scenes.sortedBy { it.pro }
@@ -455,6 +519,8 @@ private fun SectionBlock(
                         scene = scene,
                         modifier = Modifier.size(width = 156.dp, height = 96.dp),
                         onClick = { onSceneClick(scene) },
+                        isPremium = isPremium,
+                        isActive = isPlaybackActive && activeSceneId == scene.id,
                     )
                 }
             } else {
@@ -469,6 +535,8 @@ private fun SectionBlock(
                                 scene = scene,
                                 modifier = Modifier.size(width = 156.dp, height = 96.dp),
                                 onClick = { onSceneClick(scene) },
+                                isPremium = isPremium,
+                                isActive = isPlaybackActive && activeSceneId == scene.id,
                             )
                         }
                     }
@@ -483,11 +551,18 @@ fun SceneCard(
     scene: Scene,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    isPremium: Boolean,
+    isActive: Boolean,
 ) {
+    val cardShape = RoundedCornerShape(24.dp)
+    val sceneOverlayBaseColor = Color(0xFF181A1D)
+    val sceneSelectionAccentColor = Color(0xFF4257C9)
+
     Card(
         modifier = modifier
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = cardShape,
+        border = if (isActive) BorderStroke(2.dp, White) else null,
         colors = CardDefaults.cardColors(containerColor = PrimaryBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -508,11 +583,29 @@ fun SceneCard(
                         .background(Color(0xFF2C2E3A))
                 )
             }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.35f))
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                sceneOverlayBaseColor.copy(alpha = 0.7f),
+                                Color.Transparent
+                            )
+                        )
+                    )
             )
+
+            if (isActive) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(sceneSelectionAccentColor.copy(alpha = 0.25f))
+                )
+            }
+
             Text(
                 text = scene.name,
                 modifier = Modifier
@@ -524,7 +617,7 @@ fun SceneCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-            if (scene.pro) {
+            if (!isPremium && scene.pro) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -624,6 +717,7 @@ fun SoundscapesMiniPlayer(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val localizedRes = LocalLocalizedRes.current
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -651,7 +745,7 @@ fun SoundscapesMiniPlayer(
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = title.ifBlank { stringResource(R.string.soundscape_title_fallback) },
+                    text = title.ifBlank { localizedRes.string(R.string.soundscape_title_fallback) },
                     style = MaterialTheme.typography.titleSmall,
                     color = White,
                     maxLines = 1,
@@ -661,7 +755,7 @@ fun SoundscapesMiniPlayer(
                 IconButton(onClick = onTogglePlayPause) {
                     Icon(
                         painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                        contentDescription = stringResource(
+                        contentDescription = localizedRes.string(
                             if (isPlaying) R.string.soundscape_miniplayer_pause else R.string.soundscape_miniplayer_play
                         ),
                         tint = White.copy(alpha = 0.85f)
@@ -670,7 +764,7 @@ fun SoundscapesMiniPlayer(
                 IconButton(onClick = onClose) {
                     Icon(
                         painter = painterResource(R.drawable.ic_close),
-                        contentDescription = stringResource(R.string.next),
+                        contentDescription = localizedRes.string(R.string.next),
                         tint = White.copy(alpha = 0.85f)
                     )
                 }

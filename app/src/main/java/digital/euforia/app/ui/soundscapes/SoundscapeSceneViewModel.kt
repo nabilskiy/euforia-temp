@@ -28,6 +28,8 @@ import digital.euforia.app.domain.usecase.soundscapes.SyncSoundscapesCatalogUseC
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.service.soundscapes.SoundscapeAudioCacheManager
+import digital.euforia.app.service.soundscapes.SoundscapeAssetType
+import digital.euforia.app.service.soundscapes.SoundscapeOfflineManifest
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -126,9 +128,18 @@ class SoundscapeSceneViewModel @Inject constructor(
                     createFloatingButton(sound, index, total, instanceKey)
                 }
             )
+            val readyDownload = soundscapesRepository.getDownloadsSnapshot()
+                .firstOrNull { it.sceneId == sceneId && it.status == SoundscapeDownloadItem.STATUS_READY }
+            val manifest = SoundscapeOfflineManifest.fromJsonOrNull(readyDownload?.localPath)
+            val resolvedVideoUrl = resolveVideoPlaybackUrl(scene, remoteScene, manifest)
+            val resolvedImageUrl = resolveImagePlaybackUrl(scene, remoteScene, manifest)
+            val resolvedSceneMusicUrl = resolveMusicPlaybackUrl(
+                preferredUrl = loaded.selectedMusicUrl ?: remoteScene.resolveDefaultSceneMusicUrl(),
+                manifest = manifest
+            )
             playbackController.setMusicVolume(loaded.resolvedMusicVolume)
             playbackController.setSceneMusic(
-                musicUrl = loaded.selectedMusicUrl ?: remoteScene.resolveDefaultSceneMusicUrl(),
+                musicUrl = resolvedSceneMusicUrl,
                 musicVolumeFactor = loaded.musicFactor
             )
             reduce {
@@ -136,8 +147,9 @@ class SoundscapeSceneViewModel @Inject constructor(
                 state.copy(
                     title = scene.name,
                     subtitle = remoteScene?.subtitle.orEmpty(),
-                    videoUrl = scene.videoUrl ?: remoteScene?.video?.url,
+                    videoUrl = resolvedVideoUrl,
                     imageUrl = listOf(
+                        resolvedImageUrl,
                         scene.imageUrl,
                         scene.imagePreviewUrl,
                         remoteScene?.imageCoverUrl,
@@ -145,7 +157,7 @@ class SoundscapeSceneViewModel @Inject constructor(
                         remoteScene?.imagePreviewUrl
                     ).firstOrNull { !it.isNullOrBlank() },
                     selectedMusicId = loaded.selectedMusicId ?: remoteScene?.sceneMusics?.firstOrNull()?.music?.id,
-                    sceneMusicUrl = loaded.selectedMusicUrl ?: remoteScene.resolveDefaultSceneMusicUrl(),
+                    sceneMusicUrl = resolvedSceneMusicUrl,
                     sceneMusicTitle = loaded.selectedMusicTitle
                         ?: remoteScene?.sceneMusics?.firstOrNull()?.music?.name?.takeIf { !it.isNullOrBlank() },
                     sceneMusicVolumeFactor = loaded.musicFactor,
@@ -175,7 +187,14 @@ class SoundscapeSceneViewModel @Inject constructor(
     private fun startScenePreparation(sceneTitle: String, layers: List<SoundscapeLayerState>) {
         preparationJob?.cancel()
         preparationJob = viewModelScope.launch {
-            val preparedLayers = audioCacheManager.prepareSceneLayers(layers) { completed, total ->
+            val resolvedLayers = layers.map { layer ->
+                val resolvedAudioUrl = audioCacheManager.resolvePlaybackUrl(
+                    url = layer.audioUrl,
+                    type = SoundscapeAssetType.SOUND
+                )
+                if (resolvedAudioUrl != null) layer.copy(audioUrl = resolvedAudioUrl) else layer
+            }
+            val preparedLayers = audioCacheManager.prepareSceneLayers(resolvedLayers) { completed, total ->
                 intent {
                     reduce {
                         state.copy(
@@ -236,6 +255,41 @@ class SoundscapeSceneViewModel @Inject constructor(
         return sm.musicFileUrl?.takeIf { it.isNotBlank() }
             ?: sm.music?.fileUrl?.takeIf { it.isNotBlank() }
             ?: sm.music?.file?.url?.takeIf { it.isNotBlank() }
+    }
+
+    private suspend fun resolveVideoPlaybackUrl(
+        scene: digital.euforia.app.data.db.entity.Scene,
+        remoteScene: NetworkScene?,
+        manifest: SoundscapeOfflineManifest?,
+    ): String? {
+        val remoteVideo = scene.videoUrl ?: remoteScene?.video?.url ?: remoteScene?.videoUrl
+        val manifestVideo = manifest?.findLocalUrl(remoteVideo, SoundscapeAssetType.VIDEO)
+            ?: manifest?.firstLocalUrlByType(SoundscapeAssetType.VIDEO)
+        return manifestVideo ?: audioCacheManager.resolvePlaybackUrl(remoteVideo, SoundscapeAssetType.VIDEO)
+    }
+
+    private suspend fun resolveImagePlaybackUrl(
+        scene: digital.euforia.app.data.db.entity.Scene,
+        remoteScene: NetworkScene?,
+        manifest: SoundscapeOfflineManifest?,
+    ): String? {
+        val remotePreview = scene.imagePreviewUrl ?: remoteScene?.imagePreviewUrl ?: remoteScene?.imageCoverUrl
+        val remoteBackground = scene.imageUrl ?: remoteScene?.imageUrl
+        return manifest?.findLocalUrl(remotePreview, SoundscapeAssetType.IMAGE_PREVIEW)
+            ?: manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_PREVIEW)
+            ?: manifest?.findLocalUrl(remoteBackground, SoundscapeAssetType.IMAGE_BACKGROUND)
+            ?: manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_BACKGROUND)
+            ?: audioCacheManager.resolvePlaybackUrl(remotePreview, SoundscapeAssetType.IMAGE_PREVIEW)
+            ?: audioCacheManager.resolvePlaybackUrl(remoteBackground, SoundscapeAssetType.IMAGE_BACKGROUND)
+    }
+
+    private suspend fun resolveMusicPlaybackUrl(
+        preferredUrl: String?,
+        manifest: SoundscapeOfflineManifest?,
+    ): String? {
+        return manifest?.findLocalUrl(preferredUrl, SoundscapeAssetType.MUSIC)
+            ?: manifest?.firstLocalUrlByType(SoundscapeAssetType.MUSIC)
+            ?: audioCacheManager.resolvePlaybackUrl(preferredUrl, SoundscapeAssetType.MUSIC)
     }
 
     private fun syncSoundsCatalog() {
@@ -686,7 +740,10 @@ class SoundscapeSceneViewModel @Inject constructor(
                 reduce {
                     state.copy(
                         downloadState = item?.status ?: SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED,
-                        downloadItemId = item?.id
+                        downloadItemId = item?.id,
+                        downloadProgress = item?.progress ?: 0,
+                        isSceneDownloadInProgress = item?.status == SoundscapeDownloadItem.STATUS_QUEUED ||
+                            item?.status == SoundscapeDownloadItem.STATUS_DOWNLOADING
                     )
                 }
             }
@@ -735,6 +792,8 @@ data class SoundscapeSceneState(
     val isPremiumLocked: Boolean = false,
     val downloadState: String = SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED,
     val downloadItemId: String? = null,
+    val downloadProgress: Int = 0,
+    val isSceneDownloadInProgress: Boolean = false,
     val engineHealth: String = "OK",
     val availableSounds: List<AvailableSoundUi> = emptyList(),
     val suggestedSoundIds: List<Int> = emptyList(),

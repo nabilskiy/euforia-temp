@@ -6,6 +6,7 @@
 package digital.euforia.app.ui.soundscapes
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
@@ -26,6 +27,7 @@ import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
@@ -124,6 +126,7 @@ class SoundscapesViewModel @Inject constructor(
     override val container = container<SoundscapesState, SoundscapesSideEffect>(
         initialState = SoundscapesState(),
         onCreate = {
+            observePremium()
             observeCatalog()
             observePresets()
             observePlayback()
@@ -131,6 +134,14 @@ class SoundscapesViewModel @Inject constructor(
             refresh()
         }
     )
+
+    private fun observePremium() {
+        viewModelScope.launch {
+            profilePreferences.getIsPremiumFlow().collectLatest { isPremium ->
+                reduceState { copy(isPremium = isPremium) }
+            }
+        }
+    }
 
     fun refresh() {
         intent {
@@ -178,6 +189,11 @@ class SoundscapesViewModel @Inject constructor(
             if (scene.pro && !isPremium) {
                 postSideEffect(SoundscapesSideEffect.OpenPaywall)
             } else {
+                if (playbackController.playback.value.sceneId != null &&
+                    playbackController.playback.value.sceneId != scene.id
+                ) {
+                    playbackController.stop(fadeOut = true)
+                }
                 postSideEffect(SoundscapesSideEffect.OpenScene(scene.id))
             }
         }
@@ -345,7 +361,9 @@ class SoundscapesViewModel @Inject constructor(
                             isVisible = playback.sceneId != null,
                             title = playback.sceneTitle,
                             isPlaying = playback.isPlaying
-                        )
+                        ),
+                        activeSceneId = playback.sceneId,
+                        isPlaybackActive = playback.isPlaying
                     )
                 }
             }
@@ -368,6 +386,7 @@ class SoundscapesViewModel @Inject constructor(
 }
 
 data class SoundscapesState(
+    val isPremium: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
     val query: String = "",
@@ -383,6 +402,8 @@ data class SoundscapesState(
     val downloadedScenes: List<Scene> = emptyList(),
     val myScenes: List<Scene> = emptyList(),
     val miniPlayer: MiniPlayerUi = MiniPlayerUi(),
+    val activeSceneId: Int? = null,
+    val isPlaybackActive: Boolean = false,
 )
 
 data class MiniPlayerUi(

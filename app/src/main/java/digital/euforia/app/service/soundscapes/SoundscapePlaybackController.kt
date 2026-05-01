@@ -35,6 +35,7 @@ data class SoundscapePlaybackState(
     val engineHealth: String = "OK",
     val playlistSceneIds: List<Int> = emptyList(),
     val sceneImageUrl: String? = null,
+    val stopWithFadeOut: Boolean = false,
 )
 
 private const val MAX_SOUND_LAYERS = 12
@@ -67,7 +68,7 @@ interface SoundEngine {
     fun removeLayer(layerKey: String)
     fun addLayer(layer: SoundscapeLayerState)
     fun setTimer(seconds: Int?)
-    fun stop()
+    fun stop(fadeOut: Boolean = false)
 }
 
 @Singleton
@@ -94,6 +95,7 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
             ambientMode = ambientMode,
             sceneImageUrl = sceneImageUrl,
             layers = layers.take(MAX_SOUND_LAYERS),
+            stopWithFadeOut = false,
         )
         Timber.tag("SOUNDSCAPES_METRICS").d(
             "scene_start sceneId=%s layers=%s startupMs=%s",
@@ -104,12 +106,12 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
     }
 
     override fun playPause() {
-        _playback.update { it.copy(isPlaying = !it.isPlaying) }
+        _playback.update { it.copy(isPlaying = !it.isPlaying, stopWithFadeOut = false) }
     }
 
     override fun setPlaying(playing: Boolean) {
         _playback.update { state ->
-            if (state.isPlaying == playing) state else state.copy(isPlaying = playing)
+            if (state.isPlaying == playing && !state.stopWithFadeOut) state else state.copy(isPlaying = playing, stopWithFadeOut = false)
         }
     }
 
@@ -203,8 +205,16 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
         _playback.update { it.copy(timerSeconds = seconds) }
     }
 
-    override fun stop() {
-        _playback.value = SoundscapePlaybackState()
+    override fun stop(fadeOut: Boolean) {
+        val current = _playback.value
+        if (!fadeOut || current.sceneId == null) {
+            _playback.value = SoundscapePlaybackState()
+            return
+        }
+        _playback.value = current.copy(
+            isPlaying = false,
+            stopWithFadeOut = true
+        )
     }
 }
 

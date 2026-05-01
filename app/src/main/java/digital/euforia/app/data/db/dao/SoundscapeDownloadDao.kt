@@ -20,6 +20,9 @@ interface SoundscapeDownloadDao {
     @Query("SELECT * FROM soundscape_download_items ORDER BY updated_at DESC")
     fun getAllFlow(): Flow<List<SoundscapeDownloadItem>>
 
+    @Query("SELECT * FROM soundscape_download_items ORDER BY updated_at DESC")
+    suspend fun getAll(): List<SoundscapeDownloadItem>
+
     @Query("SELECT * FROM soundscape_download_items WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): SoundscapeDownloadItem?
 

@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.theme.Red
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.MenuItem
 import digital.euforia.app.ui.util.widget.MaxView
 import digital.euforia.app.ui.util.widget.OptionsMenu
@@ -54,6 +54,7 @@ fun SoundscapeSceneTopBar(
     onPreferencesClick: () -> Unit,
     onShare: () -> Unit,
 ) {
+    val localizedRes = LocalLocalizedRes.current
     var showMenu by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
     var renameValue by remember(title) { mutableStateOf(title) }
@@ -67,7 +68,7 @@ fun SoundscapeSceneTopBar(
         IconButton(onClick = onCollapse) {
             Icon(
                 imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = stringResource(R.string.soundscape_collapse),
+                contentDescription = localizedRes.string(R.string.soundscape_collapse),
                 tint = White
             )
         }
@@ -106,7 +107,7 @@ fun SoundscapeSceneTopBar(
             IconButton(onClick = { showMenu = true }) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
-                    contentDescription = stringResource(R.string.soundscape_more_actions),
+                    contentDescription = localizedRes.string(R.string.soundscape_more_actions),
                     tint = White
                 )
             }
@@ -174,12 +175,12 @@ fun SoundscapeSceneTopBar(
                 androidx.compose.material3.TextButton(onClick = {
                     onRenameScene(renameValue)
                     showRename = false
-                }) { Text(stringResource(R.string.save)) }
+                }) { Text(localizedRes.string(R.string.save)) }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showRename = false }) { Text(stringResource(R.string.cancel)) }
+                androidx.compose.material3.TextButton(onClick = { showRename = false }) { Text(localizedRes.string(R.string.cancel)) }
             },
-            title = { Text(stringResource(R.string.scenes_rename)) },
+            title = { Text(localizedRes.string(R.string.scenes_rename)) },
             text = {
                 androidx.compose.material3.OutlinedTextField(
                     value = renameValue,

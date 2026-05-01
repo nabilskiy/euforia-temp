@@ -262,7 +262,10 @@ private fun SharedTransitionScope.SettingsContent(
                                 })
                         })
                 }
-                developerItem(analyticSender = analyticSender)
+                developerItem(
+                    analyticSender = analyticSender,
+                    navController = navController
+                )
             }
 
 
@@ -341,7 +344,11 @@ private fun LazyListScope.settingGroupItem(
     }
 }
 
-fun LazyListScope.developerItem(modifier: Modifier = Modifier, analyticSender: AnalyticSender) =
+fun LazyListScope.developerItem(
+    modifier: Modifier = Modifier,
+    analyticSender: AnalyticSender,
+    navController: NavHostController,
+) =
     item(key = "dev") {
         Column(
             modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 12.dp),
@@ -381,7 +388,12 @@ fun LazyListScope.developerItem(modifier: Modifier = Modifier, analyticSender: A
             }
 
             Text(
-                modifier = modifier.fillMaxWidth().padding(bottom = 24.dp),
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp)
+                    .noRippleClickable {
+                        navController.navigate(HomeDestination.DevOptions)
+                    },
                 text = "© 2025, EUFORIA MENTAL HEALTH APPS LTD\nBuild ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = Light),
                 color = White.copy(alpha = 0.3f),
