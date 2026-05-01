@@ -62,6 +62,7 @@ import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.titleItem
 import org.orbitmvi.orbit.compose.collectAsState
@@ -78,15 +79,18 @@ fun SharedTransitionScope.DownloadsScreen(
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(navController, sideEffect)
     }
-    NavBarlessScreen(navBarVisibilityState) {
-        DownloadsContent(
-            navController = navController,
-            state = state,
-            animatedVisibilityScope = animatedVisibilityScope,
-            onBackClick = { navController.popBackStack() },
-            onClearAllClick = viewModel::onClearAllDownloadsClick,
-            onItemClick = viewModel::onDownloadClick
-        )
+    SubscriptionActivityLauncher { launchSubscription ->
+        NavBarlessScreen(navBarVisibilityState) {
+            DownloadsContent(
+                navController = navController,
+                state = state,
+                animatedVisibilityScope = animatedVisibilityScope,
+                onBackClick = { navController.popBackStack() },
+                onClearAllClick = viewModel::onClearAllDownloadsClick,
+                onItemClick = viewModel::onDownloadClick,
+                onUpgradeClick = launchSubscription,
+            )
+        }
     }
 }
 
@@ -98,6 +102,7 @@ private fun SharedTransitionScope.DownloadsContent(
     onBackClick: () -> Unit,
     onClearAllClick: () -> Unit,
     onItemClick: (SoundscapeDownloadCard) -> Unit,
+    onUpgradeClick: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val localizedRes = LocalLocalizedRes.current
@@ -116,14 +121,14 @@ private fun SharedTransitionScope.DownloadsContent(
             onBackClick = onBackClick,
             actionButton = {
                 Box {
-                    IconButton(onClick = { showMenu = true }) {
+                    if (state.downloads.isNotEmpty()) IconButton(onClick = { showMenu = true }) {
                         Icon(
                             imageVector = Icons.Filled.MoreHoriz,
                             contentDescription = null,
                             tint = White
                         )
                     }
-                    DropdownMenu(
+                    if (state.downloads.isNotEmpty()) DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
@@ -138,39 +143,92 @@ private fun SharedTransitionScope.DownloadsContent(
                 }
             }
         )
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = AppBarHeightMedium + 16.dp,
-                bottom = 56.dp
+        if (state.downloads.isEmpty()) {
+            DownloadsEmptyState(
+                onUpgradeClick = onUpgradeClick,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = AppBarHeightMedium + 16.dp)
             )
-        ) {
-            titleItem(titleRes = R.string.downloads_title)
-            item {
-                Text(
-                    text = localizedRes.string(R.string.scenes_title),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(bottom = 12.dp)
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = AppBarHeightMedium + 16.dp,
+                    bottom = 56.dp
                 )
-            }
-            item {
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(state.downloads, key = { it.download.id }) { item ->
-                        Box(modifier = Modifier.size(width = 186.dp, height = 306.dp)) {
-                            DownloadSceneCard(
-                                item = item,
-                                onClick = { onItemClick(item) },
-                                modifier = Modifier.fillMaxSize()
-                            )
+            ) {
+                titleItem(titleRes = R.string.downloads_title)
+                item {
+                    Text(
+                        text = localizedRes.string(R.string.scenes_title),
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+                item {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        items(state.downloads, key = { it.download.id }) { item ->
+                            Box(modifier = Modifier.size(width = 186.dp, height = 306.dp)) {
+                                DownloadSceneCard(
+                                    item = item,
+                                    onClick = { onItemClick(item) },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DownloadsEmptyState(
+    onUpgradeClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val localizedRes = LocalLocalizedRes.current
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = localizedRes.string(R.string.profile_downloads_free_empty_title),
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = White,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = localizedRes.string(R.string.profile_downloads_free_empty_subtitle),
+            style = MaterialTheme.typography.bodyLarge,
+            color = White.copy(alpha = 0.5f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        Box(
+            modifier = Modifier
+                .padding(top = 24.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color(0xFF2B2E3A))
+                .clickable(onClick = onUpgradeClick)
+                .padding(horizontal = 40.dp, vertical = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = localizedRes.string(R.string.profile_downloads_free_empty_button),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = White
+            )
         }
     }
 }

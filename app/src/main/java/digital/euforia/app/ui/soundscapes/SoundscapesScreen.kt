@@ -37,6 +37,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -117,6 +124,11 @@ fun SoundscapesScreen(
             firstIndex > 0 || firstOffset > thresholdPx
         }
     }
+    val playlistsBackdropHeight by animateDpAsState(
+        targetValue = if (showPlaylists) 445.dp else 0.dp,
+        animationSpec = tween(durationMillis = 320),
+        label = "playlists_backdrop_height"
+    )
     val activeScene = remember(state.activeSceneId, state.scenes) {
         val activeId = state.activeSceneId ?: return@remember null
         state.scenes.firstOrNull { it.id == activeId }
@@ -159,6 +171,16 @@ fun SoundscapesScreen(
                 )
             }
 
+            if (playlistsBackdropHeight > 0.dp) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(playlistsBackdropHeight)
+                        .clip(RoundedCornerShape(bottomStart = 34.dp, bottomEnd = 34.dp))
+                        .background(SoundscapesActionButtonBackground)
+                )
+            }
+
             BlurredAppBar(
                 shouldBlur = shouldBlur,
                 titleRes = R.string.scenes_title,
@@ -185,27 +207,38 @@ fun SoundscapesScreen(
                         titleRes = R.string.scenes_title
                     )
                     item {
-                        SearchPlaylistsRow(
-                            searchLabel = localizedRes.string(R.string.scenes_search),
-                            playlistsLabel = localizedRes.string(R.string.scenes_playlists),
-                            playlistsActive = showPlaylists,
-                            onSearchClick = {
-                                viewModel.onSearchOpened()
-                                showPlaylists = false
-                                showSearchDialog = true
-                            },
-                            onPlaylistsClick = { showPlaylists = !showPlaylists },
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
+                        ) {
+                            SearchPlaylistsRow(
+                                searchLabel = localizedRes.string(R.string.scenes_search),
+                                playlistsLabel = localizedRes.string(R.string.scenes_playlists),
+                                playlistsActive = showPlaylists,
+                                onSearchClick = {
+                                    viewModel.onSearchOpened()
+                                    showPlaylists = false
+                                    showSearchDialog = true
+                                },
+                                onPlaylistsClick = { showPlaylists = !showPlaylists },
+                            )
+                            AnimatedVisibility(
+                                visible = showPlaylists,
+                                enter = fadeIn(animationSpec = tween(260)) +
+                                    expandVertically(animationSpec = tween(260)),
+                                exit = fadeOut(animationSpec = tween(220)) +
+                                    shrinkVertically(animationSpec = tween(220))
+                            ) {
+                                PlaylistsInlineBlock(
+                                    playlists = state.playlists,
+                                    onPlaylistClick = viewModel::onPlaylistClick,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                                )
+                            }
+                        }
                     }
                     if (showPlaylists) {
-                        item {
-                            PlaylistsInlineBlock(
-                                playlists = state.playlists,
-                                onPlaylistClick = viewModel::onPlaylistClick,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                        }
+                        item { Spacer(modifier = Modifier.height(12.dp)) }
                     }
                     items(
                         items = sectionsToRender,
@@ -639,7 +672,7 @@ private fun PlaylistsInlineBlock(
     val localizedRes = LocalLocalizedRes.current
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (playlists.isEmpty()) {
             Text(
