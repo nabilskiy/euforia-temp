@@ -44,7 +44,12 @@ internal suspend fun buildLoadedSceneData(
                 title = soundItem.sound.name.orEmpty().ifBlank { "Layer ${index + 1}" },
                 audioUrl = soundUrl,
                 volume = ((soundItem.volume ?: 100).coerceIn(0, 100) / 100f),
-                muted = false
+                muted = false,
+                isContinuous = soundItem.sound.continuous == true,
+                minRepeatDelaySec = soundItem.sound.minRepeatDelay ?: 0,
+                maxRepeatDelaySec = soundItem.sound.maxRepeatDelay ?: 300,
+                repeatIntervalSec = (soundItem.interval ?: if (soundItem.sound.continuous == true) 0 else (soundItem.sound.minRepeatDelay ?: 30))
+                    .coerceAtLeast(0),
             )
         }
         .orEmpty()
@@ -87,6 +92,10 @@ internal suspend fun buildLoadedSceneData(
                 audioUrl = catalog?.fileUrl?.takeIf { it.isNotBlank() },
                 volume = volume,
                 muted = false,
+                isContinuous = catalog?.continuous == true,
+                minRepeatDelaySec = catalog?.minRepeatDelay ?: 0,
+                maxRepeatDelaySec = catalog?.maxRepeatDelay ?: 300,
+                repeatIntervalSec = if (catalog?.continuous == true) 0 else (catalog?.minRepeatDelay ?: 30),
             )
         }
         .orEmpty()
@@ -101,7 +110,13 @@ internal suspend fun buildLoadedSceneData(
                 title = it.title.ifBlank { allSoundsById[it.id]?.name ?: "Sound ${it.id}" },
                 audioUrl = sceneLayerUrl ?: catalogLayerUrl,
                 volume = it.volume,
-                muted = false
+                muted = false,
+                isContinuous = allSoundsById[it.id]?.continuous == true,
+                minRepeatDelaySec = allSoundsById[it.id]?.minRepeatDelay ?: 0,
+                maxRepeatDelaySec = allSoundsById[it.id]?.maxRepeatDelay ?: 300,
+                repeatIntervalSec = if (allSoundsById[it.id]?.continuous == true) 0 else (it.repeatIntervalSec
+                    ?: allSoundsById[it.id]?.minRepeatDelay
+                    ?: 30),
             )
         }
         }
@@ -133,6 +148,9 @@ internal suspend fun buildLoadedSceneData(
                     title = layer.title.ifBlank { catalog?.name ?: "Sound ${layer.id}" },
                     imageUrl = catalog?.imageUrl?.takeIf { it.isNotBlank() },
                     fileUrl = catalog?.fileUrl?.takeIf { it.isNotBlank() },
+                    isContinuous = catalog?.continuous == true,
+                    minRepeatDelaySec = catalog?.minRepeatDelay ?: 0,
+                    maxRepeatDelaySec = catalog?.maxRepeatDelay ?: 300,
                 ),
                 index,
                 finalLayers.size,

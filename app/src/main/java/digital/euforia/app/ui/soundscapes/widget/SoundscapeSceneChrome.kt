@@ -59,6 +59,7 @@ fun SoundscapeSceneTopBar(
     onTimerStopClick: () -> Unit,
     onPreferencesClick: () -> Unit,
     onShare: () -> Unit,
+    canShare: Boolean,
 ) {
     val localizedRes = LocalLocalizedRes.current
     var showMenu by remember { mutableStateOf(false) }
@@ -155,6 +156,15 @@ fun SoundscapeSceneTopBar(
                                 onClick = {}
                             )
                         )
+                        if (canShare) {
+                            add(
+                                MenuItem(
+                                    titleRes = R.string.share,
+                                    iconRes = R.drawable.ic_share,
+                                    onClick = onShare
+                                )
+                            )
+                        }
                         add(
                             MenuItem(
                                 titleRes = R.string.scenes_preferences,
@@ -218,13 +228,15 @@ fun SoundscapeSceneTopBar(
                                 onClick = {}
                             )
                         )
-                        add(
-                            MenuItem(
-                                titleRes = R.string.share,
-                                iconRes = R.drawable.ic_share,
-                                onClick = onShare
+                        if (canShare) {
+                            add(
+                                MenuItem(
+                                    titleRes = R.string.share,
+                                    iconRes = R.drawable.ic_share,
+                                    onClick = onShare
+                                )
                             )
-                        )
+                        }
                         add(
                             MenuItem(
                                 titleRes = R.string.scenes_preferences,

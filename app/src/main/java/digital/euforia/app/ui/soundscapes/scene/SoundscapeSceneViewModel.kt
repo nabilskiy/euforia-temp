@@ -73,6 +73,7 @@ class SoundscapeSceneViewModel @Inject constructor(
             observeSceneCategories()
             observeAvailableMusic()
             observeFavoriteMusic()
+            observeSoundAnimationsSetting()
         }
     )
 
@@ -330,7 +331,10 @@ class SoundscapeSceneViewModel @Inject constructor(
                         categoryId = sound.categoryId,
                         title = sound.name.ifBlank { "Sound ${sound.id}" },
                         imageUrl = sound.imageUrl.takeIf { it.isNotBlank() },
-                                fileUrl = sound.fileUrl.takeIf { it.isNotBlank() },
+                        fileUrl = sound.fileUrl.takeIf { it.isNotBlank() },
+                        isContinuous = sound.continuous,
+                        minRepeatDelaySec = sound.minRepeatDelay ?: 0,
+                        maxRepeatDelaySec = sound.maxRepeatDelay ?: 300,
                     )
                 }
                 val availableById = available.associateBy { it.id }
@@ -469,6 +473,21 @@ class SoundscapeSceneViewModel @Inject constructor(
         }
     }
 
+    private fun observeSoundAnimationsSetting() {
+        intent {
+            appPreferences.isSoundAnimationsEnabledFlow().collectLatest { enabled ->
+                reduce { state.copy(soundAnimationsEnabled = enabled) }
+            }
+        }
+    }
+
+    fun onSoundAnimationsEnabledChanged(enabled: Boolean) {
+        intent {
+            appPreferences.setSoundAnimationsEnabled(enabled)
+            reduce { state.copy(soundAnimationsEnabled = enabled) }
+        }
+    }
+
     fun onToggleMusicFavorite(musicId: Int) {
         intent {
             val current = state.favoriteMusicIds
@@ -486,6 +505,16 @@ class SoundscapeSceneViewModel @Inject constructor(
             reduce { state.copy(isDirty = true) }
             persistLocalSceneState()
         }
+    }
+
+    fun onLayerRepeatInterval(layerKey: String, seconds: Int) {
+        playbackController.setLayerRepeatInterval(layerKey, seconds)
+        intent {
+            reduce { state.copy(isDirty = true) }
+        }
+    }
+    fun onLayerRepeatIntervalChangeFinished() {
+        intent { persistLocalSceneState() }
     }
     fun onLayerMute(layerKey: String, muted: Boolean) {
         playbackController.muteLayer(layerKey, muted)
@@ -620,6 +649,10 @@ class SoundscapeSceneViewModel @Inject constructor(
                             audioUrl = resolvedUrl.ifBlank { sound?.fileUrl },
                             volume = 0.6f,
                             muted = false,
+                            isContinuous = sound?.isContinuous == true,
+                            minRepeatDelaySec = sound?.minRepeatDelaySec ?: 0,
+                            maxRepeatDelaySec = sound?.maxRepeatDelaySec ?: 300,
+                            repeatIntervalSec = if (sound?.isContinuous == true) 0 else (sound?.minRepeatDelaySec ?: 30),
                         )
                     )
                 }
@@ -818,7 +851,12 @@ class SoundscapeSceneViewModel @Inject constructor(
                                 instanceKey = it.instanceKey,
                                 title = it.title,
                                 volume = it.volume,
-                                muted = it.muted
+                                muted = it.muted,
+                                isContinuous = it.isContinuous,
+                                minRepeatDelaySec = it.minRepeatDelaySec,
+                                maxRepeatDelaySec = it.maxRepeatDelaySec,
+                                repeatIntervalSec = it.repeatIntervalSec,
+                                repeatRemainingMs = it.repeatRemainingMs,
                             )
                         },
                         musicVolume = playback.musicVolume,
@@ -828,7 +866,6 @@ class SoundscapeSceneViewModel @Inject constructor(
                         timerRemainingSeconds = playback.timerRemainingSeconds
                     )
                 }
-                persistLocalSceneState()
             }
         }
     }
@@ -913,6 +950,7 @@ data class SoundscapeSceneState(
     val availableMusic: List<SceneMusicUi> = emptyList(),
     val suggestedMusicIds: List<Int> = emptyList(),
     val favoriteMusicIds: Set<Int> = emptySet(),
+    val soundAnimationsEnabled: Boolean = true,
     val musicCategories: List<SceneMusicCategoryUi> = emptyList(),
     val isPreparing: Boolean = false,
     val preparingCompleted: Int = 0,
@@ -926,6 +964,11 @@ data class SoundLayerUi(
     val title: String,
     val volume: Float,
     val muted: Boolean,
+    val isContinuous: Boolean,
+    val minRepeatDelaySec: Int,
+    val maxRepeatDelaySec: Int,
+    val repeatIntervalSec: Int,
+    val repeatRemainingMs: Long?,
 )
 
 data class SoundFloatingButtonUi(
@@ -945,6 +988,9 @@ data class AvailableSoundUi(
     val title: String,
     val imageUrl: String?,
     val fileUrl: String?,
+    val isContinuous: Boolean,
+    val minRepeatDelaySec: Int,
+    val maxRepeatDelaySec: Int,
 )
 
 data class SoundCategoryUi(

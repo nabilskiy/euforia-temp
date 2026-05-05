@@ -36,6 +36,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -64,6 +65,7 @@ class SoundscapePlaybackService : MediaSessionService() {
     private var musicPauseFadeJob: Job? = null
     private var sleepDeadlineMs: Long? = null
     private var sleepTimerSeconds: Int? = null
+    private val lastRepeatRemainingSecondByLayer = mutableMapOf<String, Long?>()
 
     override fun onCreate() {
         super.onCreate()
@@ -158,6 +160,7 @@ class SoundscapePlaybackService : MediaSessionService() {
                     lastMediaId = null
                     lastSessionStreamUrl = null
                     lastMusicUrl = null
+                    lastRepeatRemainingSecondByLayer.clear()
                     soundsManager.releaseAll()
                     musicPlayer?.stop()
                     musicPlayer?.clearMediaItems()
@@ -166,12 +169,27 @@ class SoundscapePlaybackService : MediaSessionService() {
                 }
                 if (playback.stopWithFadeOut) {
                     cancelSleepTimer()
+                    lastRepeatRemainingSecondByLayer.clear()
                     fadeOutAndStopMusic(durationMs = 10_000L)
                     soundsManager.fadeOutAndReleaseAll(durationMs = 10_000L)
                     playbackController.stop()
                     return@collectLatest
                 }
-                soundsManager.render(playback)
+                soundsManager.render(playback) { layerKey, remainingMs ->
+                    val bucketSec = remainingMs?.coerceAtLeast(0L)?.div(1000L)
+                    val previousBucketSec = lastRepeatRemainingSecondByLayer[layerKey]
+                    if (previousBucketSec != bucketSec) {
+                        lastRepeatRemainingSecondByLayer[layerKey] = bucketSec
+                        playbackController.updateLayerRepeatRemaining(layerKey, remainingMs)
+                        if (bucketSec != null) {
+                            Timber.tag("SOUNDSCAPES_DEBUG").v(
+                                "repeat_remaining layer=%s sec=%s",
+                                layerKey,
+                                bucketSec
+                            )
+                        }
+                    }
+                }
                 syncMusicPlayback(playback)
                 syncSleepTimer(playback)
                 updateSessionMediaItem(exo, playback)
@@ -202,6 +220,7 @@ class SoundscapePlaybackService : MediaSessionService() {
         player?.release()
         player = null
         soundsManager.releaseAll()
+        lastRepeatRemainingSecondByLayer.clear()
         musicPlayer?.release()
         musicPlayer = null
         super.onDestroy()
@@ -372,15 +391,6 @@ class SoundscapePlaybackService : MediaSessionService() {
             )
             lastMediaId = mediaId
             lastSessionStreamUrl = sessionStreamUrl
-        } else {
-            exo.replaceMediaItem(
-                0,
-                MediaItem.Builder()
-                    .setMediaId(mediaId)
-                    .setUri(Uri.parse(sessionStreamUrl))
-                    .setMediaMetadata(metadata)
-                    .build()
-            )
         }
         if (exo.playbackState == Player.STATE_IDLE) {
             exo.prepare()

@@ -20,6 +20,11 @@ data class SoundscapeLayerState(
     val audioUrl: String? = null,
     val volume: Float = 1f,
     val muted: Boolean = false,
+    val isContinuous: Boolean = true,
+    val minRepeatDelaySec: Int = 0,
+    val maxRepeatDelaySec: Int = 300,
+    val repeatIntervalSec: Int = 0,
+    val repeatRemainingMs: Long? = null,
 )
 
 data class SoundscapePlaybackState(
@@ -65,6 +70,8 @@ interface SoundEngine {
     fun setMusicVolume(volume: Float)
     fun setSceneMusic(musicUrl: String?, musicVolumeFactor: Float = 1f)
     fun setLayerVolume(layerKey: String, volume: Float)
+    fun setLayerRepeatInterval(layerKey: String, seconds: Int)
+    fun updateLayerRepeatRemaining(layerKey: String, remainingMs: Long?)
     fun muteLayer(layerKey: String, muted: Boolean)
     fun removeLayer(layerKey: String)
     fun addLayer(layer: SoundscapeLayerState)
@@ -172,6 +179,39 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
             }
         }
         Timber.tag("SOUNDSCAPES_METRICS").d("layer_volume layerKey=%s volume=%.2f", layerKey, volume)
+    }
+
+    override fun setLayerRepeatInterval(layerKey: String, seconds: Int) {
+        _playback.update { state ->
+            val idx = state.layers.indexOfFirst { it.instanceKey == layerKey }
+            if (idx < 0) state else {
+                val next = state.layers.toMutableList()
+                val current = next[idx]
+                val normalized = seconds.coerceIn(current.minRepeatDelaySec, current.maxRepeatDelaySec)
+                if (current.repeatIntervalSec == normalized) {
+                    state
+                } else {
+                    next[idx] = current.copy(repeatIntervalSec = normalized)
+                    state.copy(layers = next)
+                }
+            }
+        }
+    }
+
+    override fun updateLayerRepeatRemaining(layerKey: String, remainingMs: Long?) {
+        _playback.update { state ->
+            val idx = state.layers.indexOfFirst { it.instanceKey == layerKey }
+            if (idx < 0) state else {
+                val next = state.layers.toMutableList()
+                val current = next[idx]
+                if (current.repeatRemainingMs == remainingMs) {
+                    state
+                } else {
+                    next[idx] = current.copy(repeatRemainingMs = remainingMs)
+                    state.copy(layers = next)
+                }
+            }
+        }
     }
 
     override fun muteLayer(layerKey: String, muted: Boolean) {

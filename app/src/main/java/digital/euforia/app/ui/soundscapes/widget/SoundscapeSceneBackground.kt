@@ -238,10 +238,11 @@ fun SoundscapeScenePlayControl(
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         if (hasTimer) {
             val left = (timerRemainingSeconds ?: 0).coerceAtLeast(0)
-            val mm = left / 60
+            val hh = left / 3600
+            val mm = (left % 3600) / 60
             val ss = left % 60
             Text(
-                text = String.format("%02d:%02d", mm, ss),
+                text = String.format("%02d:%02d:%02d", hh, mm, ss),
                 color = White,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)

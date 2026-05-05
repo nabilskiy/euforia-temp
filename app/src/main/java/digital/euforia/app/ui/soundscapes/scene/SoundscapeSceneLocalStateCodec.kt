@@ -13,6 +13,7 @@ import kotlin.math.roundToInt
 internal data class LocalLayer(
     val id: Int,
     val volume: Float,
+    val repeatIntervalSec: Int?,
     val title: String,
 )
 
@@ -32,8 +33,10 @@ internal fun SoundscapeSceneLocalState.parseLayers(): List<LocalLayer> = layersJ
         if (parts.size < 3) return@mapNotNull null
         val id = parts[0].toIntOrNull() ?: return@mapNotNull null
         val volume = (parts[1].toIntOrNull() ?: 100).coerceIn(0, 100) / 100f
-        val title = parts.subList(2, parts.size).joinToString(":").ifBlank { "Sound $id" }
-        LocalLayer(id = id, volume = volume, title = title)
+        val maybeInterval = parts.getOrNull(2)?.toIntOrNull()
+        val titleStart = if (maybeInterval != null && parts.size >= 4) 3 else 2
+        val title = parts.subList(titleStart, parts.size).joinToString(":").ifBlank { "Sound $id" }
+        LocalLayer(id = id, volume = volume, repeatIntervalSec = maybeInterval, title = title)
     }
 
 internal fun SoundscapeSceneLocalState.parseButtons(): List<LocalButton> = buttonsJson
@@ -65,7 +68,7 @@ internal suspend fun persistLocalSceneState(
 ) {
     val layersJson = playbackState.layers.joinToString(separator = "|") {
         val safeTitle = it.title.replace("|", " ").replace(":", " ")
-        "${it.id}:${(it.volume.coerceIn(0f, 1f) * 100f).roundToInt()}:$safeTitle"
+        "${it.id}:${(it.volume.coerceIn(0f, 1f) * 100f).roundToInt()}:${it.repeatIntervalSec.coerceAtLeast(0)}:$safeTitle"
     }
     val buttonsJson = sceneState.soundFloatingButtons.joinToString(separator = "|") { btn ->
         val safeTitle = btn.title.replace("|", " ").replace(":", " ")

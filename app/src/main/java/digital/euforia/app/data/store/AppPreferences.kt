@@ -54,6 +54,7 @@ class AppPreferences(
     private val keySoundscapesLevel = intPreferencesKey("soundscapes_level")
     private val keySoundscapesLastPreset = intPreferencesKey("soundscapes_last_preset")
     private val keyFavoriteMusicIds = stringSetPreferencesKey("favorite_music_ids")
+    private val keySoundAnimationsEnabled = booleanPreferencesKey("sound_animations_enabled")
 
     // Rating app preferences
     private val keyRateAppLaunchCount = intPreferencesKey("rate_app_launch_count")
@@ -571,6 +572,22 @@ class AppPreferences(
     suspend fun setFavoriteMusicIds(ids: Set<Int>) {
         store.edit { preferences ->
             preferences[keyFavoriteMusicIds] = ids.map(Int::toString).toSet()
+        }
+    }
+
+    suspend fun setSoundAnimationsEnabled(enabled: Boolean) {
+        store.edit { preferences ->
+            preferences[keySoundAnimationsEnabled] = enabled
+        }
+    }
+
+    suspend fun isSoundAnimationsEnabled(): Boolean {
+        return store.data.firstOrNull()?.get(keySoundAnimationsEnabled) ?: true
+    }
+
+    fun isSoundAnimationsEnabledFlow(): Flow<Boolean> {
+        return store.data.map { preferences ->
+            preferences[keySoundAnimationsEnabled] ?: true
         }
     }
 

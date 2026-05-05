@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -43,6 +45,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -173,14 +176,113 @@ fun MusicOptionsBottomSheetContent(
 }
 
 @Composable
+fun ScenePreferencesBottomSheetContent(
+    sceneTitle: String,
+    soundAnimationsEnabled: Boolean,
+    onSoundAnimationsToggle: (Boolean) -> Unit,
+    onChangeBackgroundClick: () -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val localizedRes = LocalLocalizedRes.current
+    Column(modifier = modifier) {
+        Text(
+            text = localizedRes.string(R.string.scenes_preferences),
+            color = White,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+        )
+        if (sceneTitle.isNotBlank()) {
+            Text(
+                text = sceneTitle,
+                color = White.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        HorizontalDivider(
+            color = White.copy(alpha = 0.16f),
+            modifier = Modifier.padding(top = 18.dp, bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = localizedRes.string(R.string.audio_scene_animations_enable),
+                color = White,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f)
+            )
+            Switch(
+                checked = soundAnimationsEnabled,
+                onCheckedChange = onSoundAnimationsToggle
+            )
+        }
+
+        HorizontalDivider(
+            color = White.copy(alpha = 0.16f),
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onChangeBackgroundClick)
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = localizedRes.string(R.string.audio_scene_replace_background_image),
+                color = White,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Filled.ArrowForward,
+                contentDescription = null,
+                tint = White.copy(alpha = 0.85f)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = onDone,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = White, contentColor = Black)
+        ) {
+            Text(
+                localizedRes.string(R.string.audio_scene_settings_done),
+                color = Black,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+        }
+    }
+}
+
+@Composable
 fun SoundLayerBottomSheetContent(
     title: String,
     volume: Float,
     onVolumeChange: (Float) -> Unit,
+    showRepeatInterval: Boolean,
+    repeatIntervalSec: Int,
+    minRepeatDelaySec: Int,
+    maxRepeatDelaySec: Int,
+    onRepeatIntervalChange: (Int) -> Unit,
+    onRepeatIntervalChangeFinished: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val localizedRes = LocalLocalizedRes.current
+    val safeMinRepeat = minRepeatDelaySec.coerceAtLeast(0)
+    val safeMaxRepeat = maxRepeatDelaySec.coerceAtLeast(safeMinRepeat)
+    val repeatSliderInteractionSource = remember { MutableInteractionSource() }
+    val isRepeatSliderDragged by repeatSliderInteractionSource.collectIsDraggedAsState()
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -216,7 +318,60 @@ fun SoundLayerBottomSheetContent(
                 inactiveTrackColor = White.copy(alpha = 0.25f)
             )
         )
+        if (showRepeatInterval) {
+            Spacer(Modifier.height(14.dp))
+            Text(
+                localizedRes.string(R.string.sound_intensity),
+                color = White.copy(alpha = 0.55f),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Slider(
+                value = repeatIntervalSec.toFloat(),
+                onValueChange = { onRepeatIntervalChange(it.toInt()) },
+                onValueChangeFinished = onRepeatIntervalChangeFinished,
+                valueRange = safeMinRepeat.toFloat()..safeMaxRepeat.toFloat(),
+                interactionSource = repeatSliderInteractionSource,
+                modifier = Modifier.fillMaxWidth(),
+                colors = SliderDefaults.colors(
+                    thumbColor = White,
+                    activeTrackColor = White,
+                    inactiveTrackColor = White.copy(alpha = 0.25f)
+                )
+            )
+            if (isRepeatSliderDragged) {
+                Text(
+                    text = formatRepeatIntervalMmSs(repeatIntervalSec),
+                    color = White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    localizedRes.string(R.string.sound_intensity_min),
+                    color = White.copy(alpha = 0.45f),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    localizedRes.string(R.string.sound_intensity_max),
+                    color = White.copy(alpha = 0.45f),
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+        }
     }
+}
+
+private fun formatRepeatIntervalMmSs(seconds: Int): String {
+    val safe = seconds.coerceAtLeast(0)
+    val mm = safe / 60
+    val ss = safe % 60
+    return String.format("%02d:%02d", mm, ss)
 }
 
 @Composable
@@ -258,7 +413,10 @@ fun SoundsPickerBottomSheetContent(
                         categoryId = 0,
                         title = fb.title,
                         imageUrl = fb.imageUrl,
-                        fileUrl = null
+                        fileUrl = null,
+                        isContinuous = true,
+                        minRepeatDelaySec = 0,
+                        maxRepeatDelaySec = 300,
                     )
                 } else null
             }
