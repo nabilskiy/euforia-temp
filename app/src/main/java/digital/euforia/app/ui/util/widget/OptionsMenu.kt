@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -36,13 +39,43 @@ fun OptionsMenu(
     expanded: Boolean, onExpandedChange: (Boolean) -> Unit, menuItems: List<MenuItem>
 ) {
     val localizedRes = LocalLocalizedRes.current
+    var stack by remember(expanded, menuItems) { mutableStateOf(listOf(menuItems)) }
+    val currentMenu = stack.lastOrNull().orEmpty()
     DropdownMenu(
         containerColor = NavBarBackground,
         shape = RoundedCornerShape(20.dp),
         expanded = expanded,
-        onDismissRequest = { onExpandedChange(false) }
+        onDismissRequest = {
+            onExpandedChange(false)
+            stack = listOf(menuItems)
+        }
     ) {
-        menuItems.forEachIndexed { index, item ->
+        if (stack.size > 1) {
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = localizedRes.string(R.string.back),
+                        color = White,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal)
+                    )
+                },
+                onClick = {
+                    stack = stack.dropLast(1)
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = White
+                    )
+                }
+            )
+            Box(
+                modifier = Modifier.fillMaxWidth().height(1.dp)
+                    .background(White.copy(alpha = 0.2f))
+            )
+        }
+        currentMenu.forEachIndexed { index, item ->
             DropdownMenuItem(
                 text = {
                     Text(
@@ -51,22 +84,33 @@ fun OptionsMenu(
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal)
                     )
                 },
-                trailingIcon = item.iconRes?.let {
-                    {
-                        Icon(
+                trailingIcon = {
+                    when {
+                        item.children.isNotEmpty() -> Icon(
+                            modifier = Modifier.size(20.dp),
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = item.color
+                        )
+                        item.iconRes != null -> Icon(
                             modifier = Modifier.size(24.dp),
-                            painter = painterResource(id = it),
+                            painter = painterResource(id = item.iconRes),
                             contentDescription = null,
                             tint = item.color
                         )
                     }
                 },
                 onClick = {
-                    item.onClick()
-                    onExpandedChange(false)
+                    if (item.children.isNotEmpty()) {
+                        stack = stack + listOf(item.children)
+                    } else {
+                        item.onClick()
+                        onExpandedChange(false)
+                        stack = listOf(menuItems)
+                    }
                 }
             )
-            if (index != menuItems.lastIndex) {
+            if (index != currentMenu.lastIndex) {
                 Box(
                     modifier = Modifier.fillMaxWidth().height(1.dp)
                         .background(White.copy(alpha = 0.2f))
@@ -160,5 +204,6 @@ data class MenuItem(
     val titleRes: Int,
     val iconRes: Int? = null,
     val color: Color = White,
+    val children: List<MenuItem> = emptyList(),
     val onClick: () -> Unit
 )

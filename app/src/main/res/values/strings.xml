@@ -553,6 +553,8 @@
     <string name="sleep_timer_message">Set the timer when playing should be ended</string>
     <string name="sleep_timer_setup_button">Set</string>
     <string name="sleep_timer_disable_button">Cancel</string>
+    <string name="sleep_timer_hour_label">hour</string>
+    <string name="sleep_timer_minute_label">min</string>
     <string name="prepare_scene_progress_title">Downloading…</string>
     <string name="sounds_section_play_now">Playing now</string>
     <string name="scene_preparing">Loading</string>

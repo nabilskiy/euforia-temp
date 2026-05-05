@@ -18,4 +18,7 @@ interface SoundscapeSceneLocalStateDao {
 
     @Query("SELECT * FROM soundscape_scene_local_state WHERE scene_id = :sceneId LIMIT 1")
     suspend fun getBySceneId(sceneId: Int): SoundscapeSceneLocalState?
+
+    @Query("DELETE FROM soundscape_scene_local_state WHERE scene_id = :sceneId")
+    suspend fun deleteBySceneId(sceneId: Int)
 }

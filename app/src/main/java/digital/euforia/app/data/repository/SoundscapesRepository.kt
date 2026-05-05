@@ -134,6 +134,7 @@ class SoundscapesRepository @Inject constructor(
     }
     suspend fun getLocalSceneState(sceneId: Int): SoundscapeSceneLocalState? = localStateDao.getBySceneId(sceneId)
     suspend fun upsertLocalSceneState(state: SoundscapeSceneLocalState) = localStateDao.upsert(state)
+    suspend fun deleteLocalSceneState(sceneId: Int) = localStateDao.deleteBySceneId(sceneId)
 
     suspend fun searchScenes(query: String): ResultWrapper<List<Scene>> {
         return api.search(query = query, searchScenes = 1).map { response ->
@@ -142,7 +143,9 @@ class SoundscapesRepository @Inject constructor(
     }
 
     fun getPresetsFlow(): Flow<List<SoundscapePreset>> = presetDao.getAllFlow()
-    suspend fun upsertPreset(preset: SoundscapePreset) = presetDao.upsert(preset)
+    suspend fun upsertPreset(preset: SoundscapePreset): Int = presetDao.upsert(preset).toInt()
+    suspend fun getPresetById(id: Int): SoundscapePreset? = presetDao.getById(id)
+    suspend fun deletePresetsBySceneId(sceneId: Int) = presetDao.deleteBySceneId(sceneId)
     suspend fun deletePreset(id: Int) = presetDao.deleteById(id)
 
     fun getDownloadsFlow(): Flow<List<SoundscapeDownloadItem>> = downloadDao.getAllFlow()

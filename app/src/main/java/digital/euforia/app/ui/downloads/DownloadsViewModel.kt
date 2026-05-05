@@ -42,7 +42,7 @@ class DownloadsViewModel @Inject constructor(
     fun onDownloadClick(item: SoundscapeDownloadCard) {
         viewModelScope.launch {
             intent {
-                postSideEffect(DownloadsSideEffect.OpenScene(item.download.sceneId))
+                postSideEffect(DownloadsSideEffect.OpenScene(item.openSceneId))
             }
         }
     }

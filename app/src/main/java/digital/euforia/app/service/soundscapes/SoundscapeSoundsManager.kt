@@ -186,7 +186,7 @@ class SoundscapeSoundsManager @Inject constructor(
             return
         }
         val steps = 10
-        val stepDelayMs = 28L
+        val stepDelayMs = 100L
         for (step in 1..steps) {
             mainHandler.postDelayed({
                 if (fadeGeneration[layerId] != gen) return@postDelayed

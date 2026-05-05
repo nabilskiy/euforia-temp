@@ -133,3 +133,49 @@ flowchart TD
   setupPlayerItem --> publicationsService
 ```
 
+## 8) My Euforia: `smartContinueWatch` (composite profile)
+
+This is the block used on the profile / “My Euforia” style layouts from Remote Config (`type: smart_continue_watch`), **not** the same as the dedicated `ContinueWatchViewController` screen.
+
+- **Fetcher:** `CompositeListFetcher.requestParametersItem` — case `.smartContinueWatch` calls `makeSmartContinueWatchPublicationsRequestParametersItem`, which uses `DataStore.shared.getStatesForSmartContinueWatching()` (see `ios/euforia/Euforia/Others/CompositeList/CompositeListFetcher.swift`, extension at end of file).
+- **DataStore:** `getStatesForSmartContinueWatching(daysInterval:)` (`ios/euforia/Euforia/Others/DataStore/DataStore.swift`, ~293–314):
+  - Default `daysInterval` from Remote Config key **`continue_watch_time_interval`** (days); if `> 0`, builds `minTimeInterval` for `makePredicateForMinLastViewingTimestamp`.
+  - Takes **at most one** candidate from each branch: meditation continue-watch state, exercise continue-watch state, **last-viewed audio scene** (`getStatesForLastViewingAudioScenes`, limit 1).
+  - Merges non-nil results and **sorts by `lastViewingTimestamp` descending** before returning `[EntityState]` for the composite list request.
+- **Cell UI:** `ContinueWatchCollectionViewCell` — publications use linear `playingProgress`; `AudioScene` uses **`infinityProgressView`** (no linear progress).
+
+## 9) Swift files touching Continue Watching (search index)
+
+Paths under `ios/euforia/Euforia/` that match `ContinueWatch`, `continue_watch`, or `continueWatch` (useful for onboarding / code search):
+
+- `AudioScenes/AudioScenesStore.swift`
+- `AudioScenes/AudioScenesWidgetsState.swift`
+- `Models/AudioScene/AudioScenePlaylistType.swift`
+- `Others/CompositeList/CompositeListFetcher.swift`
+- `Others/CompositeList/CompositeListItemsRegistryExtension.swift`
+- `Others/CompositeList/CompositeListItemTypeExtension.swift`
+- `Others/CompositeList/Descriptions/ContinueWatchPublicationsItemDescription.swift`
+- `Others/CompositeList/Descriptions/SmartContinueWatchPublicationsItemDescription.swift`
+- `Others/CompositeList/Descriptions/Standard/CustomListsItemDescription.swift`
+- `Others/DataStore/DataStore.swift`
+- `Others/DeepLinks/DeepLinksHandler.swift`
+- `Others/Services/PublicationsService.swift`
+- `ViewControllers/ContinueWatchViewController.swift`
+- `ViewControllers/CompositeList/CompositeListViewControllerSectionsProvider.swift`
+- `ViewControllers/CompositeList/Sections/ContinueWatchCollectionSection.swift`
+- `ViewControllers/CompositeList/Sections/ContinueWatchPublicationsCollectionSection.swift`
+- `ViewControllers/CompositeList/Sections/EntitiesCollectionSection.swift`
+- `ViewControllers/CompositeList/Sections/PublicationsCollectionSection.swift`
+- `ViewControllers/PremiumUpgrade/Variants/v12/PremiumUpgradeView_v12.swift`
+- `ViewControllers/Publication/ContinueWatchPublicationsListViewController.swift`
+- `ViewControllers/Publication/PublicationPlayerViewController.swift`
+- `ViewControllers/Publication/PublicationsListViewControllerBuilder.swift`
+- `ViewControllers/Publication/Details/PublicationContentViewController.swift`
+- `ViewControllers/Publication/Details/PublicationViewController.swift`
+- `ViewControllers/Publication/Details/PublicationViewControllerBuilder.swift`
+- `Views/Cells/ContinueWatchCollectionViewCell.swift`
+
+## 10) Android implementation guide
+
+Step-by-step MVP and optional `smartContinueWatch` parity: [android-continue-watching-implementation.md](android-continue-watching-implementation.md).
+

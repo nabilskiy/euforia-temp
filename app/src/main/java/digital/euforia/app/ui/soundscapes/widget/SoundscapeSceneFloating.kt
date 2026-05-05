@@ -3,7 +3,7 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.widget
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +49,7 @@ fun SceneSoundFloatingButton(
                 contentScale = ContentScale.Fit
             )
         } else {
-            androidx.compose.material3.Icon(
+            Icon(
                 painter = painterResource(R.drawable.ic_sounds),
                 contentDescription = contentDescription,
                 tint = White,

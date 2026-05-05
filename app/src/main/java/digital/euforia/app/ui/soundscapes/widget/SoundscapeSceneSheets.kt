@@ -3,18 +3,18 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.widget
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -63,6 +62,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import digital.euforia.app.R
+import digital.euforia.app.ui.soundscapes.scene.AvailableSoundUi
+import digital.euforia.app.ui.soundscapes.scene.SceneMusicCategoryUi
+import digital.euforia.app.ui.soundscapes.scene.SceneMusicUi
+import digital.euforia.app.ui.soundscapes.scene.SoundCategoryUi
+import digital.euforia.app.ui.soundscapes.scene.SoundFloatingButtonUi
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
@@ -70,6 +74,9 @@ import digital.euforia.app.ui.util.LocalLocalizedRes
 @Composable
 fun MusicOptionsBottomSheetContent(
     musicTitle: String,
+    musicCoverUrl: String?,
+    isPlaying: Boolean,
+    sceneMusicUrl: String?,
     volume: Float,
     onVolumeChange: (Float) -> Unit,
     onChangeMusicClick: () -> Unit,
@@ -80,16 +87,29 @@ fun MusicOptionsBottomSheetContent(
     Column(modifier = modifier) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(White.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_headphones),
-                    contentDescription = null,
-                    tint = White,
-                    modifier = Modifier.size(26.dp)
-                )
+                if (!musicCoverUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = musicCoverUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SoundscapeSceneMusicIndicatorThumbnailOverlay(
+                        isPlaying = isPlaying,
+                        sceneMusicUrl = sceneMusicUrl,
+                        musicVolume = volume,
+                    )
+                }
             }
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
@@ -233,7 +253,13 @@ fun SoundsPickerBottomSheetContent(
             } else {
                 val fb = buttonById[id]
                 if (fb != null && (query.isBlank() || fb.title.lowercase().contains(query.trim().lowercase()))) {
-                    AvailableSoundUi(id = id, categoryId = 0, title = fb.title, imageUrl = fb.imageUrl, fileUrl = null)
+                    AvailableSoundUi(
+                        id = id,
+                        categoryId = 0,
+                        title = fb.title,
+                        imageUrl = fb.imageUrl,
+                        fileUrl = null
+                    )
                 } else null
             }
         }
@@ -410,6 +436,8 @@ fun MusicPickerBottomSheetContent(
     suggestedMusicIds: List<Int>,
     favoriteMusicIds: Set<Int>,
     initialSelectedId: Int?,
+    isScenePlaying: Boolean,
+    musicVolume: Float,
     onFavoriteClick: (Int) -> Unit,
     onMusicClick: (Int?) -> Unit,
     onDismiss: () -> Unit,
@@ -478,7 +506,6 @@ fun MusicPickerBottomSheetContent(
         Spacer(Modifier.height(14.dp))
         LazyColumn(
             modifier = Modifier.weight(1f, fill = true),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             if (suggestions.isNotEmpty()) {
                 item("music_suggestions_title") {
@@ -504,16 +531,18 @@ fun MusicPickerBottomSheetContent(
                     }
                 }
                 if (popularExpanded) {
-                    items(suggestions, key = { it.id }) { musicItem ->
-                        MusicPickerRowItem(
-                            item = musicItem,
-                            selected = selectedId == musicItem.id,
-                            isFavorite = musicItem.id in favoriteMusicIdSet,
-                            onFavoriteClick = { onFavoriteClick(musicItem.id) },
-                            onClick = {
+                    item("music_suggestions_card") {
+                        MusicPickerCategoryCard(
+                            items = suggestions,
+                            selectedId = selectedId,
+                            isScenePlaying = isScenePlaying,
+                            musicVolume = musicVolume,
+                            favoriteMusicIdSet = favoriteMusicIdSet,
+                            onFavoriteClick = onFavoriteClick,
+                            onRowClick = { musicItem ->
                                 selectedId = musicItem.id
                                 onMusicClick(musicItem.id)
-                            }
+                            },
                         )
                     }
                 }
@@ -541,16 +570,18 @@ fun MusicPickerBottomSheetContent(
                     }
                 }
                 if (favoritesExpanded) {
-                    items(favoriteItems, key = { it.id }) { musicItem ->
-                        MusicPickerRowItem(
-                            item = musicItem,
-                            selected = selectedId == musicItem.id,
-                            isFavorite = true,
-                            onFavoriteClick = { onFavoriteClick(musicItem.id) },
-                            onClick = {
+                    item("music_favorites_card") {
+                        MusicPickerCategoryCard(
+                            items = favoriteItems,
+                            selectedId = selectedId,
+                            isScenePlaying = isScenePlaying,
+                            musicVolume = musicVolume,
+                            favoriteMusicIdSet = favoriteMusicIdSet,
+                            onFavoriteClick = onFavoriteClick,
+                            onRowClick = { musicItem ->
                                 selectedId = musicItem.id
                                 onMusicClick(musicItem.id)
-                            }
+                            },
                         )
                     }
                 }
@@ -594,16 +625,18 @@ fun MusicPickerBottomSheetContent(
                     }
                 }
                 if (expanded) {
-                    items(categoryMusic, key = { it.id }) { musicItem ->
-                        MusicPickerRowItem(
-                            item = musicItem,
-                            selected = selectedId == musicItem.id,
-                            isFavorite = musicItem.id in favoriteMusicIdSet,
-                            onFavoriteClick = { onFavoriteClick(musicItem.id) },
-                            onClick = {
+                    item("music_cat_card_${category.id}") {
+                        MusicPickerCategoryCard(
+                            items = categoryMusic,
+                            selectedId = selectedId,
+                            isScenePlaying = isScenePlaying,
+                            musicVolume = musicVolume,
+                            favoriteMusicIdSet = favoriteMusicIdSet,
+                            onFavoriteClick = onFavoriteClick,
+                            onRowClick = { musicItem ->
                                 selectedId = musicItem.id
                                 onMusicClick(musicItem.id)
-                            }
+                            },
                         )
                     }
                 }
@@ -629,13 +662,53 @@ fun MusicPickerBottomSheetContent(
     }
 }
 
+private val MusicPickerCategoryCardShape = RoundedCornerShape(16.dp)
+
+@Composable
+private fun MusicPickerCategoryCard(
+    items: List<SceneMusicUi>,
+    selectedId: Int?,
+    isScenePlaying: Boolean,
+    musicVolume: Float,
+    favoriteMusicIdSet: Set<Int>,
+    onFavoriteClick: (Int) -> Unit,
+    onRowClick: (SceneMusicUi) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .clip(MusicPickerCategoryCardShape)
+            .background(White.copy(alpha = 0.08f))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        items.forEachIndexed { index, musicItem ->
+            MusicPickerRowItem(
+                item = musicItem,
+                selected = selectedId == musicItem.id,
+                showPlayingOverlay = selectedId == musicItem.id,
+                isScenePlaying = isScenePlaying,
+                musicVolume = musicVolume,
+                isFavorite = musicItem.id in favoriteMusicIdSet,
+                onFavoriteClick = { onFavoriteClick(musicItem.id) },
+                onClick = { onRowClick(musicItem) },
+                showBottomDivider = index < items.lastIndex,
+            )
+        }
+    }
+}
+
 @Composable
 private fun MusicPickerRowItem(
     item: SceneMusicUi,
     selected: Boolean,
+    showPlayingOverlay: Boolean,
+    isScenePlaying: Boolean,
+    musicVolume: Float,
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
     onClick: () -> Unit,
+    showBottomDivider: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -647,20 +720,38 @@ private fun MusicPickerRowItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.title,
+            Box(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(White.copy(alpha = 0.08f)),
-                contentScale = ContentScale.Crop
-            )
+                    .background(White.copy(alpha = 0.08f))
+            ) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                if (showPlayingOverlay) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SoundscapeSceneMusicIndicatorThumbnailOverlay(
+                            isPlaying = isScenePlaying,
+                            sceneMusicUrl = item.fileUrl,
+                            musicVolume = musicVolume,
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.width(14.dp))
             Text(
                 text = item.title,
                 color = White,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold
+                ),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
@@ -677,10 +768,12 @@ private fun MusicPickerRowItem(
                 )
             }
         }
-        HorizontalDivider(
-            color = White.copy(alpha = if (selected) 0.25f else 0.14f),
-            modifier = Modifier.padding(top = 10.dp, start = 70.dp)
-        )
+        if (showBottomDivider) {
+            HorizontalDivider(
+                color = White.copy(alpha = if (selected) 0.25f else 0.14f),
+                modifier = Modifier.padding(top = 10.dp, start = 70.dp)
+            )
+        }
     }
 }
 

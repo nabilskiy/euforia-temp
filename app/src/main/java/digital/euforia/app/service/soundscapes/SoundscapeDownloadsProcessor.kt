@@ -12,9 +12,10 @@ import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.di.ApplicationCoroutineScopeIO
 import digital.euforia.app.domain.util.ResultWrapper
 import digital.euforia.app.domain.util.retry
+import digital.euforia.app.ui.soundscapes.scene.copySceneIdFromPresetId
+import digital.euforia.app.ui.soundscapes.scene.presetIdFromDownloadId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -66,7 +67,8 @@ class SoundscapeDownloadsProcessor @Inject constructor(
 
         try {
             val scene = repository.getSceneDetails(item.sceneId).dataOrNull
-            val localState = repository.getLocalSceneState(item.sceneId)
+            val localStateSceneId = presetIdFromDownloadId(item.id)?.let(::copySceneIdFromPresetId) ?: item.sceneId
+            val localState = repository.getLocalSceneState(localStateSceneId)
             val assetsToDownload = buildOfflineAssetRefs(
                 scene = scene,
                 localLayerSoundIds = parseLocalLayerSoundIds(localState?.layersJson),

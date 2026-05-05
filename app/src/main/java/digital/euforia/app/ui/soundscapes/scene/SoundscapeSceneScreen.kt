@@ -3,17 +3,14 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.scene
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -22,9 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -33,33 +28,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -72,50 +50,38 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlin.math.hypot
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.AudioAttributes
-import androidx.media3.common.C
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
-import coil.compose.AsyncImage
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
-import digital.euforia.app.ui.theme.Black
+import digital.euforia.app.ui.soundscapes.widget.AnimatedAddSoundsButton
+import digital.euforia.app.ui.soundscapes.widget.SleepTimerPickerDialog
+import digital.euforia.app.ui.soundscapes.widget.MusicOptionsBottomSheetContent
+import digital.euforia.app.ui.soundscapes.widget.MusicPickerBottomSheetContent
+import digital.euforia.app.ui.soundscapes.widget.SceneSoundFloatingButton
+import digital.euforia.app.ui.soundscapes.widget.SoundLayerBottomSheetContent
+import digital.euforia.app.ui.soundscapes.widget.SoundsPickerBottomSheetContent
+import digital.euforia.app.ui.soundscapes.widget.SoundscapeSceneBackground
+import digital.euforia.app.ui.soundscapes.widget.SoundscapeSceneMusicIndicatorButton
+import digital.euforia.app.ui.soundscapes.widget.SoundscapeScenePlayControl
+import digital.euforia.app.ui.soundscapes.widget.SoundscapeSceneTopBar
+import digital.euforia.app.ui.soundscapes.widget.rememberSoundscapeMediaController
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.LocalLocalizedRes
-import digital.euforia.app.ui.util.formatDuration
-import digital.euforia.app.ui.util.widget.MaxView
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import kotlinx.coroutines.delay
-import kotlin.math.min
 
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -137,7 +103,7 @@ fun SoundscapeSceneScreen(
     var showSoundsPicker by remember { mutableStateOf(false) }
     var controlsVisible by remember { mutableStateOf(true) }
     var showUnsavedExitDialog by remember { mutableStateOf(false) }
-    var showTimerDialog by remember { mutableStateOf(false) }
+    var showTimerPickerDialog by remember { mutableStateOf(false) }
     var interactionNonce by remember { mutableLongStateOf(0L) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val musicSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -265,7 +231,13 @@ fun SoundscapeSceneScreen(
                             contentDescription = btn.title,
                             modifier = Modifier
                                 .offset(xOff, yOff)
-                                .pointerInput(btn.id, maxWpx, maxHpx, btn.posXFraction, btn.posYFraction) {
+                                .pointerInput(
+                                    btn.id,
+                                    maxWpx,
+                                    maxHpx,
+                                    btn.posXFraction,
+                                    btn.posYFraction
+                                ) {
                                     awaitEachGesture {
                                         val down = awaitFirstDown(requireUnconsumed = false)
                                         markInteraction()
@@ -273,57 +245,86 @@ fun SoundscapeSceneScreen(
                                         var dragging = false
                                         while (true) {
                                             val event = awaitPointerEvent(PointerEventPass.Main)
-                                            val change = event.changes.firstOrNull { it.id == down.id }
-                                                ?: break
+                                            val change =
+                                                event.changes.firstOrNull { it.id == down.id }
+                                                    ?: break
                                             if (change.changedToUp()) {
-                                                if (!dragging && hypot(dragTotal.x, dragTotal.y) < tapSlopPx) {
+                                                if (!dragging && hypot(
+                                                        dragTotal.x,
+                                                        dragTotal.y
+                                                    ) < tapSlopPx
+                                                ) {
                                                     showMusicOptions = false
                                                     selectedSoundLayerKey = btn.instanceKey
-                                                    state.layers.firstOrNull { it.instanceKey == btn.instanceKey }?.let { layer ->
-                                                        viewModel.onLayerSettingsOpened(
-                                                            layerKey = layer.instanceKey,
-                                                            soundId = layer.id,
-                                                            title = layer.title
-                                                        )
-                                                    }
+                                                    state.layers.firstOrNull { it.instanceKey == btn.instanceKey }
+                                                        ?.let { layer ->
+                                                            viewModel.onLayerSettingsOpened(
+                                                                layerKey = layer.instanceKey,
+                                                                soundId = layer.id,
+                                                                title = layer.title
+                                                            )
+                                                        }
                                                 } else if (dragging) {
-                                                    val savedOffset = soundDragOffsets[btn.id] ?: Offset.Zero
+                                                    val savedOffset =
+                                                        soundDragOffsets[btn.id] ?: Offset.Zero
                                                     val finalX = (baseXpx + savedOffset.x)
-                                                        .coerceIn(0f, (maxWpx - btnPx).coerceAtLeast(0f))
+                                                        .coerceIn(
+                                                            0f,
+                                                            (maxWpx - btnPx).coerceAtLeast(0f)
+                                                        )
                                                     val finalY = (baseYpx + savedOffset.y)
-                                                        .coerceIn(0f, (maxHpx - btnPx).coerceAtLeast(0f))
+                                                        .coerceIn(
+                                                            0f,
+                                                            (maxHpx - btnPx).coerceAtLeast(0f)
+                                                        )
                                                     val safeMaxW = maxWpx.coerceAtLeast(1f)
                                                     val safeMaxH = maxHpx.coerceAtLeast(1f)
-                                                    val finalPosXFraction = ((finalX + btnPx / 2f) / safeMaxW)
-                                                        .coerceIn(0f, 1f)
-                                                    val finalPosYFraction = ((finalY + btnPx / 2f) / safeMaxH)
-                                                        .coerceIn(0f, 1f)
+                                                    val finalPosXFraction =
+                                                        ((finalX + btnPx / 2f) / safeMaxW)
+                                                            .coerceIn(0f, 1f)
+                                                    val finalPosYFraction =
+                                                        ((finalY + btnPx / 2f) / safeMaxH)
+                                                            .coerceIn(0f, 1f)
                                                     viewModel.onSoundButtonPositionChanged(
                                                         instanceKey = btn.instanceKey,
                                                         posXFraction = finalPosXFraction,
                                                         posYFraction = finalPosYFraction
                                                     )
-                                                    soundDragOffsets = soundDragOffsets.toMutableMap().apply { remove(btn.id) }
+                                                    soundDragOffsets =
+                                                        soundDragOffsets.toMutableMap()
+                                                            .apply { remove(btn.id) }
                                                 }
                                                 break
                                             }
                                             val delta = change.positionChange()
                                             dragTotal += delta
                                             if (!dragging) {
-                                                if (hypot(dragTotal.x, dragTotal.y) < tapSlopPx) continue
+                                                if (hypot(
+                                                        dragTotal.x,
+                                                        dragTotal.y
+                                                    ) < tapSlopPx
+                                                ) continue
                                                 dragging = true
                                             }
                                             markInteraction()
                                             change.consume()
-                                            soundDragOffsets = soundDragOffsets.toMutableMap().apply {
-                                                val cur = this[btn.id] ?: Offset.Zero
-                                                val nx = cur + delta
-                                                val candX = baseXpx + nx.x
-                                                val candY = baseYpx + nx.y
-                                                val cx = candX.coerceIn(0f, (maxWpx - btnPx).coerceAtLeast(0f))
-                                                val cy = candY.coerceIn(0f, (maxHpx - btnPx).coerceAtLeast(0f))
-                                                this[btn.id] = Offset(cx - baseXpx, cy - baseYpx)
-                                            }
+                                            soundDragOffsets =
+                                                soundDragOffsets.toMutableMap().apply {
+                                                    val cur = this[btn.id] ?: Offset.Zero
+                                                    val nx = cur + delta
+                                                    val candX = baseXpx + nx.x
+                                                    val candY = baseYpx + nx.y
+                                                    val cx = candX.coerceIn(
+                                                        0f,
+                                                        (maxWpx - btnPx).coerceAtLeast(0f)
+                                                    )
+                                                    val cy = candY.coerceIn(
+                                                        0f,
+                                                        (maxHpx - btnPx).coerceAtLeast(0f)
+                                                    )
+                                                    this[btn.id] =
+                                                        Offset(cx - baseXpx, cy - baseYpx)
+                                                }
                                         }
                                     }
                                 }
@@ -345,10 +346,15 @@ fun SoundscapeSceneScreen(
                 Column {
                     SoundscapeSceneTopBar(
                         title = state.title.ifBlank {
-                            localizedRes.string(R.string.soundscape_scene_title_fallback, state.sceneId)
+                            localizedRes.string(
+                                R.string.soundscape_scene_title_fallback,
+                                state.sceneId
+                            )
                         },
                         subtitle = if (state.isDirty) {
                             localizedRes.string(R.string.audio_scene_unsaved_changes)
+                        } else if (state.presetId != null) {
+                            localizedRes.string(R.string.playlist_type_my_scenes)
                         } else {
                             state.subtitle
                         },
@@ -362,7 +368,11 @@ fun SoundscapeSceneScreen(
                         onSaveAndDownload = viewModel::onSaveAndDownload,
                         onRenameScene = viewModel::onRenameScene,
                         onDeleteDownloaded = viewModel::onDeleteDownloadedScene,
-                        onTimerClick = { showTimerDialog = true },
+                        hasActiveTimer = (state.timerSeconds ?: 0) > 0,
+                        onTimer1hClick = { viewModel.onSetTimerSeconds(60 * 60) },
+                        onTimer2hClick = { viewModel.onSetTimerSeconds(60 * 60 * 2) },
+                        onTimerSetupClick = { showTimerPickerDialog = true },
+                        onTimerStopClick = viewModel::onDisableTimer,
                         onPreferencesClick = {
                             markInteraction()
                             selectedSoundLayerKey = null
@@ -374,9 +384,16 @@ fun SoundscapeSceneScreen(
                             markInteraction()
                             val send = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, state.title.ifBlank { localizedRes.string(R.string.app_name) })
+                                putExtra(
+                                    Intent.EXTRA_TEXT,
+                                    state.title.ifBlank { localizedRes.string(R.string.app_name) })
                             }
-                            context.startActivity(Intent.createChooser(send, localizedRes.string(R.string.share)))
+                            context.startActivity(
+                                Intent.createChooser(
+                                    send,
+                                    localizedRes.string(R.string.share)
+                                )
+                            )
                         }
                     )
                 }
@@ -396,8 +413,8 @@ fun SoundscapeSceneScreen(
                 Box {
                     SoundscapeScenePlayControl(
                         isPlaying = state.isPlaying,
-                        positionMs = positionMs,
-                        durationMs = durationMs,
+                        timerTotalSeconds = state.timerSeconds,
+                        timerRemainingSeconds = state.timerRemainingSeconds,
                         onToggle = { viewModel.onPlayPause() },
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
@@ -412,10 +429,13 @@ fun SoundscapeSceneScreen(
                         modifier = Modifier
                             .align(Alignment.CenterStart)
                             .padding(start = 24.dp)
-                            .size(44.dp),
+                            .size(55.dp),
                         enabled = controlsVisible
                     )
-                    IconButton(
+                    SoundscapeSceneMusicIndicatorButton(
+                        isPlaying = state.isPlaying,
+                        sceneMusicUrl = state.sceneMusicUrl,
+                        musicVolume = state.musicVolume,
                         onClick = {
                             markInteraction()
                             selectedSoundLayerKey = null
@@ -423,20 +443,13 @@ fun SoundscapeSceneScreen(
                             showSoundsPicker = false
                             showMusicOptions = true
                         },
+                        contentDescription = localizedRes.string(R.string.audio_scene_background_music_settings),
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .padding(end = 24.dp)
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.45f))
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_headphones),
-                            contentDescription = null,
-                            tint = White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                            .size(55.dp),
+                        enabled = controlsVisible,
+                    )
                 }
             }
 
@@ -465,6 +478,12 @@ fun SoundscapeSceneScreen(
                 ) {
                     MusicOptionsBottomSheetContent(
                         musicTitle = state.sceneMusicTitle.orEmpty(),
+                        musicCoverUrl = remember(state.selectedMusicId, state.availableMusic, state.sceneMusicUrl) {
+                            state.availableMusic.firstOrNull { it.id == state.selectedMusicId }?.imageUrl
+                                ?: state.availableMusic.firstOrNull { it.fileUrl == state.sceneMusicUrl }?.imageUrl
+                        },
+                        isPlaying = state.isPlaying,
+                        sceneMusicUrl = state.sceneMusicUrl,
                         volume = state.musicVolume,
                         onVolumeChange = viewModel::onMusicVolume,
                         onChangeMusicClick = {
@@ -500,6 +519,8 @@ fun SoundscapeSceneScreen(
                         suggestedMusicIds = state.suggestedMusicIds,
                         favoriteMusicIds = state.favoriteMusicIds,
                         initialSelectedId = state.selectedMusicId,
+                        isScenePlaying = state.isPlaying,
+                        musicVolume = state.musicVolume,
                         onFavoriteClick = viewModel::onToggleMusicFavorite,
                         onMusicClick = viewModel::onPreviewMusicSelection,
                         onDismiss = { showMusicPicker = false },
@@ -669,28 +690,17 @@ fun SoundscapeSceneScreen(
                 )
             }
 
-            if (showTimerDialog) {
-                AlertDialog(
-                    onDismissRequest = { showTimerDialog = false },
-                    title = { Text(text = localizedRes.string(R.string.sleep_timer_title)) },
-                    text = { Text(text = localizedRes.string(R.string.sleep_timer_message)) },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            viewModel.onTimerChange(60)
-                            showTimerDialog = false
-                        }) { Text(text = localizedRes.string(R.string.sleep_timer_60m)) }
+            if (showTimerPickerDialog) {
+                SleepTimerPickerDialog(
+                    initialSeconds = state.timerSeconds,
+                    onDismiss = { showTimerPickerDialog = false },
+                    onSet = { seconds ->
+                        viewModel.onSetTimerSeconds(seconds)
+                        showTimerPickerDialog = false
                     },
-                    dismissButton = {
-                        Row {
-                            TextButton(onClick = {
-                                viewModel.onTimerChange(30)
-                                showTimerDialog = false
-                            }) { Text(text = localizedRes.string(R.string.sleep_timer_30m)) }
-                            TextButton(onClick = {
-                                viewModel.onTimerChange(null)
-                                showTimerDialog = false
-                            }) { Text(text = localizedRes.string(R.string.sleep_timer_disable_button)) }
-                        }
+                    onDisable = {
+                        viewModel.onDisableTimer()
+                        showTimerPickerDialog = false
                     }
                 )
             }

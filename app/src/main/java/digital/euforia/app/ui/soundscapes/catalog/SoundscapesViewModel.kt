@@ -3,7 +3,7 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.catalog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.Scene
+import digital.euforia.app.data.db.entity.SoundscapePlaylist
 import digital.euforia.app.data.db.entity.SoundscapePreset
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
@@ -26,6 +27,7 @@ import digital.euforia.app.domain.usecase.soundscapes.SyncSoundscapesCatalogUseC
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.ui.util.reduceState
+import digital.euforia.app.ui.soundscapes.scene.copySceneIdFromPresetId
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
@@ -259,7 +261,6 @@ class SoundscapesViewModel @Inject constructor(
                         myScenes = resolveMyScenes(
                             allScenes = catalog.scenes,
                             presets = state.presets,
-                            downloadedScenes = state.downloadedScenes
                         ),
                         displaySections = buildDisplaySections(
                             sections = nextSections,
@@ -267,7 +268,6 @@ class SoundscapesViewModel @Inject constructor(
                             myScenes = resolveMyScenes(
                                 allScenes = catalog.scenes,
                                 presets = state.presets,
-                                downloadedScenes = state.downloadedScenes
                             ),
                             query = state.query,
                             quickFilter = state.quickFilter
@@ -297,7 +297,6 @@ class SoundscapesViewModel @Inject constructor(
                     val nextMy = resolveMyScenes(
                         allScenes = state.scenes,
                         presets = presets,
-                        downloadedScenes = state.downloadedScenes
                     )
                     state.copy(
                         presets = presets,
@@ -319,18 +318,13 @@ class SoundscapesViewModel @Inject constructor(
         intent {
             getReadyDownloadedScenesFlowUseCase().collectLatest { downloaded ->
                 reduce {
-                    val nextMy = resolveMyScenes(
-                        allScenes = state.scenes,
-                        presets = state.presets,
-                        downloadedScenes = downloaded
-                    )
                     state.copy(
                         downloadedScenes = downloaded,
-                        myScenes = nextMy,
+                        myScenes = state.myScenes,
                         displaySections = buildDisplaySections(
                             sections = state.categorySections,
                             defaultScenes = state.defaultScenes,
-                            myScenes = nextMy,
+                            myScenes = state.myScenes,
                             query = state.query,
                             quickFilter = state.quickFilter
                         )
@@ -343,13 +337,16 @@ class SoundscapesViewModel @Inject constructor(
     private fun resolveMyScenes(
         allScenes: List<Scene>,
         presets: List<SoundscapePreset>,
-        downloadedScenes: List<Scene>
     ): List<Scene> {
         if (allScenes.isEmpty()) return emptyList()
         val byId = allScenes.associateBy { it.id }
-        val presetScenes = presets.mapNotNull { byId[it.sceneId] }
-        return (downloadedScenes + presetScenes)
-            .distinctBy { it.id }
+        return presets.mapNotNull { preset ->
+            val original = byId[preset.sceneId] ?: return@mapNotNull null
+            original.copy(
+                id = copySceneIdFromPresetId(preset.id),
+                name = preset.name.ifBlank { original.name },
+            )
+        }
     }
 
     private fun observePlayback() {
@@ -363,6 +360,7 @@ class SoundscapesViewModel @Inject constructor(
                             isPlaying = playback.isPlaying
                         ),
                         activeSceneId = playback.sceneId,
+                        activeSceneImageUrl = playback.sceneImageUrl,
                         isPlaybackActive = playback.isPlaying
                     )
                 }
@@ -373,7 +371,7 @@ class SoundscapesViewModel @Inject constructor(
     fun onMiniPlayerClick() {
         val sceneId = playbackController.playback.value.sceneId ?: return
         intent {
-            val scene = state.scenes.firstOrNull { it.id == sceneId }
+            val scene = state.scenes.firstOrNull { it.id == sceneId } ?: state.myScenes.firstOrNull { it.id == sceneId }
             val isPro = scene?.pro == true
             val isPremium = profilePreferences.getIsPremium()
             if (isPro && !isPremium) {
@@ -397,12 +395,13 @@ data class SoundscapesState(
     val displaySections: List<SoundscapeCategorySection> = emptyList(),
     val searchSuggestions: List<String> = emptyList(),
     val popularScenes: List<Scene> = emptyList(),
-    val playlists: List<digital.euforia.app.data.db.entity.SoundscapePlaylist> = emptyList(),
+    val playlists: List<SoundscapePlaylist> = emptyList(),
     val presets: List<SoundscapePreset> = emptyList(),
     val downloadedScenes: List<Scene> = emptyList(),
     val myScenes: List<Scene> = emptyList(),
     val miniPlayer: MiniPlayerUi = MiniPlayerUi(),
     val activeSceneId: Int? = null,
+    val activeSceneImageUrl: String? = null,
     val isPlaybackActive: Boolean = false,
 )
 

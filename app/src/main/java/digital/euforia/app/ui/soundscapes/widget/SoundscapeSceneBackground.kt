@@ -3,8 +3,9 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.widget
 
+import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -56,9 +57,8 @@ import digital.euforia.app.R
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
-import digital.euforia.app.ui.util.formatDuration
 import kotlinx.coroutines.delay
-import kotlin.math.min
+import java.net.URI
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -203,7 +203,7 @@ fun SoundscapeSceneBackground(
 }
 
 @UnstableApi
-private fun buildCachedMediaSourceFactory(context: android.content.Context): DefaultMediaSourceFactory {
+private fun buildCachedMediaSourceFactory(context: Context): DefaultMediaSourceFactory {
     val cacheFactory = CacheDataSource.Factory()
         .setCache(App.getExoCache(context))
         .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context))
@@ -213,7 +213,7 @@ private fun buildCachedMediaSourceFactory(context: android.content.Context): Def
 
 private fun isLocalUri(url: String): Boolean {
     return url.startsWith("file:/") || runCatching {
-        val uri = java.net.URI(url)
+        val uri = URI(url)
         uri.scheme.equals("content", ignoreCase = true)
     }.getOrDefault(false)
 }
@@ -221,59 +221,77 @@ private fun isLocalUri(url: String): Boolean {
 @Composable
 fun SoundscapeScenePlayControl(
     isPlaying: Boolean,
-    positionMs: Long,
-    durationMs: Long,
+    timerTotalSeconds: Int?,
+    timerRemainingSeconds: Int?,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val localizedRes = LocalLocalizedRes.current
-    val progress = if (durationMs > 0) min(1f, positionMs.toFloat() / durationMs.toFloat()) else 0f
+    val hasTimer = (timerTotalSeconds ?: 0) > 0 && (timerRemainingSeconds ?: -1) >= 0
+    val progress = if (hasTimer) {
+        val total = (timerTotalSeconds ?: 0).coerceAtLeast(1)
+        val left = (timerRemainingSeconds ?: 0).coerceIn(0, total)
+        left.toFloat() / total.toFloat()
+    } else 0f
     val ringColor = White.copy(alpha = 0.9f)
     val trackColor = White.copy(alpha = 0.25f)
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = formatDuration(positionMs),
-            color = White,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        if (hasTimer) {
+            val left = (timerRemainingSeconds ?: 0).coerceAtLeast(0)
+            val mm = left / 60
+            val ss = left % 60
+            Text(
+                text = String.format("%02d:%02d", mm, ss),
+                color = White,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
         Box(
             modifier = Modifier
                 .size(88.dp)
-                .background(Color.Black.copy(alpha = 0.45f), CircleShape)
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
-            Canvas(modifier = Modifier.matchParentSize()) {
-                val stroke = 3.dp.toPx()
-                val pad = stroke / 2f + 2.dp.toPx()
-                val size = Size(this.size.width - pad * 2, this.size.height - pad * 2)
-                val top = Offset(pad, pad)
-                drawArc(
-                    color = trackColor,
-                    startAngle = 0f,
-                    sweepAngle = -180f,
-                    useCenter = false,
-                    topLeft = top,
-                    size = size,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round)
-                )
-                drawArc(
-                    color = ringColor,
-                    startAngle = 0f,
-                    sweepAngle = -180f * progress,
-                    useCenter = false,
-                    topLeft = top,
-                    size = size,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round)
-                )
+            if (hasTimer) {
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    val stroke = 3.dp.toPx()
+                    val pad = stroke / 2f + 3.dp.toPx()
+                    val size = Size(this.size.width - pad * 2, this.size.height - pad * 2)
+                    val top = Offset(pad, pad)
+                    drawArc(
+                        color = trackColor,
+                        startAngle = -90f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        topLeft = top,
+                        size = size,
+                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                    )
+                    drawArc(
+                        color = ringColor,
+                        startAngle = -90f,
+                        sweepAngle = 360f * progress,
+                        useCenter = false,
+                        topLeft = top,
+                        size = size,
+                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                    )
+                }
             }
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(Color.White.copy(alpha = 0.22f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
             Icon(
                 painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
                 contentDescription = localizedRes.string(if (isPlaying) R.string.pause else R.string.play),
                 tint = White,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(28.dp)
             )
+            }
         }
     }
 }

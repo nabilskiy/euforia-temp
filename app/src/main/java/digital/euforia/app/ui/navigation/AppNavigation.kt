@@ -1,7 +1,6 @@
 package digital.euforia.app.ui.navigation
 
 import android.net.Uri
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
@@ -18,8 +17,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
-import digital.euforia.app.R
 import digital.euforia.app.ui.devoptions.DevOptionsScreen
 import digital.euforia.app.ui.downloads.DownloadsScreen
 import digital.euforia.app.ui.home.HomeScreen
@@ -48,13 +45,12 @@ import digital.euforia.app.ui.settings.personaldata.cleardata.ClearDataScreen
 import digital.euforia.app.ui.settings.subscription.SubscriptionScreen
 import digital.euforia.app.ui.settings.subscription.info.DeviceInfoScreen
 import digital.euforia.app.ui.settings.voice.VoiceScreen
-import digital.euforia.app.ui.soundscapes.SoundscapeSceneScreen
-import digital.euforia.app.ui.soundscapes.SoundscapePlaylistScreen
-import digital.euforia.app.ui.soundscapes.SoundscapesScreen
+import digital.euforia.app.ui.soundscapes.scene.SoundscapeSceneScreen
+import digital.euforia.app.ui.soundscapes.playlist.SoundscapePlaylistScreen
+import digital.euforia.app.ui.soundscapes.catalog.SoundscapesScreen
 import digital.euforia.app.ui.sos.EmergencyScreen
 import digital.euforia.app.ui.sos.contacts.ContactsScreen
 import digital.euforia.app.ui.splash.SplashScreen
-import digital.euforia.app.ui.util.widget.ComingSoonView
 import digital.euforia.app.ui.video.VideoScreen
 import timber.log.Timber
 

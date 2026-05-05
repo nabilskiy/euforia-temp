@@ -15,10 +15,16 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SoundscapePresetDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(item: SoundscapePreset)
+    suspend fun upsert(item: SoundscapePreset): Long
 
     @Query("SELECT * FROM soundscape_presets ORDER BY created_at DESC")
     fun getAllFlow(): Flow<List<SoundscapePreset>>
+
+    @Query("SELECT * FROM soundscape_presets WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Int): SoundscapePreset?
+
+    @Query("DELETE FROM soundscape_presets WHERE scene_id = :sceneId")
+    suspend fun deleteBySceneId(sceneId: Int)
 
     @Query("DELETE FROM soundscape_presets WHERE id = :id")
     suspend fun deleteById(id: Int)

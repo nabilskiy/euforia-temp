@@ -3,9 +3,9 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+@file:OptIn(UnstableApi::class)
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.widget
 
 import android.content.ComponentName
 import androidx.compose.runtime.Composable
@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackService

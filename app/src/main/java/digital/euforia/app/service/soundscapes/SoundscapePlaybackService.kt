@@ -60,6 +60,8 @@ class SoundscapePlaybackService : MediaSessionService() {
     private var lastSessionStreamUrl: String? = null
     private var lastMusicUrl: String? = null
     private var sleepTimerJob: Job? = null
+    private var sleepTimerTickJob: Job? = null
+    private var musicPauseFadeJob: Job? = null
     private var sleepDeadlineMs: Long? = null
     private var sleepTimerSeconds: Int? = null
 
@@ -164,8 +166,8 @@ class SoundscapePlaybackService : MediaSessionService() {
                 }
                 if (playback.stopWithFadeOut) {
                     cancelSleepTimer()
-                    fadeOutAndStopMusic()
-                    soundsManager.fadeOutAndReleaseAll()
+                    fadeOutAndStopMusic(durationMs = 10_000L)
+                    soundsManager.fadeOutAndReleaseAll(durationMs = 10_000L)
                     playbackController.stop()
                     return@collectLatest
                 }
@@ -193,6 +195,7 @@ class SoundscapePlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         cancelSleepTimer()
+        musicPauseFadeJob?.cancel()
         observeJob?.cancel()
         mediaSession?.release()
         mediaSession = null
@@ -218,19 +221,36 @@ class SoundscapePlaybackService : MediaSessionService() {
         if (sleepTimerJob != null && sleepDeadlineMs == expectedDeadline) return
         sleepTimerSeconds = seconds
         sleepDeadlineMs = expectedDeadline
+        playbackController.updateTimerRemaining(
+            ((expectedDeadline - System.currentTimeMillis()) / 1000L).toInt().coerceAtLeast(0)
+        )
         sleepTimerJob?.cancel()
         sleepTimerJob = serviceScope.launch {
             val delayMs = (expectedDeadline - System.currentTimeMillis()).coerceAtLeast(0L)
             delay(delayMs)
             playbackController.stop(fadeOut = true)
         }
+        sleepTimerTickJob?.cancel()
+        sleepTimerTickJob = serviceScope.launch {
+            while (true) {
+                val left = ((expectedDeadline - System.currentTimeMillis()) / 1000L)
+                    .toInt()
+                    .coerceAtLeast(0)
+                playbackController.updateTimerRemaining(left)
+                if (left <= 0) break
+                delay(1000L)
+            }
+        }
     }
 
     private fun cancelSleepTimer() {
         sleepTimerJob?.cancel()
+        sleepTimerTickJob?.cancel()
         sleepTimerJob = null
+        sleepTimerTickJob = null
         sleepDeadlineMs = null
         sleepTimerSeconds = null
+        playbackController.updateTimerRemaining(null)
     }
 
 
@@ -256,10 +276,36 @@ class SoundscapePlaybackService : MediaSessionService() {
         p.volume = startVolume
     }
 
+    private suspend fun fadeOutAndPauseMusic(
+        player: ExoPlayer,
+        restoreVolume: Float,
+        durationMs: Long = 1000L
+    ) {
+        val startVolume = player.volume.coerceIn(0f, 1f)
+        if (startVolume <= 0.0001f) {
+            player.pause()
+            player.playWhenReady = false
+            player.volume = restoreVolume
+            return
+        }
+        val steps = 10
+        val stepDelayMs = (durationMs / steps).coerceAtLeast(1L)
+        for (step in 1..steps) {
+            val t = step / steps.toFloat()
+            val volume = startVolume * (1f - t)
+            player.volume = volume.coerceIn(0f, 1f)
+            delay(stepDelayMs)
+        }
+        player.pause()
+        player.playWhenReady = false
+        player.volume = restoreVolume
+    }
+
     private fun syncMusicPlayback(playback: SoundscapePlaybackState) {
         val p = musicPlayer ?: return
         val musicUrl = playback.sceneMusicUrl?.takeIf(String::isNotBlank)
         if (musicUrl.isNullOrBlank()) {
+            musicPauseFadeJob?.cancel()
             lastMusicUrl = null
             p.stop()
             p.clearMediaItems()
@@ -270,8 +316,28 @@ class SoundscapePlaybackService : MediaSessionService() {
             p.prepare()
             lastMusicUrl = musicUrl
         }
-        p.volume = (playback.musicVolume * playback.sceneMusicVolumeFactor).coerceIn(0f, 1f)
-        if (playback.isPlaying) p.play() else p.pause()
+        val finalMusicVolume = (playback.musicVolume * playback.sceneMusicVolumeFactor).coerceIn(0f, 1f)
+        android.util.Log.d(
+            "SOUNDSCAPES_AUDIO",
+            "music_volume base=${playback.musicVolume} factor=${playback.sceneMusicVolumeFactor} final=$finalMusicVolume playing=${playback.isPlaying}"
+        )
+        if (playback.isPlaying) {
+            musicPauseFadeJob?.cancel()
+            p.volume = finalMusicVolume
+            p.play()
+        } else {
+            if ((p.playWhenReady || p.isPlaying) && (musicPauseFadeJob?.isActive != true)) {
+                musicPauseFadeJob = serviceScope.launch {
+                    fadeOutAndPauseMusic(
+                        player = p,
+                        restoreVolume = finalMusicVolume,
+                        durationMs = 1000L
+                    )
+                }
+            } else if (!p.playWhenReady && !p.isPlaying) {
+                p.volume = finalMusicVolume
+            }
+        }
     }
 
     private fun updateSessionMediaItem(exo: ExoPlayer, playback: SoundscapePlaybackState) {

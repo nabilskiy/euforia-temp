@@ -3,8 +3,9 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.playlist
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.soundscapes.catalog.SceneCard
 import digital.euforia.app.ui.theme.SoundscapesActionButtonBackground
 import digital.euforia.app.ui.theme.SoundscapesScreenBackground
 import digital.euforia.app.ui.theme.SoundscapesTileBorder
@@ -117,7 +119,7 @@ private fun PlaylistHeader(
                     .fillMaxWidth(0.18f),
                 color = SoundscapesActionButtonBackground,
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, SoundscapesTileBorder)
+                border = BorderStroke(1.dp, SoundscapesTileBorder)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(

@@ -3,7 +3,7 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.catalog
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -70,6 +70,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
 import dev.chrisbanes.haze.hazeSource
 import coil.compose.AsyncImage
+import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
@@ -114,7 +115,7 @@ fun SoundscapesScreen(
     var showPlaylists by rememberSaveable { mutableStateOf(false) }
     val localizedRes = LocalLocalizedRes.current
     val listState = rememberLazyListState()
-    val hazeState = dev.chrisbanes.haze.rememberHazeState()
+    val hazeState = rememberHazeState()
     val density = LocalDensity.current
     val thresholdPx = with(density) { 16.dp.roundToPx() }
     val shouldBlur by remember(listState) {
@@ -129,13 +130,12 @@ fun SoundscapesScreen(
         animationSpec = tween(durationMillis = 320),
         label = "playlists_backdrop_height"
     )
-    val activeScene = remember(state.activeSceneId, state.scenes) {
+    val activeScene = remember(state.activeSceneId, state.scenes, state.myScenes) {
         val activeId = state.activeSceneId ?: return@remember null
-        state.scenes.firstOrNull { it.id == activeId }
+        state.scenes.firstOrNull { it.id == activeId } ?: state.myScenes.firstOrNull { it.id == activeId }
     }
-    val activeSceneBackgroundUrl = activeScene
-        ?.imageUrl
-        ?.takeIf { it.isNotBlank() }
+    val activeSceneBackgroundUrl = state.activeSceneImageUrl?.takeIf { it.isNotBlank() }
+        ?: activeScene?.imageUrl?.takeIf { it.isNotBlank() }
         ?: activeScene?.imagePreviewUrl?.takeIf { it.isNotBlank() }
 
     SubscriptionActivityLauncher { launchSubscription ->

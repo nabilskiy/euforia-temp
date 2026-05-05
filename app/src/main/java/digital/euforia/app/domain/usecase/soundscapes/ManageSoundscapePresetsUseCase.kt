@@ -19,7 +19,14 @@ class GetSoundscapePresetsFlowUseCase @Inject constructor(
 class SaveSoundscapePresetUseCase @Inject constructor(
     private val repository: SoundscapesRepository
 ) {
-    suspend operator fun invoke(preset: SoundscapePreset) = repository.upsertPreset(preset)
+    suspend operator fun invoke(preset: SoundscapePreset): SoundscapePreset {
+        val savedId = repository.upsertPreset(preset)
+        return if (preset.id == 0) {
+            preset.copy(id = savedId)
+        } else {
+            preset
+        }
+    }
 }
 
 class DeleteSoundscapePresetUseCase @Inject constructor(

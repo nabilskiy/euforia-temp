@@ -3,9 +3,10 @@
  * Copyright © 2019-2026 EUFORIA MENTAL HEALTH APPS LTD. All Rights Reserved.
  */
 
-package digital.euforia.app.ui.soundscapes
+package digital.euforia.app.ui.soundscapes.scene
 
 import digital.euforia.app.data.model.NetworkScene
+import digital.euforia.app.data.db.entity.SoundscapePreset
 import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 
@@ -24,6 +25,8 @@ internal suspend fun buildLoadedSceneData(
     repository: SoundscapesRepository,
     sceneId: Int,
     remoteScene: NetworkScene?,
+    localStateSceneId: Int? = sceneId,
+    preset: SoundscapePreset? = null,
     fallbackMusicVolume: Float,
     createFloatingButton: (sound: AvailableSoundUi, index: Int, total: Int, instanceKey: String) -> SoundFloatingButtonUi,
 ): LoadedSceneData {
@@ -65,11 +68,30 @@ internal suspend fun buildLoadedSceneData(
         }
         .orEmpty()
     val remoteButtonsByLayerKey = floatingButtons.associateBy { it.instanceKey }
-    val localState = repository.getLocalSceneState(sceneId)
+    val localState = localStateSceneId?.let { repository.getLocalSceneState(it) }
     val localLayers = localState?.parseLayers().orEmpty()
     val localButtons = localState?.parseButtons().orEmpty().associateBy { it.instanceKey }
     val allSoundsById = repository.getAllSounds().associateBy { it.id }
-    val finalLayers = if (localLayers.isNotEmpty()) {
+    val presetLayers = preset?.layersJson
+        ?.split("|")
+        ?.mapNotNull { item ->
+            val parts = item.split(":")
+            if (parts.size < 2) return@mapNotNull null
+            val id = parts[0].toIntOrNull() ?: return@mapNotNull null
+            val volume = parts[1].toFloatOrNull()?.coerceIn(0f, 1f) ?: return@mapNotNull null
+            val catalog = allSoundsById[id]
+            SoundscapeLayerState(
+                id = id,
+                instanceKey = "$id:local",
+                title = catalog?.name ?: "Sound $id",
+                audioUrl = catalog?.fileUrl?.takeIf { it.isNotBlank() },
+                volume = volume,
+                muted = false,
+            )
+        }
+        .orEmpty()
+    val finalLayers = when {
+        localLayers.isNotEmpty() -> {
         localLayers.map {
             val sceneLayerUrl = sceneLayers.firstOrNull { layer -> layer.id == it.id }?.audioUrl
             val catalogLayerUrl = allSoundsById[it.id]?.fileUrl?.takeIf { url -> url.isNotBlank() }
@@ -82,7 +104,10 @@ internal suspend fun buildLoadedSceneData(
                 muted = false
             )
         }
-    } else sceneLayers
+        }
+        presetLayers.isNotEmpty() -> presetLayers
+        else -> sceneLayers
+    }
 
     val floatingByKey = floatingButtons.associateBy { it.instanceKey }
     val finalButtons = finalLayers.mapIndexed { index, layer ->

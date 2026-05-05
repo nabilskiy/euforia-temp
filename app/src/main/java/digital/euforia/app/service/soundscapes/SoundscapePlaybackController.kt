@@ -26,12 +26,13 @@ data class SoundscapePlaybackState(
     val sceneId: Int? = null,
     val sceneTitle: String = "",
     val isPlaying: Boolean = false,
-    val musicVolume: Float = 0.35f,
+    val musicVolume: Float = 1f,
     val sceneMusicUrl: String? = null,
     val sceneMusicVolumeFactor: Float = 1f,
     val ambientMode: Boolean = false,
     val layers: List<SoundscapeLayerState> = emptyList(),
     val timerSeconds: Int? = null,
+    val timerRemainingSeconds: Int? = null,
     val engineHealth: String = "OK",
     val playlistSceneIds: List<Int> = emptyList(),
     val sceneImageUrl: String? = null,
@@ -68,6 +69,7 @@ interface SoundEngine {
     fun removeLayer(layerKey: String)
     fun addLayer(layer: SoundscapeLayerState)
     fun setTimer(seconds: Int?)
+    fun updateTimerRemaining(seconds: Int?)
     fun stop(fadeOut: Boolean = false)
 }
 
@@ -202,7 +204,16 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
     }
 
     override fun setTimer(seconds: Int?) {
-        _playback.update { it.copy(timerSeconds = seconds) }
+        _playback.update {
+            it.copy(
+                timerSeconds = seconds,
+                timerRemainingSeconds = seconds
+            )
+        }
+    }
+
+    override fun updateTimerRemaining(seconds: Int?) {
+        _playback.update { it.copy(timerRemainingSeconds = seconds) }
     }
 
     override fun stop(fadeOut: Boolean) {
