@@ -179,7 +179,8 @@ fun AppNavigation(
                     isBottomBarShown.value = true
                     SoundscapesScreen(
                         navController = navController,
-                        viewModel = hiltViewModel()
+                        viewModel = hiltViewModel(),
+                        animatedVisibilityScope = this
                     )
                 }
                 composable<HomeDestination.SoundscapesScene>(
@@ -203,7 +204,8 @@ fun AppNavigation(
                     isBottomBarShown.value = false
                     SoundscapePlaylistScreen(
                         navController = navController,
-                        viewModel = hiltViewModel()
+                        viewModel = hiltViewModel(),
+                        animatedVisibilityScope = this
                     )
                 }
                 composable<HomeDestination.AudioPlayer> {

@@ -5,6 +5,9 @@
 
 package digital.euforia.app.ui.soundscapes.catalog
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -79,11 +82,14 @@ import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
-import digital.euforia.app.ui.theme.SoundscapeColors
 import digital.euforia.app.ui.theme.SoundscapesActionButtonActiveBackground
 import digital.euforia.app.ui.theme.SoundscapesActionButtonBackground
 import digital.euforia.app.ui.theme.SoundscapesCardSurface
-import digital.euforia.app.ui.theme.SoundscapesScreenBackground
+import digital.euforia.app.ui.theme.SoundscapesSearchDialogBackground
+import digital.euforia.app.ui.theme.SoundscapesSearchFieldBorder
+import digital.euforia.app.ui.theme.SoundscapesSearchFieldContainer
+import digital.euforia.app.ui.theme.SoundscapesSearchSuggestionDivider
+import digital.euforia.app.ui.theme.SoundscapesSearchSuggestionText
 import digital.euforia.app.ui.theme.SoundscapesTileBorder
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
@@ -97,18 +103,21 @@ import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.widget.BlurredAppBar
 import digital.euforia.app.ui.util.widget.MaxView
 import digital.euforia.app.ui.util.widget.PremiumButtonState
-import digital.euforia.app.ui.util.widget.titleItem
+import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.UpgradeView
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 private const val ActiveSceneBackgroundDimAlpha = 0.55f
 private val ActiveSceneBackgroundBlurRadiusDp = 16.dp
+private const val SoundscapesSharedTitleKey = "soundscapes_title"
 
 @Composable
-fun SoundscapesScreen(
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun SharedTransitionScope.SoundscapesScreen(
     navController: NavHostController,
-    viewModel: SoundscapesViewModel
+    viewModel: SoundscapesViewModel,
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val state by viewModel.collectAsState()
     var showSearchDialog by rememberSaveable { mutableStateOf(false) }
@@ -202,10 +211,20 @@ fun SoundscapesScreen(
                 ) {
                     val sectionsToRender = state.displaySections
                         .filterNot { it.categoryId == SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST }
-                    titleItem(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        titleRes = R.string.scenes_title
-                    )
+                    item(key = "title_shared_soundscapes") {
+                        Text(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 16.dp)
+                                .sharedElement(
+                                    rememberSharedContentState(key = SoundscapesSharedTitleKey),
+                                    animatedVisibilityScope
+                                ),
+                            text = localizedRes.string(R.string.scenes_title),
+                            style = MaterialTheme.typography.displaySmall,
+                            color = White
+                        )
+                    }
                     item {
                         Column(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -259,6 +278,11 @@ fun SoundscapesScreen(
                     }
                 }
             }
+            if (state.isLoading) {
+                ProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
         }
     }
 
@@ -272,13 +296,13 @@ fun SoundscapesScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = SoundscapesScreenBackground
+                color = SoundscapesSearchDialogBackground
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -287,50 +311,59 @@ fun SoundscapesScreen(
                         OutlinedTextField(
                             value = state.query,
                             onValueChange = viewModel::onSearchQueryChanged,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
                             singleLine = true,
                             placeholder = { Text(localizedRes.string(R.string.scenes_search)) },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_search),
                                     contentDescription = null,
-                                    tint = White.copy(alpha = 0.75f)
+                                    tint = White.copy(alpha = 0.42f)
                                 )
                             },
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedTextColor = White,
                                 focusedTextColor = White,
-                                unfocusedBorderColor = White.copy(alpha = 0.2f),
-                                focusedBorderColor = White.copy(alpha = 0.45f),
-                                unfocusedContainerColor = White.copy(alpha = 0.08f),
-                                focusedContainerColor = White.copy(alpha = 0.12f)
+                                unfocusedBorderColor = SoundscapesSearchFieldBorder,
+                                focusedBorderColor = SoundscapesSearchFieldBorder.copy(alpha = 1f),
+                                unfocusedContainerColor = SoundscapesSearchFieldContainer,
+                                focusedContainerColor = SoundscapesSearchFieldContainer,
+                                unfocusedPlaceholderColor = White.copy(alpha = 0.42f),
+                                focusedPlaceholderColor = White.copy(alpha = 0.42f),
+                                cursorColor = White.copy(alpha = 0.85f)
                             ),
                             shape = RoundedCornerShape(14.dp)
                         )
-                        TextButton(onClick = { showSearchDialog = false }) {
+                        TextButton(
+                            onClick = { showSearchDialog = false },
+                            modifier = Modifier.padding(start = 6.dp)
+                        ) {
                             Text(
                                 text = localizedRes.string(R.string.cancel),
-                                color = White
+                                color = White.copy(alpha = 0.92f),
+                                style = MaterialTheme.typography.titleMedium
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(26.dp))
 
                     if (state.searchSuggestions.isNotEmpty()) {
                         Text(
                             text = localizedRes.string(R.string.search_suggestions),
                             color = White,
                             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(bottom = 10.dp)
+                            modifier = Modifier.padding(bottom = 12.dp)
                         )
                         state.searchSuggestions.chunked(2).forEach { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(18.dp)
+                                horizontalArrangement = Arrangement.spacedBy(20.dp)
                             ) {
                                 row.forEach { suggestion ->
-                                    Row(
+                                    Column(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clickable {
@@ -338,20 +371,28 @@ fun SoundscapesScreen(
                                                 viewModel.onSearchQueryChanged(suggestion)
                                                 showSearchDialog = false
                                             }
-                                            .padding(vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .padding(top = 8.dp, bottom = 8.dp)
                                     ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_search),
-                                            contentDescription = null,
-                                            tint = SoundscapeColors[5],
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(Modifier.width(10.dp))
-                                        Text(
-                                            text = suggestion,
-                                            color = SoundscapeColors[5],
-                                            style = MaterialTheme.typography.titleMedium
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.ic_search),
+                                                contentDescription = null,
+                                                tint = SoundscapesSearchSuggestionText,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(10.dp))
+                                            Text(
+                                                text = suggestion,
+                                                color = SoundscapesSearchSuggestionText,
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                        }
+                                        Spacer(Modifier.height(10.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(1.dp)
+                                                .background(SoundscapesSearchSuggestionDivider)
                                         )
                                     }
                                 }
@@ -361,12 +402,12 @@ fun SoundscapesScreen(
                     }
 
                     if (state.popularScenes.isNotEmpty()) {
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(24.dp))
                         Text(
                             text = localizedRes.string(R.string.search_popular_scenes),
                             color = White,
                             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(bottom = 10.dp)
+                            modifier = Modifier.padding(bottom = 12.dp)
                         )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             items(state.popularScenes, key = { it.id }) { scene ->
