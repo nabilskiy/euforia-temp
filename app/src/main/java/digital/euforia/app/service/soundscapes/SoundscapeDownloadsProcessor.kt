@@ -72,9 +72,12 @@ class SoundscapeDownloadsProcessor @Inject constructor(
             val assetsToDownload = buildOfflineAssetRefs(
                 scene = scene,
                 localLayerSoundIds = parseLocalLayerSoundIds(localState?.layersJson),
+                localButtonImageUrls = parseLocalButtonImageUrls(localState?.buttonsJson),
                 localSelectedMusicUrl = localState?.selectedMusicUrl,
                 localSoundFileUrlsById = repository.getAllSounds()
-                    .associate { sound -> sound.id to sound.fileUrl.takeIf { it.isNotBlank() } }
+                    .associate { sound -> sound.id to sound.fileUrl.takeIf { it.isNotBlank() } },
+                localSoundImageUrlsById = repository.getAllSounds()
+                    .associate { sound -> sound.id to sound.imageUrl.takeIf { it.isNotBlank() } }
             )
 
             if (assetsToDownload.isEmpty()) {
@@ -151,9 +154,14 @@ internal data class OfflineAssetRef(
 internal fun buildOfflineAssetRefs(
     scene: NetworkScene?,
     localLayerSoundIds: List<Int> = emptyList(),
+    localButtonImageUrls: List<String> = emptyList(),
     localSelectedMusicUrl: String? = null,
     localSoundFileUrlsById: Map<Int, String?> = emptyMap(),
+    localSoundImageUrlsById: Map<Int, String?> = emptyMap(),
 ): List<OfflineAssetRef> {
+    val sceneSoundIds = scene?.sceneSounds
+        ?.mapNotNull { it.sound?.id }
+        .orEmpty()
     val soundAssets = scene?.sceneSounds
         ?.mapNotNull { soundItem ->
             soundItem.soundFileUrl?.takeIf { it.isNotBlank() }
@@ -165,6 +173,20 @@ internal fun buildOfflineAssetRefs(
     val localEditedSoundAssets = localLayerSoundIds
         .mapNotNull { soundId -> localSoundFileUrlsById[soundId]?.takeIf { it.isNotBlank() } }
         .map { OfflineAssetRef(type = SoundscapeAssetType.SOUND, url = it) }
+    val sceneSoundImageAssets = scene?.sceneSounds
+        ?.mapNotNull { soundItem ->
+            soundItem.sound?.imageUrl?.takeIf { it.isNotBlank() }
+        }
+        .orEmpty()
+        .map { OfflineAssetRef(type = SoundscapeAssetType.SOUND_ICON, url = it) }
+    val sceneSoundImageAssetsFromCatalog = sceneSoundIds
+        .mapNotNull { soundId -> localSoundImageUrlsById[soundId]?.takeIf { it.isNotBlank() } }
+        .map { OfflineAssetRef(type = SoundscapeAssetType.SOUND_ICON, url = it) }
+    val localEditedSoundImageAssets = localLayerSoundIds
+        .mapNotNull { soundId -> localSoundImageUrlsById[soundId]?.takeIf { it.isNotBlank() } }
+        .map { OfflineAssetRef(type = SoundscapeAssetType.SOUND_ICON, url = it) }
+    val localButtonImageAssets = localButtonImageUrls
+        .map { OfflineAssetRef(type = SoundscapeAssetType.SOUND_ICON, url = it) }
     val musicAssets = scene?.sceneMusics
         ?.mapNotNull { music ->
             music.musicFileUrl?.takeIf { it.isNotBlank() }
@@ -191,6 +213,10 @@ internal fun buildOfflineAssetRefs(
     return (
         soundAssets +
             localEditedSoundAssets +
+            sceneSoundImageAssets +
+            sceneSoundImageAssetsFromCatalog +
+            localEditedSoundImageAssets +
+            localButtonImageAssets +
             musicAssets +
             localEditedMusicAssets +
             videoAssets +
@@ -206,5 +232,17 @@ private fun parseLocalLayerSoundIds(layersJson: String?): List<Int> {
         .mapNotNull { item ->
             val idPart = item.substringBefore(":", missingDelimiterValue = "").trim()
             idPart.toIntOrNull()
+        }
+}
+
+private fun parseLocalButtonImageUrls(buttonsJson: String?): List<String> {
+    if (buttonsJson.isNullOrBlank()) return emptyList()
+    return buttonsJson
+        .split("|")
+        .mapNotNull { item ->
+            val parts = item.split(":")
+            if (parts.size < 6) return@mapNotNull null
+            val imageEncoded = parts.subList(5, parts.size).joinToString(":")
+            imageEncoded.replace("%7C", "|").takeIf { it.isNotBlank() }
         }
 }

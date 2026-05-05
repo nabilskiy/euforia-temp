@@ -33,7 +33,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -82,6 +81,7 @@ import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.LinkGenerator
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.ProgressIndicator
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import kotlinx.coroutines.delay
@@ -111,6 +111,7 @@ fun SoundscapeSceneScreen(
     var controlsVisible by remember { mutableStateOf(true) }
     var showUnsavedExitDialog by remember { mutableStateOf(false) }
     var showTimerPickerDialog by remember { mutableStateOf(false) }
+    var topBarModalVisible by remember { mutableStateOf(false) }
     var interactionNonce by remember { mutableLongStateOf(0L) }
     val inertiaScope = rememberCoroutineScope()
     val inertiaJobs = remember { mutableMapOf<String, Job>() }
@@ -118,7 +119,14 @@ fun SoundscapeSceneScreen(
     val musicSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val soundsPickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var soundDragOffsets by remember(state.sceneId) { mutableStateOf(mapOf<String, Offset>()) }
-    val hasModalOpen = showPreferences || showMusicOptions || showMusicPicker || showSoundsPicker || selectedSoundLayerKey != null
+    val hasModalOpen = showPreferences ||
+        showMusicOptions ||
+        showMusicPicker ||
+        showSoundsPicker ||
+        selectedSoundLayerKey != null ||
+        showUnsavedExitDialog ||
+        showTimerPickerDialog ||
+        topBarModalVisible
     fun markInteraction() {
         controlsVisible = true
         interactionNonce++
@@ -470,7 +478,10 @@ fun SoundscapeSceneScreen(
                         onSaveChanges = viewModel::onSavePreset,
                         onSaveAndDownload = viewModel::onSaveAndDownload,
                         onRenameScene = viewModel::onRenameScene,
-                        onDeleteDownloaded = viewModel::onDeleteDownloadedScene,
+                        onDeleteDownloaded = {
+                            viewModel.onDeleteDownloadedScene()
+                            navController.popBackStack()
+                        },
                         hasActiveTimer = (state.timerSeconds ?: 0) > 0,
                         onTimer1hClick = { viewModel.onSetTimerSeconds(60 * 60) },
                         onTimer2hClick = { viewModel.onSetTimerSeconds(60 * 60 * 2) },
@@ -502,7 +513,11 @@ fun SoundscapeSceneScreen(
                                 )
                             )
                         },
-                        canShare = state.presetId == null
+                        canShare = state.presetId == null,
+                        onModalVisibilityChanged = { isVisible ->
+                            topBarModalVisible = isVisible
+                            if (isVisible) controlsVisible = true
+                        }
                     )
                 }
             }
@@ -770,7 +785,7 @@ fun SoundscapeSceneScreen(
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.padding(horizontal = 24.dp)
                     ) {
-                        CircularProgressIndicator(color = White)
+                        ProgressIndicator()
                         val progressText = if (state.isSceneDownloadInProgress) {
                             localizedRes.string(R.string.downloads_progress_format, state.downloadProgress)
                         } else {

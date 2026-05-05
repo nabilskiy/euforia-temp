@@ -162,6 +162,12 @@ class SoundscapeSceneViewModel @Inject constructor(
                 musicUrl = resolvedSceneMusicUrl,
                 musicVolumeFactor = loaded.musicFactor
             )
+            val finalButtonsWithResolvedImages = loaded.finalButtons.map { button ->
+                button.copy(
+                    imageUrl = manifest?.findLocalUrl(button.imageUrl, SoundscapeAssetType.SOUND_ICON)
+                        ?: button.imageUrl
+                )
+            }
             reduce {
                 val sceneCategoryAlias = scene.categoryId?.let(sceneCategoryAliasesById::get)
                 state.copy(
@@ -192,7 +198,7 @@ class SoundscapeSceneViewModel @Inject constructor(
                     isPreparing = true,
                     preparingCompleted = 0,
                     preparingTotal = loaded.finalLayers.mapNotNull { it.audioUrl?.takeIf(String::isNotBlank) }.distinct().size,
-                    soundFloatingButtons = loaded.finalButtons,
+                    soundFloatingButtons = finalButtonsWithResolvedImages,
                     defaultSceneSoundIds = loaded.defaultSceneSoundIds,
                     suggestedSoundIds = resolveSuggestedSoundIds(
                         available = state.availableSounds,
@@ -201,7 +207,8 @@ class SoundscapeSceneViewModel @Inject constructor(
                     ),
                 )
             }
-            startScenePreparation(scene.name, loaded.finalLayers)
+            val sceneTitleForPlayback = container.stateFlow.value.title.ifBlank { scene.name }
+            startScenePreparation(sceneTitleForPlayback, loaded.finalLayers)
             analyticSender.scenesItemClick()
         }
     }
@@ -558,15 +565,19 @@ class SoundscapeSceneViewModel @Inject constructor(
 
     fun onDisableTimer() = onSetTimerSeconds(0)
 
-    fun onSaveAndDownload() {
+    fun onSaveAndDownload(rawName: String) {
         val playback = playbackController.playback.value
         val layersJson = playback.layers.joinToString(separator = "|") { "${it.id}:${it.volume}:${it.muted}" }
+        val requestedName = rawName.trim()
         intent {
             val sourceState = state
+            val finalName = requestedName.ifBlank {
+                playback.sceneTitle.ifBlank { sourceState.title.ifBlank { "Preset" } }
+            }
             val savedPreset = savePresetUseCase(
                 SoundscapePreset(
                     id = sourceState.presetId ?: 0,
-                    name = playback.sceneTitle.ifBlank { sourceState.title.ifBlank { "Preset" } },
+                    name = finalName,
                     sceneId = sourceState.originalSceneId,
                     layersJson = layersJson,
                     musicVolume = playback.musicVolume
@@ -607,6 +618,7 @@ class SoundscapeSceneViewModel @Inject constructor(
             ?: return
         intent {
             deleteDownloadUseCase(downloadItemId)
+            playbackController.stop(fadeOut = false)
             reduce {
                 state.copy(
                     downloadState = SoundscapeDownloadItem.STATUS_NOT_DOWNLOADED,
@@ -641,6 +653,16 @@ class SoundscapeSceneViewModel @Inject constructor(
                     val resolvedUrl = runCatching {
                         audioCacheManager.ensureCached(sound?.fileUrl.orEmpty())
                     }.getOrDefault(sound?.fileUrl.orEmpty())
+                    sound?.imageUrl
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { imageUrl ->
+                            runCatching {
+                                audioCacheManager.ensureCached(
+                                    url = imageUrl,
+                                    type = SoundscapeAssetType.SOUND_ICON
+                                )
+                            }
+                        }
                     playbackController.addLayer(
                         SoundscapeLayerState(
                             id = soundId,
@@ -778,17 +800,6 @@ class SoundscapeSceneViewModel @Inject constructor(
                 repository = soundscapesRepository,
                 sceneState = nextState,
                 playbackState = playback
-            )
-            analyticSender.soundscapeDownloadQueued(nextState.originalSceneId)
-            queueDownloadUseCase(
-                SoundscapeDownloadItem(
-                    id = copyDownloadIdFromPresetId(savedPreset.id),
-                    sceneId = nextState.originalSceneId,
-                    title = nextState.title.ifBlank { "Scene ${nextState.originalSceneId}" },
-                    url = "scene://${nextState.originalSceneId}",
-                    status = SoundscapeDownloadItem.STATUS_QUEUED,
-                    progress = 0
-                )
             )
             reduce { nextState }
         }

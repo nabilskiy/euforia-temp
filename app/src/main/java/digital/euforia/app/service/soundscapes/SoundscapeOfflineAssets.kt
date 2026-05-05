@@ -14,6 +14,7 @@ enum class SoundscapeAssetType {
     VIDEO,
     IMAGE_PREVIEW,
     IMAGE_BACKGROUND,
+    SOUND_ICON,
 }
 
 data class SoundscapeOfflineAsset(

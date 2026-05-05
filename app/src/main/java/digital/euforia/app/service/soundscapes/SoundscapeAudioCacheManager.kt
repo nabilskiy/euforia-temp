@@ -205,6 +205,7 @@ class SoundscapeAudioCacheManager @Inject constructor(
             SoundscapeAssetType.VIDEO -> "video"
             SoundscapeAssetType.IMAGE_PREVIEW -> "images/preview"
             SoundscapeAssetType.IMAGE_BACKGROUND -> "images/background"
+            SoundscapeAssetType.SOUND_ICON -> "images/sound_icons"
         }
         return File(soundscapeDirectory, child).apply { mkdirs() }
     }

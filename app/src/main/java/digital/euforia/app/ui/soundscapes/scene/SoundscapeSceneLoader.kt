@@ -75,7 +75,9 @@ internal suspend fun buildLoadedSceneData(
     val remoteButtonsByLayerKey = floatingButtons.associateBy { it.instanceKey }
     val localState = localStateSceneId?.let { repository.getLocalSceneState(it) }
     val localLayers = localState?.parseLayers().orEmpty()
-    val localButtons = localState?.parseButtons().orEmpty().associateBy { it.instanceKey }
+    val localButtons = localState?.parseButtons().orEmpty()
+    val localButtonsByKey = localButtons.associateBy { it.instanceKey }
+    val localButtonsById = localButtons.groupBy { it.id }
     val allSoundsById = repository.getAllSounds().associateBy { it.id }
     val presetLayers = preset?.layersJson
         ?.split("|")
@@ -101,21 +103,26 @@ internal suspend fun buildLoadedSceneData(
         .orEmpty()
     val finalLayers = when {
         localLayers.isNotEmpty() -> {
-        localLayers.map {
-            val sceneLayerUrl = sceneLayers.firstOrNull { layer -> layer.id == it.id }?.audioUrl
-            val catalogLayerUrl = allSoundsById[it.id]?.fileUrl?.takeIf { url -> url.isNotBlank() }
+        localLayers.map { localLayer ->
+            val restoredButton = localButtonsById[localLayer.id]?.firstOrNull()
+            val remoteLayer = sceneLayers.firstOrNull { layer -> layer.id == localLayer.id }
+            val restoredInstanceKey = restoredButton?.instanceKey
+                ?: remoteLayer?.instanceKey
+                ?: "${localLayer.id}:local"
+            val sceneLayerUrl = sceneLayers.firstOrNull { layer -> layer.id == localLayer.id }?.audioUrl
+            val catalogLayerUrl = allSoundsById[localLayer.id]?.fileUrl?.takeIf { url -> url.isNotBlank() }
             SoundscapeLayerState(
-                id = it.id,
-                instanceKey = "${it.id}:local",
-                title = it.title.ifBlank { allSoundsById[it.id]?.name ?: "Sound ${it.id}" },
+                id = localLayer.id,
+                instanceKey = restoredInstanceKey,
+                title = localLayer.title.ifBlank { allSoundsById[localLayer.id]?.name ?: "Sound ${localLayer.id}" },
                 audioUrl = sceneLayerUrl ?: catalogLayerUrl,
-                volume = it.volume,
+                volume = localLayer.volume,
                 muted = false,
-                isContinuous = allSoundsById[it.id]?.continuous == true,
-                minRepeatDelaySec = allSoundsById[it.id]?.minRepeatDelay ?: 0,
-                maxRepeatDelaySec = allSoundsById[it.id]?.maxRepeatDelay ?: 300,
-                repeatIntervalSec = if (allSoundsById[it.id]?.continuous == true) 0 else (it.repeatIntervalSec
-                    ?: allSoundsById[it.id]?.minRepeatDelay
+                isContinuous = allSoundsById[localLayer.id]?.continuous == true,
+                minRepeatDelaySec = allSoundsById[localLayer.id]?.minRepeatDelay ?: 0,
+                maxRepeatDelaySec = allSoundsById[localLayer.id]?.maxRepeatDelay ?: 300,
+                repeatIntervalSec = if (allSoundsById[localLayer.id]?.continuous == true) 0 else (localLayer.repeatIntervalSec
+                    ?: allSoundsById[localLayer.id]?.minRepeatDelay
                     ?: 30),
             )
         }
@@ -126,7 +133,8 @@ internal suspend fun buildLoadedSceneData(
 
     val floatingByKey = floatingButtons.associateBy { it.instanceKey }
     val finalButtons = finalLayers.mapIndexed { index, layer ->
-        val fromLocal = localButtons[layer.instanceKey]
+        val fromLocal = localButtonsByKey[layer.instanceKey]
+            ?: localButtonsById[layer.id]?.firstOrNull()
         if (fromLocal != null) {
             val catalog = allSoundsById[layer.id]
             SoundFloatingButtonUi(

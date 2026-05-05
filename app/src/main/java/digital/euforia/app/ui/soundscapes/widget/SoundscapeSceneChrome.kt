@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,7 +50,7 @@ fun SoundscapeSceneTopBar(
     isDownloaded: Boolean,
     onCollapse: () -> Unit,
     onSaveChanges: () -> Unit,
-    onSaveAndDownload: () -> Unit,
+    onSaveAndDownload: (String) -> Unit,
     onRenameScene: (String) -> Unit,
     onDeleteDownloaded: () -> Unit,
     hasActiveTimer: Boolean,
@@ -60,11 +61,17 @@ fun SoundscapeSceneTopBar(
     onPreferencesClick: () -> Unit,
     onShare: () -> Unit,
     canShare: Boolean,
+    onModalVisibilityChanged: (Boolean) -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     var showMenu by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
+    var showSaveAndDownloadDialog by remember { mutableStateOf(false) }
     var renameValue by remember(title) { mutableStateOf(title) }
+    var saveAndDownloadName by remember(title) { mutableStateOf(title) }
+    LaunchedEffect(showMenu, showRename, showSaveAndDownloadDialog) {
+        onModalVisibilityChanged(showMenu || showRename || showSaveAndDownloadDialog)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -248,7 +255,10 @@ fun SoundscapeSceneTopBar(
                             MenuItem(
                                 titleRes = R.string.scenes_save_download,
                                 iconRes = R.drawable.ic_done,
-                                onClick = onSaveAndDownload
+                                onClick = {
+                                    saveAndDownloadName = title
+                                    showSaveAndDownloadDialog = true
+                                }
                             )
                         )
                     }
@@ -275,6 +285,40 @@ fun SoundscapeSceneTopBar(
                     onValueChange = { renameValue = it },
                     singleLine = true
                 )
+            }
+        )
+    }
+    if (showSaveAndDownloadDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveAndDownloadDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSaveAndDownload(saveAndDownloadName)
+                    showSaveAndDownloadDialog = false
+                }) { Text(localizedRes.string(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveAndDownloadDialog = false }) {
+                    Text(localizedRes.string(R.string.cancel))
+                }
+            },
+            title = { Text(localizedRes.string(R.string.rename_audio_scene_title)) },
+            text = {
+                Column {
+                    Text(
+                        text = localizedRes.string(R.string.save_audio_scene_message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    OutlinedTextField(
+                        value = saveAndDownloadName,
+                        onValueChange = { saveAndDownloadName = it },
+                        singleLine = true,
+                        placeholder = {
+                            Text(localizedRes.string(R.string.save_audio_scene_name_placeholder))
+                        }
+                    )
+                }
             }
         )
     }
