@@ -5,11 +5,13 @@
 
 package digital.euforia.app.ui.soundscapes.scene
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.net.Uri
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.analytics.soundscapeLayerSettingsOpenedCompat
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
@@ -49,6 +51,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SoundscapeSceneViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
+    @ApplicationContext private val applicationContext: Context,
     private val soundscapesRepository: SoundscapesRepository,
     private val backgroundImportRepository: BackgroundImportRepository,
     private val musicRepository: MusicRepository,
@@ -180,8 +183,9 @@ class SoundscapeSceneViewModel @Inject constructor(
                 state.copy(
                     title = openedPreset?.name?.ifBlank { scene.name } ?: scene.name,
                     subtitle = remoteScene?.subtitle.orEmpty(),
-                    videoUrl = resolvedVideoUrl,
+                    videoUrl = loaded.backgroundVideoUrl ?: resolvedVideoUrl,
                     imageUrl = listOf(
+                        loaded.backgroundImageUrl,
                         resolvedImageUrl,
                         scene.imageUrl,
                         scene.imagePreviewUrl,
@@ -207,6 +211,7 @@ class SoundscapeSceneViewModel @Inject constructor(
                     preparingTotal = loaded.finalLayers.mapNotNull { it.audioUrl?.takeIf(String::isNotBlank) }.distinct().size,
                     soundFloatingButtons = finalButtonsWithResolvedImages,
                     defaultSceneSoundIds = loaded.defaultSceneSoundIds,
+                    backgroundSource = loaded.backgroundSource,
                     suggestedSoundIds = resolveSuggestedSoundIds(
                         available = state.availableSounds,
                         sceneCategoryAlias = sceneCategoryAlias,
@@ -684,33 +689,57 @@ class SoundscapeSceneViewModel @Inject constructor(
                 state.copy(
                     imageUrl = normalized,
                     videoUrl = null,
+                    backgroundSource = "image",
                     isDirty = true,
                 )
             }
+            persistLocalSceneState()
         }
     }
 
-    fun onBackgroundVideoSelected(videoUrl: String) {
+    fun onBackgroundVideoSelected(videoUrl: String, previewImageUrl: String? = null) {
         val normalized = videoUrl.trim()
         if (normalized.isBlank()) return
         intent {
             reduce {
                 state.copy(
                     videoUrl = normalized,
+                    imageUrl = previewImageUrl?.takeIf { it.isNotBlank() } ?: state.imageUrl,
+                    backgroundSource = "video",
                     isDirty = true,
                 )
             }
+            persistLocalSceneState()
         }
     }
 
     fun onBackgroundLocalFileSelected(uri: Uri, mimeType: String?) {
-        val localUrl = uri.toString()
-        if (localUrl.isBlank()) return
-        val lowerMime = mimeType?.lowercase().orEmpty()
-        if (lowerMime.startsWith("video/")) {
-            onBackgroundVideoSelected(localUrl)
-        } else {
-            onBackgroundImageSelected(localUrl)
+        viewModelScope.launch {
+            val lowerMime = mimeType?.lowercase().orEmpty()
+            if (lowerMime.startsWith("video/")) {
+                val imported = importLocalVideo(applicationContext, uri)
+                if (imported != null) {
+                    intent {
+                        reduce {
+                            state.copy(
+                                videoUrl = imported.videoUrl,
+                                imageUrl = imported.previewImageUrl ?: state.imageUrl,
+                                backgroundSource = "local_video",
+                                isDirty = true,
+                            )
+                        }
+                        persistLocalSceneState()
+                    }
+                }
+            }
+        }
+    }
+
+    fun onBackgroundCroppedLocalImageSelected(imageUrl: String) {
+        onBackgroundImageSelected(imageUrl)
+        intent {
+            reduce { state.copy(backgroundSource = "local_image") }
+            persistLocalSceneState()
         }
     }
 
@@ -1123,6 +1152,7 @@ data class SoundscapeSceneState(
     val backgroundSearchError: String? = null,
     val backgroundSearchRequestNonce: Int = 0,
     val pexelsVideoTabSelected: Boolean = false,
+    val backgroundSource: String? = null,
 )
 
 data class SoundLayerUi(

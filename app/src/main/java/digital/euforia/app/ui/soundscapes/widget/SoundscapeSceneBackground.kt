@@ -80,8 +80,23 @@ fun SoundscapeSceneBackground(
 
     val parallaxScale = if (isParallaxEnabled) 1.06f else 1f
 
-    // Base layer: keep only neutral background under video.
-    Box(Modifier.fillMaxSize().background(Black))
+    // Base layer: when there is no video (or while it isn't ready), image must stay visible.
+    if (!displayImageUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(displayImageUrl)
+                .allowHardware(false)
+                .crossfade(false)
+                .build(),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale),
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Box(Modifier.fillMaxSize().background(Black))
+    }
 
     val videoExo = remember(videoUrl) {
         if (videoUrl.isNullOrBlank()) null else {

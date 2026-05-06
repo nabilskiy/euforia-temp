@@ -15,20 +15,23 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -37,17 +40,24 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +76,9 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -134,6 +147,7 @@ fun SoundscapeSceneScreen(
     var showImportSourceDialog by remember { mutableStateOf(false) }
     var showUnsplashPicker by remember { mutableStateOf(false) }
     var showPexelsPicker by remember { mutableStateOf(false) }
+    var pendingCropImageUri by remember { mutableStateOf<Uri?>(null) }
     var interactionNonce by remember { mutableLongStateOf(0L) }
     val inertiaScope = rememberCoroutineScope()
     val inertiaJobs = remember { mutableMapOf<String, Job>() }
@@ -158,8 +172,12 @@ fun SoundscapeSceneScreen(
     ) { uri: Uri? ->
         val picked = uri ?: return@rememberLauncherForActivityResult
         val mimeType = context.contentResolver.getType(picked)
-        viewModel.onBackgroundLocalFileSelected(picked, mimeType)
-        showPreferences = false
+        if (mimeType?.lowercase()?.startsWith("video/") == true) {
+            viewModel.onBackgroundLocalFileSelected(picked, mimeType)
+            showPreferences = false
+        } else {
+            pendingCropImageUri = picked
+        }
     }
 
     fun openSource(source: BackgroundImportSource) {
@@ -975,7 +993,10 @@ fun SoundscapeSceneScreen(
                         error = state.backgroundSearchError,
                         onItemClick = { item ->
                             if (item.isVideo) {
-                                viewModel.onBackgroundVideoSelected(item.mediaUrl)
+                                viewModel.onBackgroundVideoSelected(
+                                    videoUrl = item.mediaUrl,
+                                    previewImageUrl = item.previewUrl
+                                )
                             } else {
                                 viewModel.onBackgroundImageSelected(item.mediaUrl)
                             }
@@ -989,10 +1010,24 @@ fun SoundscapeSceneScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .fillMaxHeight(0.98f)
                             .navigationBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     )
                 }
+            }
+
+            val cropUri = pendingCropImageUri
+            if (cropUri != null) {
+                LocalImageCropDialog(
+                    sourceUri = cropUri,
+                    onDismiss = { pendingCropImageUri = null },
+                    onApply = { croppedImageUrl ->
+                        pendingCropImageUri = null
+                        viewModel.onBackgroundCroppedLocalImageSelected(croppedImageUrl)
+                        showPreferences = false
+                    }
+                )
             }
         }
     }
@@ -1023,42 +1058,108 @@ private fun BackgroundSearchSheet(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            if (isPexels) {
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = White.copy(alpha = 0.85f)
+                    )
+                }
+            } else {
+                TextButton(
+                    onClick = onClose,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
+                    Text("Cancel", color = Color(0xFF0A84FF))
+                }
+            }
             Text(
                 text = title,
                 color = White,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.align(Alignment.Center)
             )
-            TextButton(onClick = onClose) {
-                Text("Close")
-            }
         }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = White.copy(alpha = 0.10f),
+                unfocusedContainerColor = White.copy(alpha = 0.10f),
+                disabledContainerColor = White.copy(alpha = 0.10f),
+                focusedTextColor = White,
+                unfocusedTextColor = White,
+                focusedPlaceholderColor = White.copy(alpha = 0.55f),
+                unfocusedPlaceholderColor = White.copy(alpha = 0.55f),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = White,
+            ),
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = White.copy(alpha = 0.65f)
+                )
+            },
+            trailingIcon = {
+                if (query.isNotBlank()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Clear search",
+                            tint = White.copy(alpha = 0.65f)
+                        )
+                    }
+                }
+            },
             placeholder = {
                 Text(if (isPexels && pexelsVideoTabSelected) "Search videos" else "Search photos")
             }
         )
         if (isPexels) {
             Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = !pexelsVideoTabSelected,
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(White.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val activeBg = White.copy(alpha = 0.18f)
+                TextButton(
                     onClick = { onPexelsTabChange(false) },
-                    label = { Text("Photos") }
-                )
-                FilterChip(
-                    selected = pexelsVideoTabSelected,
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            if (!pexelsVideoTabSelected) activeBg else Color.Transparent,
+                            RoundedCornerShape(8.dp)
+                        ),
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = White.copy(alpha = if (!pexelsVideoTabSelected) 1f else 0.75f)
+                    )
+                ) { Text("Photos") }
+                TextButton(
                     onClick = { onPexelsTabChange(true) },
-                    label = { Text("Videos") }
-                )
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            if (pexelsVideoTabSelected) activeBg else Color.Transparent,
+                            RoundedCornerShape(8.dp)
+                        ),
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = White.copy(alpha = if (pexelsVideoTabSelected) 1f else 0.75f)
+                    )
+                ) { Text("Videos") }
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -1088,43 +1189,199 @@ private fun BackgroundSearchSheet(
                 )
             }
             else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(420.dp)
+                        .weight(1f),
+                    verticalItemSpacing = 8.dp,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(items, key = { it.id }) { item ->
-                        Column(
+                        Box(
                             modifier = Modifier
-                                .padding(6.dp)
                                 .clickable { onItemClick(item) }
+                                .fillMaxWidth()
+                                .height(if ((item.id.hashCode() and 1) == 0) 185.dp else 255.dp)
+                                .background(Black.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                                .border(1.dp, White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
                         ) {
                             AsyncImage(
                                 model = item.previewUrl,
                                 contentDescription = item.author,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(170.dp)
-                                    .background(Black.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                                    .fillMaxHeight(),
+                                contentScale = ContentScale.Crop
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .fillMaxWidth()
+                                    .height(58.dp)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            0f to Color.Black.copy(alpha = 0.45f),
+                                            1f to Color.Transparent
+                                        )
+                                    )
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .fillMaxWidth()
+                                    .height(58.dp)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            0f to Color.Transparent,
+                                            1f to Color.Black.copy(alpha = 0.48f)
+                                        )
+                                    )
                             )
                             Text(
                                 text = item.author.ifBlank { "Unknown" },
-                                color = White.copy(alpha = 0.9f),
-                                style = MaterialTheme.typography.bodySmall,
+                                color = White.copy(alpha = 0.96f),
+                                style = MaterialTheme.typography.titleMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(horizontal = 10.dp, vertical = 8.dp)
                             )
                             if (item.isVideo && item.durationSec != null) {
                                 Text(
-                                    text = "00:${item.durationSec.toString().padStart(2, '0')}",
-                                    color = White.copy(alpha = 0.7f),
-                                    style = MaterialTheme.typography.labelSmall
+                                    text = formatDuration(item.durationSec),
+                                    color = White.copy(alpha = 0.96f),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(horizontal = 10.dp, vertical = 8.dp)
                                 )
                             }
-                        }
+                        } 
                     }
+                }
+            }
+        }
+    }
+}
+
+private fun formatDuration(totalSec: Int): String {
+    val safe = totalSec.coerceAtLeast(0)
+    val mm = safe / 60
+    val ss = safe % 60
+    return "%02d:%02d".format(mm, ss)
+}
+
+@Composable
+private fun LocalImageCropDialog(
+    sourceUri: Uri,
+    onDismiss: () -> Unit,
+    onApply: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    var scale by remember(sourceUri) { mutableStateOf(1f) }
+    var offset by remember(sourceUri) { mutableStateOf(Offset.Zero) }
+    var frameSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    var saving by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 24.dp, start = 16.dp, end = 16.dp, bottom = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    Text(text = "Crop", color = White, style = MaterialTheme.typography.titleMedium)
+                    TextButton(
+                        onClick = {
+                            if (saving || frameSize.width <= 0 || frameSize.height <= 0) return@TextButton
+                            saving = true
+                            scope.launch {
+                                val cropped = importLocalImageWithManualCrop(
+                                    context = context,
+                                    sourceUri = sourceUri,
+                                    cropFrameWidthPx = frameSize.width,
+                                    cropFrameHeightPx = frameSize.height,
+                                    scale = scale,
+                                    offsetX = offset.x,
+                                    offsetY = offset.y
+                                )
+                                saving = false
+                                cropped?.let { onApply(it.imageUrl) }
+                            }
+                        }
+                    ) { Text("Apply") }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(9f / 16f)
+                            .background(Color.Black)
+                            .onSizeChanged { frameSize = it }
+                            .pointerInput(sourceUri, frameSize) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    scale = (scale * zoom).coerceIn(1f, 5f)
+                                    val maxX = frameSize.width * (scale - 1f) / 2f
+                                    val maxY = frameSize.height * (scale - 1f) / 2f
+                                    offset = Offset(
+                                        x = (offset.x + pan.x).coerceIn(-maxX, maxX),
+                                        y = (offset.y + pan.y).coerceIn(-maxY, maxY)
+                                    )
+                                }
+                            }
+                    ) {
+                        AsyncImage(
+                            model = sourceUri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer(
+                                    scaleX = scale,
+                                    scaleY = scale,
+                                    translationX = offset.x,
+                                    translationY = offset.y
+                                ),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+                Text(
+                    text = "Move and zoom to choose crop area (9:16)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = White.copy(alpha = 0.75f),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            if (saving) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.55f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ProgressIndicator()
                 }
             }
         }

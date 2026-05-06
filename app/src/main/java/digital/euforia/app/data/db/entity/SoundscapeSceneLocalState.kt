@@ -28,6 +28,12 @@ data class SoundscapeSceneLocalState(
     /** id:x:y:title:imageUrl entries separated by "|" */
     @ColumnInfo(name = "buttons_json")
     val buttonsJson: String,
+    @ColumnInfo(name = "background_image_url")
+    val backgroundImageUrl: String? = null,
+    @ColumnInfo(name = "background_video_url")
+    val backgroundVideoUrl: String? = null,
+    @ColumnInfo(name = "background_source")
+    val backgroundSource: String? = null,
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long = System.currentTimeMillis(),
 )

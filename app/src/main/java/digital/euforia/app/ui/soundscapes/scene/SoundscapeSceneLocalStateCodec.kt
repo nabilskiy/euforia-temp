@@ -85,6 +85,9 @@ internal suspend fun persistLocalSceneState(
             selectedMusicTitle = sceneState.sceneMusicTitle,
             layersJson = layersJson,
             buttonsJson = buttonsJson,
+            backgroundImageUrl = sceneState.imageUrl,
+            backgroundVideoUrl = sceneState.videoUrl,
+            backgroundSource = sceneState.backgroundSource,
         )
     )
 }

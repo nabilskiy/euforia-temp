@@ -67,7 +67,7 @@ import digital.euforia.app.data.db.entity.SoundscapeSoundCategory
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class, IntListConverter::class, PublicationTypeConverter::class])
 @Database(
-    version = 16,
+    version = 17,
     entities = [
         SampleEntity::class,
         Accompaniment::class,

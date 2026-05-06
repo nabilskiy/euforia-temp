@@ -19,6 +19,9 @@ internal data class LoadedSceneData(
     val selectedMusicId: Int?,
     val selectedMusicUrl: String?,
     val selectedMusicTitle: String?,
+    val backgroundImageUrl: String?,
+    val backgroundVideoUrl: String?,
+    val backgroundSource: String?,
 )
 
 internal suspend fun buildLoadedSceneData(
@@ -178,5 +181,8 @@ internal suspend fun buildLoadedSceneData(
         selectedMusicId = localState?.selectedMusicId,
         selectedMusicUrl = localState?.selectedMusicUrl,
         selectedMusicTitle = localState?.selectedMusicTitle,
+        backgroundImageUrl = localState?.backgroundImageUrl,
+        backgroundVideoUrl = localState?.backgroundVideoUrl,
+        backgroundSource = localState?.backgroundSource,
     )
 }
