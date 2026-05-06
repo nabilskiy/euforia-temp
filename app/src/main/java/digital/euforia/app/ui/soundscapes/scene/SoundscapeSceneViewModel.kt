@@ -8,6 +8,7 @@ package digital.euforia.app.ui.soundscapes.scene
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.net.Uri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.analytics.soundscapeLayerSettingsOpenedCompat
@@ -15,6 +16,8 @@ import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.data.db.entity.SoundscapePreset
+import digital.euforia.app.data.model.BackgroundMediaItem
+import digital.euforia.app.data.repository.BackgroundImportRepository
 import digital.euforia.app.data.repository.MusicRepository
 import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.data.store.AppPreferences
@@ -22,6 +25,7 @@ import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.toEntity
 import digital.euforia.app.domain.model.config.ScenePlayerConfig
+import digital.euforia.app.domain.util.ResultWrapper
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapeDownloadsFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.DeleteSoundscapeDownloadUseCase
 import digital.euforia.app.domain.usecase.soundscapes.QueueSoundscapeDownloadUseCase
@@ -32,8 +36,10 @@ import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.service.soundscapes.SoundscapeAudioCacheManager
 import digital.euforia.app.service.soundscapes.SoundscapeAssetType
 import digital.euforia.app.service.soundscapes.SoundscapeOfflineManifest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
 import org.orbitmvi.orbit.ContainerHost
@@ -44,6 +50,7 @@ import javax.inject.Inject
 class SoundscapeSceneViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val soundscapesRepository: SoundscapesRepository,
+    private val backgroundImportRepository: BackgroundImportRepository,
     private val musicRepository: MusicRepository,
     private val syncSoundscapesCatalogUseCase: SyncSoundscapesCatalogUseCase,
     private val savePresetUseCase: SaveSoundscapePresetUseCase,
@@ -565,6 +572,148 @@ class SoundscapeSceneViewModel @Inject constructor(
 
     fun onDisableTimer() = onSetTimerSeconds(0)
 
+    fun onUnsplashBackgroundPickerOpened() {
+        intent {
+            reduce {
+                state.copy(
+                    backgroundSearchQuery = "",
+                    backgroundSearchItems = emptyList(),
+                    backgroundSearchError = null,
+                    backgroundSearchLoading = true,
+                    backgroundSearchRequestNonce = state.backgroundSearchRequestNonce + 1,
+                )
+            }
+        }
+    }
+
+    fun onPexelsBackgroundPickerOpened(initialVideoTab: Boolean = true) {
+        intent {
+            reduce {
+                state.copy(
+                    pexelsVideoTabSelected = initialVideoTab,
+                    backgroundSearchQuery = "",
+                    backgroundSearchItems = emptyList(),
+                    backgroundSearchError = null,
+                    backgroundSearchLoading = true,
+                    backgroundSearchRequestNonce = state.backgroundSearchRequestNonce + 1,
+                )
+            }
+        }
+    }
+
+    fun onBackgroundImportQueryChange(query: String) {
+        intent { reduce { state.copy(backgroundSearchQuery = query) } }
+    }
+
+    fun onPexelsImportVideoTabChange(selectedVideo: Boolean) {
+        intent {
+            reduce {
+                state.copy(
+                    pexelsVideoTabSelected = selectedVideo,
+                    backgroundSearchRequestNonce = state.backgroundSearchRequestNonce + 1,
+                )
+            }
+        }
+    }
+
+    fun refreshUnsplashBackgroundSearch() {
+        viewModelScope.launch {
+            val query = container.stateFlow.value.backgroundSearchQuery
+            intent {
+                reduce { state.copy(backgroundSearchLoading = true, backgroundSearchError = null) }
+            }
+            val result = withContext(Dispatchers.IO) {
+                backgroundImportRepository.searchUnsplashPhotos(query)
+            }
+            intent {
+                reduce {
+                    when (result) {
+                        is ResultWrapper.Success -> state.copy(
+                            backgroundSearchLoading = false,
+                            backgroundSearchItems = result.data,
+                            backgroundSearchError = null,
+                        )
+                        is ResultWrapper.Failure -> state.copy(
+                            backgroundSearchLoading = false,
+                            backgroundSearchItems = emptyList(),
+                            backgroundSearchError = result.throwable.message
+                                ?: result.throwable::class.java.simpleName,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun refreshPexelsBackgroundSearch() {
+        viewModelScope.launch {
+            val snapshot = container.stateFlow.value
+            val query = snapshot.backgroundSearchQuery
+            val videos = snapshot.pexelsVideoTabSelected
+            intent {
+                reduce { state.copy(backgroundSearchLoading = true, backgroundSearchError = null) }
+            }
+            val result = withContext(Dispatchers.IO) {
+                backgroundImportRepository.searchPexels(query, videos)
+            }
+            intent {
+                reduce {
+                    when (result) {
+                        is ResultWrapper.Success -> state.copy(
+                            backgroundSearchLoading = false,
+                            backgroundSearchItems = result.data,
+                            backgroundSearchError = null,
+                        )
+                        is ResultWrapper.Failure -> state.copy(
+                            backgroundSearchLoading = false,
+                            backgroundSearchItems = emptyList(),
+                            backgroundSearchError = result.throwable.message
+                                ?: result.throwable::class.java.simpleName,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun onBackgroundImageSelected(imageUrl: String) {
+        val normalized = imageUrl.trim()
+        if (normalized.isBlank()) return
+        intent {
+            reduce {
+                state.copy(
+                    imageUrl = normalized,
+                    videoUrl = null,
+                    isDirty = true,
+                )
+            }
+        }
+    }
+
+    fun onBackgroundVideoSelected(videoUrl: String) {
+        val normalized = videoUrl.trim()
+        if (normalized.isBlank()) return
+        intent {
+            reduce {
+                state.copy(
+                    videoUrl = normalized,
+                    isDirty = true,
+                )
+            }
+        }
+    }
+
+    fun onBackgroundLocalFileSelected(uri: Uri, mimeType: String?) {
+        val localUrl = uri.toString()
+        if (localUrl.isBlank()) return
+        val lowerMime = mimeType?.lowercase().orEmpty()
+        if (lowerMime.startsWith("video/")) {
+            onBackgroundVideoSelected(localUrl)
+        } else {
+            onBackgroundImageSelected(localUrl)
+        }
+    }
+
     fun onSaveAndDownload(rawName: String) {
         val playback = playbackController.playback.value
         val layersJson = playback.layers.joinToString(separator = "|") { "${it.id}:${it.volume}:${it.muted}" }
@@ -967,6 +1116,13 @@ data class SoundscapeSceneState(
     val preparingCompleted: Int = 0,
     val preparingTotal: Int = 0,
     val error: SoundscapeError? = null,
+    /** Stock background import (Unsplash / Pexels) */
+    val backgroundSearchQuery: String = "",
+    val backgroundSearchItems: List<BackgroundMediaItem> = emptyList(),
+    val backgroundSearchLoading: Boolean = false,
+    val backgroundSearchError: String? = null,
+    val backgroundSearchRequestNonce: Int = 0,
+    val pexelsVideoTabSelected: Boolean = false,
 )
 
 data class SoundLayerUi(

@@ -8,11 +8,14 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import digital.euforia.app.BuildConfig
 import digital.euforia.app.data.api.EuforiaApi
+import digital.euforia.app.data.api.PexelsApi
+import digital.euforia.app.data.api.UnsplashApi
 import digital.euforia.app.data.network.AuthToken
 import digital.euforia.app.data.network.AuthTokenProvider
 import digital.euforia.app.data.network.DeviceToken
 import digital.euforia.app.data.network.DeviceTokenProvider
 import digital.euforia.app.data.network.HeadersInterceptor
+import digital.euforia.app.data.network.StockMediaAuthInterceptor
 import digital.euforia.app.data.network.TokenProvider
 import digital.euforia.app.data.network.TokensProvider
 import digital.euforia.app.data.network.adapter.ResultAdapterFactory
@@ -57,6 +60,69 @@ class NetworkModule {
     fun provideEuforiaApi(
         retrofit: Retrofit
     ): EuforiaApi = retrofit.create(EuforiaApi::class.java)
+
+    @Singleton
+    @Provides
+    fun provideStockMediaAuthInterceptor(): StockMediaAuthInterceptor =
+        StockMediaAuthInterceptor()
+
+    /**
+     * OkHttp for third-party stock media hosts only — do not attach [HeadersInterceptor].
+     */
+    @Singleton
+    @Provides
+    @StockMediaOkHttpClient
+    fun provideStockMediaOkHttpClient(
+        stockMediaAuthInterceptor: StockMediaAuthInterceptor,
+        loggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(stockMediaAuthInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .build()
+    }
+
+    @Singleton
+    @Provides
+    @UnsplashRetrofit
+    fun provideUnsplashRetrofit(
+        @StockMediaOkHttpClient stockMediaOkHttpClient: OkHttpClient,
+        moshi: Moshi,
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL_UNSPLASH)
+            .client(stockMediaOkHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .addCallAdapterFactory(ResultAdapterFactory())
+            .build()
+    }
+
+    @Singleton
+    @Provides
+    @PexelsRetrofit
+    fun providePexelsRetrofit(
+        @StockMediaOkHttpClient stockMediaOkHttpClient: OkHttpClient,
+        moshi: Moshi,
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL_PEXELS)
+            .client(stockMediaOkHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .addCallAdapterFactory(ResultAdapterFactory())
+            .build()
+    }
+
+    @Singleton
+    @Provides
+    fun provideUnsplashApi(
+        @UnsplashRetrofit retrofit: Retrofit
+    ): UnsplashApi = retrofit.create(UnsplashApi::class.java)
+
+    @Singleton
+    @Provides
+    fun providePexelsApi(
+        @PexelsRetrofit retrofit: Retrofit
+    ): PexelsApi = retrofit.create(PexelsApi::class.java)
 
     @Singleton
     @Provides
@@ -113,5 +179,7 @@ class NetworkModule {
     companion object {
         const val NAMED_MOSHI_NETWORK = "moshi_network"
         const val TIMEOUT_SEC = 60L
+        private const val BASE_URL_UNSPLASH = "https://api.unsplash.com/"
+        private const val BASE_URL_PEXELS = "https://api.pexels.com/"
     }
 }

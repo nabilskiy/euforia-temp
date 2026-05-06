@@ -6,19 +6,26 @@
 package digital.euforia.app.ui.soundscapes.scene
 
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,12 +36,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,13 +69,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlin.math.hypot
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
+import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.soundscapes.widget.AnimatedAddSoundsButton
 import digital.euforia.app.ui.soundscapes.widget.SleepTimerPickerDialog
 import digital.euforia.app.ui.soundscapes.widget.MusicOptionsBottomSheetContent
@@ -70,6 +86,7 @@ import digital.euforia.app.ui.soundscapes.widget.MusicPickerBottomSheetContent
 import digital.euforia.app.ui.soundscapes.widget.SceneSoundFloatingButton
 import digital.euforia.app.ui.soundscapes.widget.SoundLayerBottomSheetContent
 import digital.euforia.app.ui.soundscapes.widget.SoundsPickerBottomSheetContent
+import digital.euforia.app.data.model.BackgroundMediaItem
 import digital.euforia.app.ui.soundscapes.widget.SoundscapeSceneBackground
 import digital.euforia.app.ui.soundscapes.widget.SoundscapeSceneMusicIndicatorButton
 import digital.euforia.app.ui.soundscapes.widget.ScenePreferencesBottomSheetContent
@@ -88,6 +105,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+private enum class BackgroundImportSource { PEXELS, UNSPLASH, PHOTOS }
 
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -112,6 +131,9 @@ fun SoundscapeSceneScreen(
     var showUnsavedExitDialog by remember { mutableStateOf(false) }
     var showTimerPickerDialog by remember { mutableStateOf(false) }
     var topBarModalVisible by remember { mutableStateOf(false) }
+    var showImportSourceDialog by remember { mutableStateOf(false) }
+    var showUnsplashPicker by remember { mutableStateOf(false) }
+    var showPexelsPicker by remember { mutableStateOf(false) }
     var interactionNonce by remember { mutableLongStateOf(0L) }
     val inertiaScope = rememberCoroutineScope()
     val inertiaJobs = remember { mutableMapOf<String, Job>() }
@@ -130,6 +152,31 @@ fun SoundscapeSceneScreen(
     fun markInteraction() {
         controlsVisible = true
         interactionNonce++
+    }
+    val pickBackgroundMediaLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        val picked = uri ?: return@rememberLauncherForActivityResult
+        val mimeType = context.contentResolver.getType(picked)
+        viewModel.onBackgroundLocalFileSelected(picked, mimeType)
+        showPreferences = false
+    }
+
+    fun openSource(source: BackgroundImportSource) {
+        showImportSourceDialog = false
+        when (source) {
+            BackgroundImportSource.PEXELS -> {
+                viewModel.onPexelsBackgroundPickerOpened(initialVideoTab = true)
+                showPexelsPicker = true
+            }
+            BackgroundImportSource.UNSPLASH -> {
+                viewModel.onUnsplashBackgroundPickerOpened()
+                showUnsplashPicker = true
+            }
+            BackgroundImportSource.PHOTOS -> {
+                pickBackgroundMediaLauncher.launch(arrayOf("image/*", "video/*"))
+            }
+        }
     }
 
     LaunchedEffect(state.layers, selectedSoundLayerKey) {
@@ -151,6 +198,19 @@ fun SoundscapeSceneScreen(
         if (hasModalOpen) return@LaunchedEffect
         delay(5000)
         controlsVisible = false
+    }
+    LaunchedEffect(showUnsplashPicker, state.backgroundSearchQuery, state.backgroundSearchRequestNonce) {
+        if (!showUnsplashPicker) return@LaunchedEffect
+        viewModel.refreshUnsplashBackgroundSearch()
+    }
+    LaunchedEffect(
+        showPexelsPicker,
+        state.backgroundSearchQuery,
+        state.pexelsVideoTabSelected,
+        state.backgroundSearchRequestNonce
+    ) {
+        if (!showPexelsPicker) return@LaunchedEffect
+        viewModel.refreshPexelsBackgroundSearch()
     }
 
     SubscriptionActivityLauncher { launchSubscription ->
@@ -606,7 +666,7 @@ fun SoundscapeSceneScreen(
                         soundAnimationsEnabled = state.soundAnimationsEnabled,
                         onSoundAnimationsToggle = viewModel::onSoundAnimationsEnabledChanged,
                         onChangeBackgroundClick = {
-                            // Keep menu parity with iOS; background source picker is wired separately.
+                            showImportSourceDialog = true
                         },
                         onDone = { showPreferences = false },
                         modifier = Modifier
@@ -865,6 +925,75 @@ fun SoundscapeSceneScreen(
                     }
                 )
             }
+            if (showImportSourceDialog) {
+                AlertDialog(
+                    onDismissRequest = { showImportSourceDialog = false },
+                    title = { Text(text = localizedRes.string(R.string.import_from)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            TextButton(onClick = { openSource(BackgroundImportSource.PEXELS) }) {
+                                Text("Pexels")
+                            }
+                            TextButton(onClick = { openSource(BackgroundImportSource.UNSPLASH) }) {
+                                Text("Unsplash")
+                            }
+                            TextButton(onClick = { openSource(BackgroundImportSource.PHOTOS) }) {
+                                Text("Photos")
+                            }
+                        }
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        TextButton(onClick = { showImportSourceDialog = false }) {
+                            Text(text = localizedRes.string(R.string.cancel))
+                        }
+                    }
+                )
+            }
+
+            if (showUnsplashPicker || showPexelsPicker) {
+                ModalBottomSheet(
+                    onDismissRequest = {
+                        showUnsplashPicker = false
+                        showPexelsPicker = false
+                    },
+                    sheetState = soundsPickerSheetState,
+                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                    containerColor = BottomSheetBackground
+                ) {
+                    BackgroundSearchSheet(
+                        title = if (showUnsplashPicker) "Unsplash" else "Pexels",
+                        query = state.backgroundSearchQuery,
+                        isPexels = showPexelsPicker,
+                        pexelsVideoTabSelected = state.pexelsVideoTabSelected,
+                        onPexelsTabChange = { selectedVideo ->
+                            viewModel.onPexelsImportVideoTabChange(selectedVideo)
+                        },
+                        onQueryChange = { viewModel.onBackgroundImportQueryChange(it) },
+                        items = state.backgroundSearchItems,
+                        loading = state.backgroundSearchLoading,
+                        error = state.backgroundSearchError,
+                        onItemClick = { item ->
+                            if (item.isVideo) {
+                                viewModel.onBackgroundVideoSelected(item.mediaUrl)
+                            } else {
+                                viewModel.onBackgroundImageSelected(item.mediaUrl)
+                            }
+                            showUnsplashPicker = false
+                            showPexelsPicker = false
+                            showPreferences = false
+                        },
+                        onClose = {
+                            showUnsplashPicker = false
+                            showPexelsPicker = false
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    )
+                }
+            }
         }
     }
 
@@ -875,4 +1004,129 @@ fun SoundscapeSceneScreen(
 @Composable
 private fun BindSoundscapeMediaSession() {
     rememberSoundscapeMediaController()
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BackgroundSearchSheet(
+    title: String,
+    query: String,
+    isPexels: Boolean,
+    pexelsVideoTabSelected: Boolean,
+    onPexelsTabChange: (Boolean) -> Unit,
+    onQueryChange: (String) -> Unit,
+    items: List<BackgroundMediaItem>,
+    loading: Boolean,
+    error: String?,
+    onItemClick: (BackgroundMediaItem) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = White,
+                style = MaterialTheme.typography.titleLarge
+            )
+            TextButton(onClick = onClose) {
+                Text("Close")
+            }
+        }
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            placeholder = {
+                Text(if (isPexels && pexelsVideoTabSelected) "Search videos" else "Search photos")
+            }
+        )
+        if (isPexels) {
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !pexelsVideoTabSelected,
+                    onClick = { onPexelsTabChange(false) },
+                    label = { Text("Photos") }
+                )
+                FilterChip(
+                    selected = pexelsVideoTabSelected,
+                    onClick = { onPexelsTabChange(true) },
+                    label = { Text("Videos") }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        when {
+            loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ProgressIndicator()
+                }
+            }
+            error != null -> {
+                Text(
+                    text = error,
+                    color = White.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            items.isEmpty() -> {
+                Text(
+                    text = "No results",
+                    color = White.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            else -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(420.dp)
+                ) {
+                    items(items, key = { it.id }) { item ->
+                        Column(
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .clickable { onItemClick(item) }
+                        ) {
+                            AsyncImage(
+                                model = item.previewUrl,
+                                contentDescription = item.author,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(170.dp)
+                                    .background(Black.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                            )
+                            Text(
+                                text = item.author.ifBlank { "Unknown" },
+                                color = White.copy(alpha = 0.9f),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                            if (item.isVideo && item.durationSec != null) {
+                                Text(
+                                    text = "00:${item.durationSec.toString().padStart(2, '0')}",
+                                    color = White.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

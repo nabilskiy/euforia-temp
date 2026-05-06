@@ -32,6 +32,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_API_URL", "\"https://euforia.digital/api/\"")
         buildConfigField("String", "API_KEY", "\"3i6o2ko}AFGM1,LTj8xn/FmRw\\\\]@NI7\"")
+        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"-JndjsO7pVs0b_dnz2asryatqI2Tt0Ol9j2Dls1yU_c\"")
+        buildConfigField("String", "UNSPLASH_SECRET_KEY", "\"_OwTN939rfzjMGrMSbOxs3L9reeQZENlsIjMu_F-JQw\"")
+        buildConfigField("String", "PEXELS_API_KEY", "\"gEKEloETni2msv2SEueSxlqG69I0qZP0evewtJAFsKwmLU6RFqczMVxd\"")
         buildConfigField("boolean", "IS_SANDBOX", "true")
     }
 
