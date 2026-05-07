@@ -25,6 +25,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,6 +70,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -260,302 +262,886 @@ fun SoundscapeSceneScreen(
                 }
             )
 
-            // Vignette + bottom readability (aligned with iOS SoundStudio overlays)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Black.copy(alpha = 0.45f),
-                            0.35f to Color.Transparent,
-                            0.65f to Color.Transparent,
-                            1f to Color.Black.copy(alpha = 0.55f)
-                        )
+            SceneGradientOverlays()
+
+            SceneFloatingSoundButtons(
+                visible = controlsVisible,
+                state = state,
+                soundDragOffsets = soundDragOffsets,
+                onSoundDragOffsetsChange = { soundDragOffsets = it },
+                draggingSoundKey = draggingSoundKey,
+                onDraggingSoundKeyChange = { draggingSoundKey = it },
+                pressedSoundKey = pressedSoundKey,
+                onPressedSoundKeyChange = { pressedSoundKey = it },
+                tapPulseSoundKey = tapPulseSoundKey,
+                onTapPulseSoundKeyChange = { tapPulseSoundKey = it },
+                trashHovered = trashHovered,
+                onTrashHoveredChange = { trashHovered = it },
+                selectedSoundLayerKey = selectedSoundLayerKey,
+                onSelectedSoundLayerKeyChange = { selectedSoundLayerKey = it },
+                markInteraction = ::markInteraction,
+                onOpenLayerSettings = { layer ->
+                    showMusicOptions = false
+                    showPreferences = false
+                    selectedSoundLayerKey = layer.instanceKey
+                    viewModel.onLayerSettingsOpened(
+                        layerKey = layer.instanceKey,
+                        soundId = layer.id,
+                        title = layer.title
                     )
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Black.copy(alpha = 0.45f),
-                            1f to Color.Transparent
-                        )
-                    )
-                    .zIndex(2f)
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(170.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            1f to Color.Black.copy(alpha = 0.55f)
-                        )
-                    )
-                    .zIndex(2f)
+                },
+                onRemoveLayer = viewModel::onLayerRemove,
+                onSoundButtonPositionChanged = viewModel::onSoundButtonPositionChanged,
+                inertiaScope = inertiaScope,
+                inertiaJobs = inertiaJobs,
+                deleteContentDescription = localizedRes.string(R.string.delete)
             )
 
-            AnimatedVisibility(
+            SceneTopControls(
                 visible = controlsVisible,
-                enter = fadeIn(animationSpec = tween(180)),
-                exit = fadeOut(animationSpec = tween(260)),
-                modifier = Modifier.zIndex(3f)
-            ) {
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .padding(top = 72.dp, bottom = 140.dp)
-                ) {
-                val btnSize = 56.dp
-                val density = LocalDensity.current
-                val maxWpx = with(density) { maxWidth.toPx() }
-                val maxHpx = with(density) { maxHeight.toPx() }
-                val btnPx = with(density) { btnSize.toPx() }
-                val tapSlopPx = with(density) { 12.dp.toPx() }
-                val trashSizePx = with(density) { 50.dp.toPx() }
-                val trashTopPx = 0f
-                val trashLeftPx = (maxWpx - trashSizePx) / 2f
-                val trashRightPx = trashLeftPx + trashSizePx
-                val trashBottomPx = trashTopPx + trashSizePx
-                val trashCenterX = (trashLeftPx + trashRightPx) / 2f
-                val trashCenterY = (trashTopPx + trashBottomPx) / 2f
-                val removeDistancePx = with(density) { 80.dp.toPx() }
-                fun isOverTrash(centerX: Float, centerY: Float): Boolean {
-                    val dx = centerX - trashCenterX
-                    val dy = centerY - trashCenterY
-                    return hypot(dx, dy) < removeDistancePx
-                }
-                val visibleIds = state.layers.map { it.instanceKey }.toSet()
-                val layersByKey = state.layers.associateBy { it.instanceKey }
-                AnimatedVisibility(
-                    visible = controlsVisible && draggingSoundKey != null,
-                    enter = fadeIn(animationSpec = tween(120)),
-                    exit = fadeOut(animationSpec = tween(120)),
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 0.dp)
-                        .zIndex(8f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .background(
-                                color = if (trashHovered) {
-                                    Color.Red.copy(alpha = 0.3f)
-                                } else {
-                                    Color.Black.copy(alpha = 0.3f)
-                                },
-                                shape = RoundedCornerShape(25.dp)
-                            )
-                            .border(
-                                width = 1.5.dp,
-                                color = White.copy(alpha = 0.9f),
-                                shape = RoundedCornerShape(25.dp)
-                            )
-                            .graphicsLayer {
-                                val scale = if (trashHovered) 1.1f else 1f
-                                scaleX = scale
-                                scaleY = scale
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = localizedRes.string(R.string.delete),
-                            tint = White.copy(alpha = if (trashHovered) 1f else 0.86f)
+                title = state.title.ifBlank {
+                    localizedRes.string(
+                        R.string.soundscape_scene_title_fallback,
+                        state.sceneId
+                    )
+                },
+                subtitle = if (state.isDirty) {
+                    localizedRes.string(R.string.audio_scene_unsaved_changes)
+                } else if (state.presetId != null) {
+                    localizedRes.string(R.string.playlist_type_my_scenes)
+                } else {
+                    state.subtitle
+                },
+                showMaxBadge = state.isPro,
+                isDownloaded = state.downloadState == SoundscapeDownloadItem.STATUS_READY,
+                hasActiveTimer = (state.timerSeconds ?: 0) > 0,
+                canShare = state.presetId == null,
+                onCollapse = {
+                    if (state.isDirty) showUnsavedExitDialog = true
+                    else navController.popBackStack()
+                },
+                onSaveChanges = viewModel::onSavePreset,
+                onSaveAndDownload = viewModel::onSaveAndDownload,
+                onRenameScene = viewModel::onRenameScene,
+                onDeleteDownloaded = {
+                    viewModel.onDeleteDownloadedScene()
+                    navController.popBackStack()
+                },
+                onTimer1hClick = { viewModel.onSetTimerSeconds(60 * 60) },
+                onTimer2hClick = { viewModel.onSetTimerSeconds(60 * 60 * 2) },
+                onTimerSetupClick = { showTimerPickerDialog = true },
+                onTimerStopClick = viewModel::onDisableTimer,
+                onPreferencesClick = {
+                    markInteraction()
+                    selectedSoundLayerKey = null
+                    showMusicOptions = false
+                    showMusicPicker = false
+                    showSoundsPicker = false
+                    showPreferences = true
+                },
+                onShare = {
+                    markInteraction()
+                    val shareUrl = LinkGenerator.buildAudioSceneShareUrl(state.originalSceneId)
+                        ?: return@SceneTopControls
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(
+                            Intent.EXTRA_TEXT,
+                            shareUrl
                         )
                     }
-                }
-                state.soundFloatingButtons
-                    .filter { it.instanceKey in visibleIds }
-                    .forEach { btn ->
-                        val soundScale by animateFloatAsState(
-                            targetValue = when {
-                                draggingSoundKey == btn.instanceKey -> 1.1f
-                                pressedSoundKey == btn.instanceKey -> 0.94f
-                                tapPulseSoundKey == btn.instanceKey -> 1.05f
-                                else -> 1f
-                            },
-                            animationSpec = spring(
-                                dampingRatio = 0.58f,
-                                stiffness = 430f
-                            ),
-                            label = "sound_button_scale"
+                    context.startActivity(
+                        Intent.createChooser(
+                            send,
+                            localizedRes.string(R.string.share)
                         )
-                        val extra = soundDragOffsets[btn.instanceKey] ?: Offset.Zero
-                        val baseXpx = maxWpx * btn.posXFraction - btnPx / 2f
-                        val baseYpx = maxHpx * btn.posYFraction - btnPx / 2f
-                        val xPx = (baseXpx + extra.x).coerceIn(0f, (maxWpx - btnPx).coerceAtLeast(0f))
-                        val yPx = (baseYpx + extra.y).coerceIn(0f, (maxHpx - btnPx).coerceAtLeast(0f))
-                        val xOff = with(density) { xPx.toDp() }
-                        val yOff = with(density) { yPx.toDp() }
-                        SceneSoundFloatingButton(
-                            imageUrl = btn.imageUrl,
-                            contentDescription = btn.title,
-                            showSoundAnimation = state.soundAnimationsEnabled &&
-                                state.isPlaying &&
-                                ((layersByKey[btn.instanceKey]?.volume ?: 0f) > 0f) &&
-                                (layersByKey[btn.instanceKey]?.muted != true),
-                            repeatProgress = run {
-                                val layer = layersByKey[btn.instanceKey] ?: return@run null
-                                if (layer.isContinuous || layer.repeatIntervalSec <= 0) return@run null
-                                val remaining = layer.repeatRemainingMs ?: return@run null
-                                (remaining.toFloat() / (layer.repeatIntervalSec * 1000f)).coerceIn(0f, 1f)
+                    )
+                },
+                onModalVisibilityChanged = { isVisible ->
+                    topBarModalVisible = isVisible
+                    if (isVisible) controlsVisible = true
+                }
+            )
+
+            SceneBottomControls(
+                visible = controlsVisible,
+                isPlaying = state.isPlaying,
+                timerTotalSeconds = state.timerSeconds,
+                timerRemainingSeconds = state.timerRemainingSeconds,
+                sceneMusicUrl = state.sceneMusicUrl,
+                musicVolume = state.musicVolume,
+                musicContentDescription = localizedRes.string(R.string.audio_scene_background_music_settings),
+                onTogglePlay = { viewModel.onPlayPause() },
+                onAddSoundClick = {
+                    markInteraction()
+                    showPreferences = false
+                    showMusicOptions = false
+                    showMusicPicker = false
+                    selectedSoundLayerKey = null
+                    showSoundsPicker = true
+                },
+                onMusicClick = {
+                    markInteraction()
+                    selectedSoundLayerKey = null
+                    showPreferences = false
+                    showMusicPicker = false
+                    showSoundsPicker = false
+                    showMusicOptions = true
+                }
+            )
+
+            SceneModalHost(
+                state = state,
+                showPreferences = showPreferences,
+                onShowPreferencesChange = { showPreferences = it },
+                showMusicOptions = showMusicOptions,
+                onShowMusicOptionsChange = { showMusicOptions = it },
+                showMusicPicker = showMusicPicker,
+                onShowMusicPickerChange = { showMusicPicker = it },
+                showSoundsPicker = showSoundsPicker,
+                onShowSoundsPickerChange = { showSoundsPicker = it },
+                selectedSoundLayerKey = selectedSoundLayerKey,
+                onSelectedSoundLayerKeyChange = { selectedSoundLayerKey = it },
+                onShowImportSourceDialog = { showImportSourceDialog = true },
+                viewModel = viewModel,
+                layerSheetState = sheetState,
+                musicSheetState = musicSheetState,
+                soundsPickerSheetState = soundsPickerSheetState
+            )
+            if (!controlsVisible && !hasModalOpen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zIndex(20f)
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = { markInteraction() })
+                        }
+                )
+            }
+
+            ScenePreparingOverlay(
+                visible = state.isPreparing || state.isSceneDownloadInProgress,
+                isSceneDownloadInProgress = state.isSceneDownloadInProgress,
+                downloadProgress = state.downloadProgress,
+                preparingTotal = state.preparingTotal,
+                preparingCompleted = state.preparingCompleted,
+                onCancel = viewModel::onCancelPreparation
+            )
+
+            SceneDialogsHost(
+                state = state,
+                showUnsavedExitDialog = showUnsavedExitDialog,
+                onShowUnsavedExitDialogChange = { showUnsavedExitDialog = it },
+                showTimerPickerDialog = showTimerPickerDialog,
+                onShowTimerPickerDialogChange = { showTimerPickerDialog = it },
+                showImportSourceDialog = showImportSourceDialog,
+                onShowImportSourceDialogChange = { showImportSourceDialog = it },
+                showUnsplashPicker = showUnsplashPicker,
+                onShowUnsplashPickerChange = { showUnsplashPicker = it },
+                showPexelsPicker = showPexelsPicker,
+                onShowPexelsPickerChange = { showPexelsPicker = it },
+                pendingCropImageUri = pendingCropImageUri,
+                onPendingCropImageUriChange = { pendingCropImageUri = it },
+                onSavePreset = viewModel::onSavePreset,
+                onDiscardChangesAndExit = viewModel::onDiscardChangesAndExit,
+                onSetTimerSeconds = viewModel::onSetTimerSeconds,
+                onDisableTimer = viewModel::onDisableTimer,
+                onOpenSource = ::openSource,
+                onPexelsTabChange = viewModel::onPexelsImportVideoTabChange,
+                onBackgroundImportQueryChange = viewModel::onBackgroundImportQueryChange,
+                onBackgroundVideoSelected = viewModel::onBackgroundVideoSelected,
+                onBackgroundImageSelected = viewModel::onBackgroundImageSelected,
+                onBackgroundCroppedLocalImageSelected = viewModel::onBackgroundCroppedLocalImageSelected,
+                onCloseAfterExitAction = { navController.popBackStack() },
+                onHidePreferences = { showPreferences = false },
+                soundsPickerSheetState = soundsPickerSheetState
+            )
+        }
+    }
+}
+
+@Composable
+private fun SceneSheetDragHandle() {
+    Box(
+        Modifier
+            .padding(vertical = 10.dp)
+            .width(36.dp)
+            .height(4.dp)
+            .background(White.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
+    )
+}
+
+@Composable
+private fun BoxScope.SceneGradientOverlays() {
+    // Vignette + bottom readability (aligned with iOS SoundStudio overlays)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.Black.copy(alpha = 0.45f),
+                    0.35f to Color.Transparent,
+                    0.65f to Color.Transparent,
+                    1f to Color.Black.copy(alpha = 0.55f)
+                )
+            )
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .align(Alignment.TopCenter)
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.Black.copy(alpha = 0.45f),
+                    1f to Color.Transparent
+                )
+            )
+            .zIndex(2f)
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(170.dp)
+            .align(Alignment.BottomCenter)
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.Transparent,
+                    1f to Color.Black.copy(alpha = 0.55f)
+                )
+            )
+            .zIndex(2f)
+    )
+}
+
+@Composable
+private fun BoxScope.SceneTopControls(
+    visible: Boolean,
+    title: String,
+    subtitle: String,
+    showMaxBadge: Boolean,
+    isDownloaded: Boolean,
+    hasActiveTimer: Boolean,
+    canShare: Boolean,
+    onCollapse: () -> Unit,
+    onSaveChanges: () -> Unit,
+    onSaveAndDownload: (String) -> Unit,
+    onRenameScene: (String) -> Unit,
+    onDeleteDownloaded: () -> Unit,
+    onTimer1hClick: () -> Unit,
+    onTimer2hClick: () -> Unit,
+    onTimerSetupClick: () -> Unit,
+    onTimerStopClick: () -> Unit,
+    onPreferencesClick: () -> Unit,
+    onShare: () -> Unit,
+    onModalVisibilityChanged: (Boolean) -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(180)),
+        exit = fadeOut(animationSpec = tween(260)),
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .statusBarsPadding()
+            .zIndex(4f)
+            .fillMaxWidth()
+    ) {
+        Column {
+            SoundscapeSceneTopBar(
+                title = title,
+                subtitle = subtitle,
+                showMaxBadge = showMaxBadge,
+                isDownloaded = isDownloaded,
+                onCollapse = onCollapse,
+                onSaveChanges = onSaveChanges,
+                onSaveAndDownload = onSaveAndDownload,
+                onRenameScene = onRenameScene,
+                onDeleteDownloaded = onDeleteDownloaded,
+                hasActiveTimer = hasActiveTimer,
+                onTimer1hClick = onTimer1hClick,
+                onTimer2hClick = onTimer2hClick,
+                onTimerSetupClick = onTimerSetupClick,
+                onTimerStopClick = onTimerStopClick,
+                onPreferencesClick = onPreferencesClick,
+                onShare = onShare,
+                canShare = canShare,
+                onModalVisibilityChanged = onModalVisibilityChanged
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SceneDialogsHost(
+    state: SoundscapeSceneState,
+    showUnsavedExitDialog: Boolean,
+    onShowUnsavedExitDialogChange: (Boolean) -> Unit,
+    showTimerPickerDialog: Boolean,
+    onShowTimerPickerDialogChange: (Boolean) -> Unit,
+    showImportSourceDialog: Boolean,
+    onShowImportSourceDialogChange: (Boolean) -> Unit,
+    showUnsplashPicker: Boolean,
+    onShowUnsplashPickerChange: (Boolean) -> Unit,
+    showPexelsPicker: Boolean,
+    onShowPexelsPickerChange: (Boolean) -> Unit,
+    pendingCropImageUri: Uri?,
+    onPendingCropImageUriChange: (Uri?) -> Unit,
+    onSavePreset: () -> Unit,
+    onDiscardChangesAndExit: () -> Unit,
+    onSetTimerSeconds: (Int) -> Unit,
+    onDisableTimer: () -> Unit,
+    onOpenSource: (BackgroundImportSource) -> Unit,
+    onPexelsTabChange: (Boolean) -> Unit,
+    onBackgroundImportQueryChange: (String) -> Unit,
+    onBackgroundVideoSelected: (String, String?) -> Unit,
+    onBackgroundImageSelected: (String) -> Unit,
+    onBackgroundCroppedLocalImageSelected: (String) -> Unit,
+    onCloseAfterExitAction: () -> Unit,
+    onHidePreferences: () -> Unit,
+    soundsPickerSheetState: androidx.compose.material3.SheetState
+) {
+    val localizedRes = LocalLocalizedRes.current
+    if (showUnsavedExitDialog) {
+        AlertDialog(
+            onDismissRequest = { onShowUnsavedExitDialogChange(false) },
+            title = { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_title)) },
+            text = { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSavePreset()
+                    onShowUnsavedExitDialogChange(false)
+                    onCloseAfterExitAction()
+                }) { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_save)) }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { onShowUnsavedExitDialogChange(false) }) {
+                        Text(text = localizedRes.string(R.string.cancel))
+                    }
+                    TextButton(onClick = {
+                        onDiscardChangesAndExit()
+                        onShowUnsavedExitDialogChange(false)
+                        onCloseAfterExitAction()
+                    }) {
+                        Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_discard))
+                    }
+                }
+            }
+        )
+    }
+
+    if (showTimerPickerDialog) {
+        SleepTimerPickerDialog(
+            initialSeconds = state.timerSeconds,
+            onDismiss = { onShowTimerPickerDialogChange(false) },
+            onSet = { seconds ->
+                onSetTimerSeconds(seconds)
+                onShowTimerPickerDialogChange(false)
+            },
+            onDisable = {
+                onDisableTimer()
+                onShowTimerPickerDialogChange(false)
+            }
+        )
+    }
+
+    if (showImportSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { onShowImportSourceDialogChange(false) },
+            title = { Text(text = localizedRes.string(R.string.import_from)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    TextButton(onClick = { onOpenSource(BackgroundImportSource.PEXELS) }) {
+                        Text("Pexels")
+                    }
+                    TextButton(onClick = { onOpenSource(BackgroundImportSource.UNSPLASH) }) {
+                        Text("Unsplash")
+                    }
+                    TextButton(onClick = { onOpenSource(BackgroundImportSource.PHOTOS) }) {
+                        Text("Photos")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { onShowImportSourceDialogChange(false) }) {
+                    Text(text = localizedRes.string(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showUnsplashPicker || showPexelsPicker) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                onShowUnsplashPickerChange(false)
+                onShowPexelsPickerChange(false)
+            },
+            sheetState = soundsPickerSheetState,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            containerColor = BottomSheetBackground
+        ) {
+            BackgroundSearchSheet(
+                title = if (showUnsplashPicker) "Unsplash" else "Pexels",
+                query = state.backgroundSearchQuery,
+                isPexels = showPexelsPicker,
+                pexelsVideoTabSelected = state.pexelsVideoTabSelected,
+                onPexelsTabChange = onPexelsTabChange,
+                onQueryChange = onBackgroundImportQueryChange,
+                items = state.backgroundSearchItems,
+                loading = state.backgroundSearchLoading,
+                error = state.backgroundSearchError,
+                onItemClick = { item ->
+                    if (item.isVideo) {
+                        onBackgroundVideoSelected(item.mediaUrl, item.previewUrl)
+                    } else {
+                        onBackgroundImageSelected(item.mediaUrl)
+                    }
+                    onShowUnsplashPickerChange(false)
+                    onShowPexelsPickerChange(false)
+                    onHidePreferences()
+                },
+                onClose = {
+                    onShowUnsplashPickerChange(false)
+                    onShowPexelsPickerChange(false)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.98f)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            )
+        }
+    }
+
+    val cropUri = pendingCropImageUri
+    if (cropUri != null) {
+        LocalImageCropDialog(
+            sourceUri = cropUri,
+            onDismiss = { onPendingCropImageUriChange(null) },
+            onApply = { croppedImageUrl ->
+                onPendingCropImageUriChange(null)
+                onBackgroundCroppedLocalImageSelected(croppedImageUrl)
+                onHidePreferences()
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SceneModalHost(
+    state: SoundscapeSceneState,
+    showPreferences: Boolean,
+    onShowPreferencesChange: (Boolean) -> Unit,
+    showMusicOptions: Boolean,
+    onShowMusicOptionsChange: (Boolean) -> Unit,
+    showMusicPicker: Boolean,
+    onShowMusicPickerChange: (Boolean) -> Unit,
+    showSoundsPicker: Boolean,
+    onShowSoundsPickerChange: (Boolean) -> Unit,
+    selectedSoundLayerKey: String?,
+    onSelectedSoundLayerKeyChange: (String?) -> Unit,
+    onShowImportSourceDialog: () -> Unit,
+    viewModel: SoundscapeSceneViewModel,
+    layerSheetState: androidx.compose.material3.SheetState,
+    musicSheetState: androidx.compose.material3.SheetState,
+    soundsPickerSheetState: androidx.compose.material3.SheetState
+) {
+    val selectedLayer = selectedSoundLayerKey?.let { key ->
+        state.layers.firstOrNull { it.instanceKey == key }
+    }
+    val selectedButton = selectedLayer?.let { layer ->
+        state.soundFloatingButtons.firstOrNull { it.instanceKey == layer.instanceKey }
+    }
+
+    if (showPreferences) {
+        ModalBottomSheet(
+            onDismissRequest = { onShowPreferencesChange(false) },
+            sheetState = musicSheetState,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            containerColor = BottomSheetBackground,
+            dragHandle = { SceneSheetDragHandle() }
+        ) {
+            ScenePreferencesBottomSheetContent(
+                sceneTitle = state.title,
+                soundAnimationsEnabled = state.soundAnimationsEnabled,
+                onSoundAnimationsToggle = viewModel::onSoundAnimationsEnabledChanged,
+                onChangeBackgroundClick = onShowImportSourceDialog,
+                onDone = { onShowPreferencesChange(false) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+    } else if (showMusicOptions) {
+        ModalBottomSheet(
+            onDismissRequest = { onShowMusicOptionsChange(false) },
+            sheetState = musicSheetState,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            containerColor = BottomSheetBackground,
+            dragHandle = { SceneSheetDragHandle() }
+        ) {
+            MusicOptionsBottomSheetContent(
+                musicTitle = state.sceneMusicTitle.orEmpty(),
+                musicCoverUrl = remember(state.selectedMusicId, state.availableMusic, state.sceneMusicUrl) {
+                    state.availableMusic.firstOrNull { it.id == state.selectedMusicId }?.imageUrl
+                        ?: state.availableMusic.firstOrNull { it.fileUrl == state.sceneMusicUrl }?.imageUrl
+                },
+                isPlaying = state.isPlaying,
+                sceneMusicUrl = state.sceneMusicUrl,
+                volume = state.musicVolume,
+                onVolumeChange = viewModel::onMusicVolume,
+                onChangeMusicClick = {
+                    onShowMusicOptionsChange(false)
+                    onShowMusicPickerChange(true)
+                },
+                onDone = { onShowMusicOptionsChange(false) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+    } else if (showMusicPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { onShowMusicPickerChange(false) },
+            sheetState = soundsPickerSheetState,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            containerColor = BottomSheetBackground,
+            dragHandle = { SceneSheetDragHandle() }
+        ) {
+            MusicPickerBottomSheetContent(
+                music = state.availableMusic,
+                categories = state.musicCategories,
+                suggestedMusicIds = state.suggestedMusicIds,
+                favoriteMusicIds = state.favoriteMusicIds,
+                initialSelectedId = state.selectedMusicId,
+                isScenePlaying = state.isPlaying,
+                musicVolume = state.musicVolume,
+                onFavoriteClick = viewModel::onToggleMusicFavorite,
+                onMusicClick = viewModel::onPreviewMusicSelection,
+                onDismiss = { onShowMusicPickerChange(false) },
+                onApply = { selectedId ->
+                    viewModel.onApplyMusicSelection(selectedId)
+                    onShowMusicPickerChange(false)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+    } else if (selectedSoundLayerKey != null && selectedLayer != null && selectedButton != null) {
+        ModalBottomSheet(
+            onDismissRequest = { onSelectedSoundLayerKeyChange(null) },
+            sheetState = layerSheetState,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            containerColor = BottomSheetBackground,
+            dragHandle = { SceneSheetDragHandle() }
+        ) {
+            SoundLayerBottomSheetContent(
+                title = selectedButton.title,
+                volume = selectedLayer.volume,
+                onVolumeChange = { viewModel.onLayerVolume(selectedLayer.instanceKey, it) },
+                showRepeatInterval = !selectedLayer.isContinuous,
+                repeatIntervalSec = selectedLayer.repeatIntervalSec,
+                minRepeatDelaySec = selectedLayer.minRepeatDelaySec,
+                maxRepeatDelaySec = selectedLayer.maxRepeatDelaySec,
+                onRepeatIntervalChange = { viewModel.onLayerRepeatInterval(selectedLayer.instanceKey, it) },
+                onRepeatIntervalChangeFinished = viewModel::onLayerRepeatIntervalChangeFinished,
+                onDelete = {
+                    viewModel.onLayerRemove(selectedLayer.instanceKey)
+                    onSelectedSoundLayerKeyChange(null)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+    } else if (showSoundsPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { onShowSoundsPickerChange(false) },
+            sheetState = soundsPickerSheetState,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            containerColor = BottomSheetBackground,
+            dragHandle = { SceneSheetDragHandle() }
+        ) {
+            SoundsPickerBottomSheetContent(
+                sounds = state.availableSounds,
+                categories = state.soundCategories,
+                defaultSceneSoundIds = state.defaultSceneSoundIds,
+                suggestedSoundIds = state.suggestedSoundIds,
+                sceneSoundButtons = state.soundFloatingButtons,
+                initialSelectedIds = state.layers.map { it.id }.toSet(),
+                onSelectionChanged = viewModel::onApplySoundsSelection,
+                onDismiss = { onShowSoundsPickerChange(false) },
+                onApply = { selected ->
+                    viewModel.onApplySoundsSelection(selected)
+                    onShowSoundsPickerChange(false)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SceneFloatingSoundButtons(
+    visible: Boolean,
+    state: SoundscapeSceneState,
+    soundDragOffsets: Map<String, Offset>,
+    onSoundDragOffsetsChange: (Map<String, Offset>) -> Unit,
+    draggingSoundKey: String?,
+    onDraggingSoundKeyChange: (String?) -> Unit,
+    pressedSoundKey: String?,
+    onPressedSoundKeyChange: (String?) -> Unit,
+    tapPulseSoundKey: String?,
+    onTapPulseSoundKeyChange: (String?) -> Unit,
+    trashHovered: Boolean,
+    onTrashHoveredChange: (Boolean) -> Unit,
+    selectedSoundLayerKey: String?,
+    onSelectedSoundLayerKeyChange: (String?) -> Unit,
+    markInteraction: () -> Unit,
+    onOpenLayerSettings: (SoundLayerUi) -> Unit,
+    onRemoveLayer: (String) -> Unit,
+    onSoundButtonPositionChanged: (String, Float, Float) -> Unit,
+    inertiaScope: kotlinx.coroutines.CoroutineScope,
+    inertiaJobs: MutableMap<String, Job>,
+    deleteContentDescription: String
+) {
+    val latestSoundDragOffsets by rememberUpdatedState(newValue = soundDragOffsets)
+    val latestDraggingSoundKey by rememberUpdatedState(newValue = draggingSoundKey)
+    val latestPressedSoundKey by rememberUpdatedState(newValue = pressedSoundKey)
+    val latestTapPulseSoundKey by rememberUpdatedState(newValue = tapPulseSoundKey)
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(180)),
+        exit = fadeOut(animationSpec = tween(260)),
+        modifier = Modifier.zIndex(3f)
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(top = 72.dp, bottom = 140.dp)
+        ) {
+            val btnSize = 56.dp
+            val density = LocalDensity.current
+            val maxWpx = with(density) { maxWidth.toPx() }
+            val maxHpx = with(density) { maxHeight.toPx() }
+            val btnPx = with(density) { btnSize.toPx() }
+            val tapSlopPx = with(density) { 12.dp.toPx() }
+            val trashSizePx = with(density) { 50.dp.toPx() }
+            val trashTopPx = 0f
+            val trashLeftPx = (maxWpx - trashSizePx) / 2f
+            val trashRightPx = trashLeftPx + trashSizePx
+            val trashBottomPx = trashTopPx + trashSizePx
+            val trashCenterX = (trashLeftPx + trashRightPx) / 2f
+            val trashCenterY = (trashTopPx + trashBottomPx) / 2f
+            val removeDistancePx = with(density) { 80.dp.toPx() }
+            fun isOverTrash(centerX: Float, centerY: Float): Boolean {
+                val dx = centerX - trashCenterX
+                val dy = centerY - trashCenterY
+                return hypot(dx, dy) < removeDistancePx
+            }
+            val visibleIds = state.layers.map { it.instanceKey }.toSet()
+            val layersByKey = state.layers.associateBy { it.instanceKey }
+            AnimatedVisibility(
+                visible = visible && draggingSoundKey != null,
+                enter = fadeIn(animationSpec = tween(120)),
+                exit = fadeOut(animationSpec = tween(120)),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 0.dp)
+                    .zIndex(8f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(
+                            color = if (trashHovered) {
+                                Color.Red.copy(alpha = 0.3f)
+                            } else {
+                                Color.Black.copy(alpha = 0.3f)
                             },
-                            modifier = Modifier
-                                .offset(xOff, yOff)
-                                .graphicsLayer {
-                                    scaleX = soundScale
-                                    scaleY = soundScale
-                                }
-                                .pointerInput(
-                                    btn.instanceKey,
-                                    maxWpx,
-                                    maxHpx,
-                                    btn.posXFraction,
-                                    btn.posYFraction
-                                ) {
-                                    awaitEachGesture {
-                                        val down = awaitFirstDown(requireUnconsumed = false)
-                                        markInteraction()
-                                        pressedSoundKey = btn.instanceKey
-                                        inertiaJobs.remove(btn.instanceKey)?.cancel()
-                                        var dragTotal = Offset.Zero
-                                        var dragging = false
-                                        var velocityX = 0f
-                                        var velocityY = 0f
-                                        var lastEventTimeMs = down.uptimeMillis
-                                        while (true) {
-                                            val event = awaitPointerEvent(PointerEventPass.Main)
-                                            val change =
-                                                event.changes.firstOrNull { it.id == down.id }
-                                                    ?: break
-                                            if (change.changedToUp()) {
-                                                if (!dragging && hypot(
-                                                        dragTotal.x,
-                                                        dragTotal.y
-                                                    ) < tapSlopPx
-                                                ) {
-                                                    tapPulseSoundKey = btn.instanceKey
-                                                    inertiaScope.launch {
-                                                        delay(110)
-                                                        if (tapPulseSoundKey == btn.instanceKey) {
-                                                            tapPulseSoundKey = null
-                                                        }
+                            shape = RoundedCornerShape(25.dp)
+                        )
+                        .border(
+                            width = 1.5.dp,
+                            color = White.copy(alpha = 0.9f),
+                            shape = RoundedCornerShape(25.dp)
+                        )
+                        .graphicsLayer {
+                            val scale = if (trashHovered) 1.1f else 1f
+                            scaleX = scale
+                            scaleY = scale
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = deleteContentDescription,
+                        tint = White.copy(alpha = if (trashHovered) 1f else 0.86f)
+                    )
+                }
+            }
+            state.soundFloatingButtons
+                .filter { it.instanceKey in visibleIds }
+                .forEach { btn ->
+                    val soundScale by animateFloatAsState(
+                        targetValue = when {
+                            draggingSoundKey == btn.instanceKey -> 1.1f
+                            pressedSoundKey == btn.instanceKey -> 0.94f
+                            tapPulseSoundKey == btn.instanceKey -> 1.05f
+                            else -> 1f
+                        },
+                        animationSpec = spring(
+                            dampingRatio = 0.58f,
+                            stiffness = 430f
+                        ),
+                        label = "sound_button_scale"
+                    )
+                    val extra = latestSoundDragOffsets[btn.instanceKey] ?: Offset.Zero
+                    val baseXpx = maxWpx * btn.posXFraction - btnPx / 2f
+                    val baseYpx = maxHpx * btn.posYFraction - btnPx / 2f
+                    val xPx = (baseXpx + extra.x).coerceIn(0f, (maxWpx - btnPx).coerceAtLeast(0f))
+                    val yPx = (baseYpx + extra.y).coerceIn(0f, (maxHpx - btnPx).coerceAtLeast(0f))
+                    val xOff = with(density) { xPx.toDp() }
+                    val yOff = with(density) { yPx.toDp() }
+                    SceneSoundFloatingButton(
+                        imageUrl = btn.imageUrl,
+                        contentDescription = btn.title,
+                        showSoundAnimation = state.soundAnimationsEnabled &&
+                            state.isPlaying &&
+                            ((layersByKey[btn.instanceKey]?.volume ?: 0f) > 0f) &&
+                            (layersByKey[btn.instanceKey]?.muted != true),
+                        repeatProgress = run {
+                            val layer = layersByKey[btn.instanceKey] ?: return@run null
+                            if (layer.isContinuous || layer.repeatIntervalSec <= 0) return@run null
+                            val remaining = layer.repeatRemainingMs ?: return@run null
+                            (remaining.toFloat() / (layer.repeatIntervalSec * 1000f)).coerceIn(0f, 1f)
+                        },
+                        modifier = Modifier
+                            .offset(xOff, yOff)
+                            .graphicsLayer {
+                                scaleX = soundScale
+                                scaleY = soundScale
+                            }
+                            .pointerInput(
+                                btn.instanceKey,
+                                maxWpx,
+                                maxHpx,
+                                btn.posXFraction,
+                                btn.posYFraction
+                            ) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    markInteraction()
+                                    onPressedSoundKeyChange(btn.instanceKey)
+                                    inertiaJobs.remove(btn.instanceKey)?.cancel()
+                                    var dragTotal = Offset.Zero
+                                    var dragging = false
+                                    var velocityX = 0f
+                                    var velocityY = 0f
+                                    var lastEventTimeMs = down.uptimeMillis
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Main)
+                                        val change =
+                                            event.changes.firstOrNull { it.id == down.id }
+                                                ?: break
+                                        if (change.changedToUp()) {
+                                            if (!dragging && hypot(
+                                                    dragTotal.x,
+                                                    dragTotal.y
+                                                ) < tapSlopPx
+                                            ) {
+                                                onTapPulseSoundKeyChange(btn.instanceKey)
+                                                inertiaScope.launch {
+                                                    delay(110)
+                                                    if (latestTapPulseSoundKey == btn.instanceKey) {
+                                                        onTapPulseSoundKeyChange(null)
                                                     }
-                                                    showMusicOptions = false
-                                                    showPreferences = false
-                                                    selectedSoundLayerKey = btn.instanceKey
-                                                    state.layers.firstOrNull { it.instanceKey == btn.instanceKey }
-                                                        ?.let { layer ->
-                                                            viewModel.onLayerSettingsOpened(
-                                                                layerKey = layer.instanceKey,
-                                                                soundId = layer.id,
-                                                                title = layer.title
-                                                            )
-                                                        }
-                                                } else if (dragging) {
-                                                    val savedOffset =
-                                                        soundDragOffsets[btn.instanceKey] ?: Offset.Zero
-                                                    val dropX = (baseXpx + savedOffset.x)
-                                                        .coerceIn(0f, (maxWpx - btnPx).coerceAtLeast(0f))
-                                                    val dropY = (baseYpx + savedOffset.y)
-                                                        .coerceIn(0f, (maxHpx - btnPx).coerceAtLeast(0f))
-                                                    val dropCenterX = dropX + btnPx / 2f
-                                                    val dropCenterY = dropY + btnPx / 2f
-                                                    if (isOverTrash(dropCenterX, dropCenterY)) {
-                                                        viewModel.onLayerRemove(btn.instanceKey)
-                                                        if (selectedSoundLayerKey == btn.instanceKey) {
-                                                            selectedSoundLayerKey = null
-                                                        }
-                                                        soundDragOffsets = soundDragOffsets
+                                                }
+                                                state.layers.firstOrNull { it.instanceKey == btn.instanceKey }
+                                                    ?.let(onOpenLayerSettings)
+                                            } else if (dragging) {
+                                                val savedOffset =
+                                                    latestSoundDragOffsets[btn.instanceKey] ?: Offset.Zero
+                                                val dropX = (baseXpx + savedOffset.x)
+                                                    .coerceIn(0f, (maxWpx - btnPx).coerceAtLeast(0f))
+                                                val dropY = (baseYpx + savedOffset.y)
+                                                    .coerceIn(0f, (maxHpx - btnPx).coerceAtLeast(0f))
+                                                val dropCenterX = dropX + btnPx / 2f
+                                                val dropCenterY = dropY + btnPx / 2f
+                                                if (isOverTrash(dropCenterX, dropCenterY)) {
+                                                    onRemoveLayer(btn.instanceKey)
+                                                    if (selectedSoundLayerKey == btn.instanceKey) {
+                                                        onSelectedSoundLayerKeyChange(null)
+                                                    }
+                                                    onSoundDragOffsetsChange(
+                                                        latestSoundDragOffsets
                                                             .toMutableMap()
                                                             .apply { remove(btn.instanceKey) }
-                                                        break
-                                                    }
-                                                    val flingVx = velocityX * 0.1f
-                                                    val flingVy = velocityY * 0.1f
-                                                    val minVelocity = 35f
-                                                    val boostedFlingVx = flingVx * 1.8f
-                                                    val boostedFlingVy = flingVy * 1.8f
-                                                    if (hypot(boostedFlingVx, boostedFlingVy) >= minVelocity) {
-                                                        inertiaJobs[btn.instanceKey] = inertiaScope.launch {
-                                                            var vx = boostedFlingVx
-                                                            var vy = boostedFlingVy
-                                                            var currentOffset = savedOffset
-                                                            val dt = 1f / 60f
-                                                            val friction = 0.95f
-                                                            while (isActive && hypot(vx, vy) > minVelocity) {
-                                                                val proposedOffset = Offset(
-                                                                    x = currentOffset.x + vx * dt,
-                                                                    y = currentOffset.y + vy * dt
-                                                                )
-                                                                val candidateX = baseXpx + proposedOffset.x
-                                                                val candidateY = baseYpx + proposedOffset.y
-                                                                val clampedX = candidateX.coerceIn(
-                                                                    0f,
-                                                                    (maxWpx - btnPx).coerceAtLeast(0f)
-                                                                )
-                                                                val clampedY = candidateY.coerceIn(
-                                                                    0f,
-                                                                    (maxHpx - btnPx).coerceAtLeast(0f)
-                                                                )
-                                                                val hitHorizontal = clampedX != candidateX
-                                                                val hitVertical = clampedY != candidateY
-                                                                currentOffset = Offset(
-                                                                    x = clampedX - baseXpx,
-                                                                    y = clampedY - baseYpx
-                                                                )
-                                                                soundDragOffsets = soundDragOffsets
+                                                    )
+                                                    break
+                                                }
+                                                val flingVx = velocityX * 0.1f
+                                                val flingVy = velocityY * 0.1f
+                                                val minVelocity = 35f
+                                                val boostedFlingVx = flingVx * 1.8f
+                                                val boostedFlingVy = flingVy * 1.8f
+                                                if (hypot(boostedFlingVx, boostedFlingVy) >= minVelocity) {
+                                                    inertiaJobs[btn.instanceKey] = inertiaScope.launch {
+                                                        var vx = boostedFlingVx
+                                                        var vy = boostedFlingVy
+                                                        var currentOffset = savedOffset
+                                                        val dt = 1f / 60f
+                                                        val friction = 0.95f
+                                                        while (isActive && hypot(vx, vy) > minVelocity) {
+                                                            val proposedOffset = Offset(
+                                                                x = currentOffset.x + vx * dt,
+                                                                y = currentOffset.y + vy * dt
+                                                            )
+                                                            val candidateX = baseXpx + proposedOffset.x
+                                                            val candidateY = baseYpx + proposedOffset.y
+                                                            val clampedX = candidateX.coerceIn(
+                                                                0f,
+                                                                (maxWpx - btnPx).coerceAtLeast(0f)
+                                                            )
+                                                            val clampedY = candidateY.coerceIn(
+                                                                0f,
+                                                                (maxHpx - btnPx).coerceAtLeast(0f)
+                                                            )
+                                                            val hitHorizontal = clampedX != candidateX
+                                                            val hitVertical = clampedY != candidateY
+                                                            currentOffset = Offset(
+                                                                x = clampedX - baseXpx,
+                                                                y = clampedY - baseYpx
+                                                            )
+                                                            onSoundDragOffsetsChange(
+                                                                latestSoundDragOffsets
                                                                     .toMutableMap()
                                                                     .apply { this[btn.instanceKey] = currentOffset }
-                                                                if (hitHorizontal) vx = -vx * 0.45f
-                                                                if (hitVertical) vy = -vy * 0.45f
-                                                                vx *= friction
-                                                                vy *= friction
-                                                                delay(16)
-                                                            }
-                                                            val finalX = (baseXpx + currentOffset.x)
-                                                                .coerceIn(
-                                                                    0f,
-                                                                    (maxWpx - btnPx).coerceAtLeast(0f)
-                                                                )
-                                                            val finalY = (baseYpx + currentOffset.y)
-                                                                .coerceIn(
-                                                                    0f,
-                                                                    (maxHpx - btnPx).coerceAtLeast(0f)
-                                                                )
-                                                            val safeMaxW = maxWpx.coerceAtLeast(1f)
-                                                            val safeMaxH = maxHpx.coerceAtLeast(1f)
-                                                            val finalPosXFraction =
-                                                                ((finalX + btnPx / 2f) / safeMaxW)
-                                                                    .coerceIn(0f, 1f)
-                                                            val finalPosYFraction =
-                                                                ((finalY + btnPx / 2f) / safeMaxH)
-                                                                    .coerceIn(0f, 1f)
-                                                            viewModel.onSoundButtonPositionChanged(
-                                                                instanceKey = btn.instanceKey,
-                                                                posXFraction = finalPosXFraction,
-                                                                posYFraction = finalPosYFraction
                                                             )
-                                                            soundDragOffsets = soundDragOffsets
-                                                                .toMutableMap()
-                                                                .apply { remove(btn.instanceKey) }
-                                                            inertiaJobs.remove(btn.instanceKey)
+                                                            if (hitHorizontal) vx = -vx * 0.45f
+                                                            if (hitVertical) vy = -vy * 0.45f
+                                                            vx *= friction
+                                                            vy *= friction
+                                                            delay(16)
                                                         }
-                                                    } else {
-                                                        val finalX = (baseXpx + savedOffset.x)
+                                                        val finalX = (baseXpx + currentOffset.x)
                                                             .coerceIn(
                                                                 0f,
                                                                 (maxWpx - btnPx).coerceAtLeast(0f)
                                                             )
-                                                        val finalY = (baseYpx + savedOffset.y)
+                                                        val finalY = (baseYpx + currentOffset.y)
                                                             .coerceIn(
                                                                 0f,
                                                                 (maxHpx - btnPx).coerceAtLeast(0f)
@@ -568,587 +1154,223 @@ fun SoundscapeSceneScreen(
                                                         val finalPosYFraction =
                                                             ((finalY + btnPx / 2f) / safeMaxH)
                                                                 .coerceIn(0f, 1f)
-                                                        viewModel.onSoundButtonPositionChanged(
-                                                            instanceKey = btn.instanceKey,
-                                                            posXFraction = finalPosXFraction,
-                                                            posYFraction = finalPosYFraction
+                                                        onSoundButtonPositionChanged(
+                                                            btn.instanceKey,
+                                                            finalPosXFraction,
+                                                            finalPosYFraction
                                                         )
-                                                        soundDragOffsets = soundDragOffsets
+                                                        onSoundDragOffsetsChange(
+                                                            latestSoundDragOffsets
+                                                                .toMutableMap()
+                                                                .apply { remove(btn.instanceKey) }
+                                                        )
+                                                        inertiaJobs.remove(btn.instanceKey)
+                                                    }
+                                                } else {
+                                                    val finalX = (baseXpx + savedOffset.x)
+                                                        .coerceIn(
+                                                            0f,
+                                                            (maxWpx - btnPx).coerceAtLeast(0f)
+                                                        )
+                                                    val finalY = (baseYpx + savedOffset.y)
+                                                        .coerceIn(
+                                                            0f,
+                                                            (maxHpx - btnPx).coerceAtLeast(0f)
+                                                        )
+                                                    val safeMaxW = maxWpx.coerceAtLeast(1f)
+                                                    val safeMaxH = maxHpx.coerceAtLeast(1f)
+                                                    val finalPosXFraction =
+                                                        ((finalX + btnPx / 2f) / safeMaxW)
+                                                            .coerceIn(0f, 1f)
+                                                    val finalPosYFraction =
+                                                        ((finalY + btnPx / 2f) / safeMaxH)
+                                                            .coerceIn(0f, 1f)
+                                                    onSoundButtonPositionChanged(
+                                                        btn.instanceKey,
+                                                        finalPosXFraction,
+                                                        finalPosYFraction
+                                                    )
+                                                    onSoundDragOffsetsChange(
+                                                        latestSoundDragOffsets
                                                             .toMutableMap()
                                                             .apply { remove(btn.instanceKey) }
-                                                    }
-                                                }
-                                                break
-                                            }
-                                            val delta = change.positionChange()
-                                            val eventTimeMs = change.uptimeMillis
-                                            val dtSec = ((eventTimeMs - lastEventTimeMs).coerceAtLeast(1L)) / 1000f
-                                            val instantVx = delta.x / dtSec
-                                            val instantVy = delta.y / dtSec
-                                            velocityX = velocityX * 0.65f + instantVx * 0.35f
-                                            velocityY = velocityY * 0.65f + instantVy * 0.35f
-                                            lastEventTimeMs = eventTimeMs
-                                            dragTotal += delta
-                                            if (!dragging) {
-                                                if (hypot(
-                                                        dragTotal.x,
-                                                        dragTotal.y
-                                                    ) < tapSlopPx
-                                                ) continue
-                                                dragging = true
-                                                pressedSoundKey = null
-                                                draggingSoundKey = btn.instanceKey
-                                            }
-                                            markInteraction()
-                                            change.consume()
-                                            soundDragOffsets =
-                                                soundDragOffsets.toMutableMap().apply {
-                                                    val cur = this[btn.instanceKey] ?: Offset.Zero
-                                                    val nx = cur + delta
-                                                    val candX = baseXpx + nx.x
-                                                    val candY = baseYpx + nx.y
-                                                    val cx = candX.coerceIn(
-                                                        0f,
-                                                        (maxWpx - btnPx).coerceAtLeast(0f)
                                                     )
-                                                    val cy = candY.coerceIn(
-                                                        0f,
-                                                        (maxHpx - btnPx).coerceAtLeast(0f)
-                                                    )
-                                                    this[btn.instanceKey] =
-                                                        Offset(cx - baseXpx, cy - baseYpx)
-                                                    if (draggingSoundKey == btn.instanceKey) {
-                                                        val centerX = cx + btnPx / 2f
-                                                        val centerY = cy + btnPx / 2f
-                                                        trashHovered = isOverTrash(centerX, centerY)
-                                                    }
                                                 }
+                                            }
+                                            break
                                         }
-                                        if (draggingSoundKey == btn.instanceKey) {
-                                            draggingSoundKey = null
-                                            trashHovered = false
+                                        val delta = change.positionChange()
+                                        val eventTimeMs = change.uptimeMillis
+                                        val dtSec = ((eventTimeMs - lastEventTimeMs).coerceAtLeast(1L)) / 1000f
+                                        val instantVx = delta.x / dtSec
+                                        val instantVy = delta.y / dtSec
+                                        velocityX = velocityX * 0.65f + instantVx * 0.35f
+                                        velocityY = velocityY * 0.65f + instantVy * 0.35f
+                                        lastEventTimeMs = eventTimeMs
+                                        dragTotal += delta
+                                        if (!dragging) {
+                                            if (hypot(
+                                                    dragTotal.x,
+                                                    dragTotal.y
+                                                ) < tapSlopPx
+                                            ) continue
+                                            dragging = true
+                                            onPressedSoundKeyChange(null)
+                                            onDraggingSoundKeyChange(btn.instanceKey)
                                         }
-                                        if (pressedSoundKey == btn.instanceKey) {
-                                            pressedSoundKey = null
-                                        }
+                                        markInteraction()
+                                        change.consume()
+                                        onSoundDragOffsetsChange(
+                                            latestSoundDragOffsets.toMutableMap().apply {
+                                                val cur = this[btn.instanceKey] ?: Offset.Zero
+                                                val nx = cur + delta
+                                                val candX = baseXpx + nx.x
+                                                val candY = baseYpx + nx.y
+                                                val cx = candX.coerceIn(
+                                                    0f,
+                                                    (maxWpx - btnPx).coerceAtLeast(0f)
+                                                )
+                                                val cy = candY.coerceIn(
+                                                    0f,
+                                                    (maxHpx - btnPx).coerceAtLeast(0f)
+                                                )
+                                                this[btn.instanceKey] =
+                                                    Offset(cx - baseXpx, cy - baseYpx)
+                                                if (latestDraggingSoundKey == btn.instanceKey) {
+                                                    val centerX = cx + btnPx / 2f
+                                                    val centerY = cy + btnPx / 2f
+                                                    onTrashHoveredChange(isOverTrash(centerX, centerY))
+                                                }
+                                            }
+                                        )
+                                    }
+                                    if (latestDraggingSoundKey == btn.instanceKey) {
+                                        onDraggingSoundKeyChange(null)
+                                        onTrashHoveredChange(false)
+                                    }
+                                    if (latestPressedSoundKey == btn.instanceKey) {
+                                        onPressedSoundKeyChange(null)
                                     }
                                 }
-                        )
-                    }
+                            }
+                    )
                 }
-            }
+        }
+    }
+}
 
-            AnimatedVisibility(
-                visible = controlsVisible,
-                enter = fadeIn(animationSpec = tween(180)),
-                exit = fadeOut(animationSpec = tween(260)),
+@Composable
+private fun BoxScope.SceneBottomControls(
+    visible: Boolean,
+    isPlaying: Boolean,
+    timerTotalSeconds: Int?,
+    timerRemainingSeconds: Int?,
+    sceneMusicUrl: String?,
+    musicVolume: Float,
+    musicContentDescription: String,
+    onTogglePlay: () -> Unit,
+    onAddSoundClick: () -> Unit,
+    onMusicClick: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(180)),
+        exit = fadeOut(animationSpec = tween(260)),
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .zIndex(5f)
+            .navigationBarsPadding()
+            .padding(bottom = 16.dp)
+            .fillMaxWidth()
+    ) {
+        Box {
+            SoundscapeScenePlayControl(
+                isPlaying = isPlaying,
+                timerTotalSeconds = timerTotalSeconds,
+                timerRemainingSeconds = timerRemainingSeconds,
+                onToggle = onTogglePlay,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+            AnimatedAddSoundsButton(
+                onClick = onAddSoundClick,
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .zIndex(4f)
-                    .fillMaxWidth()
-            ) {
-                Column {
-                    SoundscapeSceneTopBar(
-                        title = state.title.ifBlank {
-                            localizedRes.string(
-                                R.string.soundscape_scene_title_fallback,
-                                state.sceneId
-                            )
-                        },
-                        subtitle = if (state.isDirty) {
-                            localizedRes.string(R.string.audio_scene_unsaved_changes)
-                        } else if (state.presetId != null) {
-                            localizedRes.string(R.string.playlist_type_my_scenes)
-                        } else {
-                            state.subtitle
-                        },
-                        showMaxBadge = state.isPro,
-                        isDownloaded = state.downloadState == SoundscapeDownloadItem.STATUS_READY,
-                        onCollapse = {
-                            if (state.isDirty) showUnsavedExitDialog = true
-                            else navController.popBackStack()
-                        },
-                        onSaveChanges = viewModel::onSavePreset,
-                        onSaveAndDownload = viewModel::onSaveAndDownload,
-                        onRenameScene = viewModel::onRenameScene,
-                        onDeleteDownloaded = {
-                            viewModel.onDeleteDownloadedScene()
-                            navController.popBackStack()
-                        },
-                        hasActiveTimer = (state.timerSeconds ?: 0) > 0,
-                        onTimer1hClick = { viewModel.onSetTimerSeconds(60 * 60) },
-                        onTimer2hClick = { viewModel.onSetTimerSeconds(60 * 60 * 2) },
-                        onTimerSetupClick = { showTimerPickerDialog = true },
-                        onTimerStopClick = viewModel::onDisableTimer,
-                        onPreferencesClick = {
-                            markInteraction()
-                            selectedSoundLayerKey = null
-                            showMusicOptions = false
-                            showMusicPicker = false
-                            showSoundsPicker = false
-                            showPreferences = true
-                        },
-                        onShare = {
-                            markInteraction()
-                            val shareUrl = LinkGenerator.buildAudioSceneShareUrl(state.originalSceneId)
-                                ?: return@SoundscapeSceneTopBar
-                            val send = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    shareUrl
-                                )
-                            }
-                            context.startActivity(
-                                Intent.createChooser(
-                                    send,
-                                    localizedRes.string(R.string.share)
-                                )
-                            )
-                        },
-                        canShare = state.presetId == null,
-                        onModalVisibilityChanged = { isVisible ->
-                            topBarModalVisible = isVisible
-                            if (isVisible) controlsVisible = true
-                        }
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = controlsVisible,
-                enter = fadeIn(animationSpec = tween(180)),
-                exit = fadeOut(animationSpec = tween(260)),
+                    .align(Alignment.CenterStart)
+                    .padding(start = 24.dp)
+                    .size(55.dp),
+                enabled = visible
+            )
+            SoundscapeSceneMusicIndicatorButton(
+                isPlaying = isPlaying,
+                sceneMusicUrl = sceneMusicUrl,
+                musicVolume = musicVolume,
+                onClick = onMusicClick,
+                contentDescription = musicContentDescription,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .zIndex(5f)
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
-                    .fillMaxWidth()
-            ) {
-                Box {
-                    SoundscapeScenePlayControl(
-                        isPlaying = state.isPlaying,
-                        timerTotalSeconds = state.timerSeconds,
-                        timerRemainingSeconds = state.timerRemainingSeconds,
-                        onToggle = { viewModel.onPlayPause() },
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
-                    AnimatedAddSoundsButton(
-                        onClick = {
-                            markInteraction()
-                            showPreferences = false
-                            showMusicOptions = false
-                            showMusicPicker = false
-                            selectedSoundLayerKey = null
-                            showSoundsPicker = true
-                        },
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = 24.dp)
-                            .size(55.dp),
-                        enabled = controlsVisible
-                    )
-                    SoundscapeSceneMusicIndicatorButton(
-                        isPlaying = state.isPlaying,
-                        sceneMusicUrl = state.sceneMusicUrl,
-                        musicVolume = state.musicVolume,
-                        onClick = {
-                            markInteraction()
-                            selectedSoundLayerKey = null
-                            showPreferences = false
-                            showMusicPicker = false
-                            showSoundsPicker = false
-                            showMusicOptions = true
-                        },
-                        contentDescription = localizedRes.string(R.string.audio_scene_background_music_settings),
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 24.dp)
-                            .size(55.dp),
-                        enabled = controlsVisible,
-                    )
-                }
-            }
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 24.dp)
+                    .size(55.dp),
+                enabled = visible,
+            )
+        }
+    }
+}
 
-            val selectedLayer = selectedSoundLayerKey?.let { key ->
-                state.layers.firstOrNull { it.instanceKey == key }
-            }
-            val selectedButton = selectedLayer?.let { layer ->
-                state.soundFloatingButtons.firstOrNull { it.instanceKey == layer.instanceKey }
-            }
-
-            if (showPreferences) {
-                ModalBottomSheet(
-                    onDismissRequest = { showPreferences = false },
-                    sheetState = musicSheetState,
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    containerColor = BottomSheetBackground,
-                    dragHandle = {
-                        Box(
-                            Modifier
-                                .padding(vertical = 10.dp)
-                                .width(36.dp)
-                                .height(4.dp)
-                                .background(White.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                        )
-                    }
-                ) {
-                    ScenePreferencesBottomSheetContent(
-                        sceneTitle = state.title,
-                        soundAnimationsEnabled = state.soundAnimationsEnabled,
-                        onSoundAnimationsToggle = viewModel::onSoundAnimationsEnabledChanged,
-                        onChangeBackgroundClick = {
-                            showImportSourceDialog = true
-                        },
-                        onDone = { showPreferences = false },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                    )
-                }
-            } else if (showMusicOptions) {
-                ModalBottomSheet(
-                    onDismissRequest = { showMusicOptions = false },
-                    sheetState = musicSheetState,
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    containerColor = BottomSheetBackground,
-                    dragHandle = {
-                        Box(
-                            Modifier
-                                .padding(vertical = 10.dp)
-                                .width(36.dp)
-                                .height(4.dp)
-                                .background(White.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                        )
-                    }
-                ) {
-                    MusicOptionsBottomSheetContent(
-                        musicTitle = state.sceneMusicTitle.orEmpty(),
-                        musicCoverUrl = remember(state.selectedMusicId, state.availableMusic, state.sceneMusicUrl) {
-                            state.availableMusic.firstOrNull { it.id == state.selectedMusicId }?.imageUrl
-                                ?: state.availableMusic.firstOrNull { it.fileUrl == state.sceneMusicUrl }?.imageUrl
-                        },
-                        isPlaying = state.isPlaying,
-                        sceneMusicUrl = state.sceneMusicUrl,
-                        volume = state.musicVolume,
-                        onVolumeChange = viewModel::onMusicVolume,
-                        onChangeMusicClick = {
-                            showMusicOptions = false
-                            showMusicPicker = true
-                        },
-                        onDone = { showMusicOptions = false },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                    )
-                }
-            } else if (showMusicPicker) {
-                ModalBottomSheet(
-                    onDismissRequest = { showMusicPicker = false },
-                    sheetState = soundsPickerSheetState,
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    containerColor = BottomSheetBackground,
-                    dragHandle = {
-                        Box(
-                            Modifier
-                                .padding(vertical = 10.dp)
-                                .width(36.dp)
-                                .height(4.dp)
-                                .background(White.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                        )
-                    }
-                ) {
-                    MusicPickerBottomSheetContent(
-                        music = state.availableMusic,
-                        categories = state.musicCategories,
-                        suggestedMusicIds = state.suggestedMusicIds,
-                        favoriteMusicIds = state.favoriteMusicIds,
-                        initialSelectedId = state.selectedMusicId,
-                        isScenePlaying = state.isPlaying,
-                        musicVolume = state.musicVolume,
-                        onFavoriteClick = viewModel::onToggleMusicFavorite,
-                        onMusicClick = viewModel::onPreviewMusicSelection,
-                        onDismiss = { showMusicPicker = false },
-                        onApply = { selectedId ->
-                            viewModel.onApplyMusicSelection(selectedId)
-                            showMusicPicker = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                    )
-                }
-            } else if (selectedSoundLayerKey != null && selectedLayer != null && selectedButton != null) {
-                ModalBottomSheet(
-                    onDismissRequest = { selectedSoundLayerKey = null },
-                    sheetState = sheetState,
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    containerColor = BottomSheetBackground,
-                    dragHandle = {
-                        Box(
-                            Modifier
-                                .padding(vertical = 10.dp)
-                                .width(36.dp)
-                                .height(4.dp)
-                                .background(White.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                        )
-                    }
-                ) {
-                    SoundLayerBottomSheetContent(
-                        title = selectedButton.title,
-                        volume = selectedLayer.volume,
-                        onVolumeChange = { viewModel.onLayerVolume(selectedLayer.instanceKey, it) },
-                        showRepeatInterval = !selectedLayer.isContinuous,
-                        repeatIntervalSec = selectedLayer.repeatIntervalSec,
-                        minRepeatDelaySec = selectedLayer.minRepeatDelaySec,
-                        maxRepeatDelaySec = selectedLayer.maxRepeatDelaySec,
-                        onRepeatIntervalChange = { viewModel.onLayerRepeatInterval(selectedLayer.instanceKey, it) },
-                        onRepeatIntervalChangeFinished = viewModel::onLayerRepeatIntervalChangeFinished,
-                        onDelete = {
-                            viewModel.onLayerRemove(selectedLayer.instanceKey)
-                            selectedSoundLayerKey = null
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                    )
-                }
-            } else if (showSoundsPicker) {
-                ModalBottomSheet(
-                    onDismissRequest = { showSoundsPicker = false },
-                    sheetState = soundsPickerSheetState,
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    containerColor = BottomSheetBackground,
-                    dragHandle = {
-                        Box(
-                            Modifier
-                                .padding(vertical = 10.dp)
-                                .width(36.dp)
-                                .height(4.dp)
-                                .background(White.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                        )
-                    }
-                ) {
-                    SoundsPickerBottomSheetContent(
-                        sounds = state.availableSounds,
-                        categories = state.soundCategories,
-                        defaultSceneSoundIds = state.defaultSceneSoundIds,
-                        suggestedSoundIds = state.suggestedSoundIds,
-                        sceneSoundButtons = state.soundFloatingButtons,
-                        initialSelectedIds = state.layers.map { it.id }.toSet(),
-                        onSelectionChanged = viewModel::onApplySoundsSelection,
-                        onDismiss = { showSoundsPicker = false },
-                        onApply = { selected ->
-                            viewModel.onApplySoundsSelection(selected)
-                            showSoundsPicker = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                    )
+@Composable
+private fun ScenePreparingOverlay(
+    visible: Boolean,
+    isSceneDownloadInProgress: Boolean,
+    downloadProgress: Int,
+    preparingTotal: Int,
+    preparingCompleted: Int,
+    onCancel: () -> Unit
+) {
+    if (!visible) return
+    val localizedRes = LocalLocalizedRes.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.62f))
+            .zIndex(30f),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            ProgressIndicator()
+            val progressText = if (isSceneDownloadInProgress) {
+                localizedRes.string(R.string.downloads_progress_format, downloadProgress)
+            } else {
+                if (preparingTotal > 0) {
+                    localizedRes.string(R.string.scene_preparing_progress_format, preparingCompleted, preparingTotal)
+                } else {
+                    localizedRes.string(R.string.loading)
                 }
             }
-            if (!controlsVisible && !hasModalOpen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .zIndex(20f)
-                        .pointerInput(Unit) {
-                            detectTapGestures(onTap = { markInteraction() })
-                        }
-                )
-            }
-
-            if (state.isPreparing || state.isSceneDownloadInProgress) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.62f))
-                        .zIndex(30f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    ) {
-                        ProgressIndicator()
-                        val progressText = if (state.isSceneDownloadInProgress) {
-                            localizedRes.string(R.string.downloads_progress_format, state.downloadProgress)
-                        } else {
-                            val total = state.preparingTotal
-                            val done = state.preparingCompleted
-                            if (total > 0) {
-                                localizedRes.string(R.string.scene_preparing_progress_format, done, total)
-                            } else {
-                                localizedRes.string(R.string.loading)
-                            }
-                        }
-                        Text(
-                            text = if (state.isSceneDownloadInProgress) {
-                                localizedRes.string(R.string.audio_scene_saving)
-                            } else {
-                                localizedRes.string(R.string.scene_preparing)
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = White,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = progressText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = White.copy(alpha = 0.82f),
-                            textAlign = TextAlign.Center
-                        )
-                        if (!state.isSceneDownloadInProgress) {
-                            TextButton(onClick = viewModel::onCancelPreparation) {
-                                Text(text = localizedRes.string(R.string.cancel), color = White)
-                            }
-                        }
-                    }
+            Text(
+                text = if (isSceneDownloadInProgress) {
+                    localizedRes.string(R.string.audio_scene_saving)
+                } else {
+                    localizedRes.string(R.string.scene_preparing)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = White,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = progressText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = White.copy(alpha = 0.82f),
+                textAlign = TextAlign.Center
+            )
+            if (!isSceneDownloadInProgress) {
+                TextButton(onClick = onCancel) {
+                    Text(text = localizedRes.string(R.string.cancel), color = White)
                 }
-            }
-
-            if (showUnsavedExitDialog) {
-                AlertDialog(
-                    onDismissRequest = { showUnsavedExitDialog = false },
-                    title = { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_title)) },
-                    text = { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_message)) },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            viewModel.onSavePreset()
-                            showUnsavedExitDialog = false
-                            navController.popBackStack()
-                        }) { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_save)) }
-                    },
-                    dismissButton = {
-                        Row {
-                            TextButton(onClick = { showUnsavedExitDialog = false }) {
-                                Text(text = localizedRes.string(R.string.cancel))
-                            }
-                            TextButton(onClick = {
-                                viewModel.onDiscardChangesAndExit()
-                                showUnsavedExitDialog = false
-                                navController.popBackStack()
-                            }) {
-                                Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_discard))
-                            }
-                        }
-                    }
-                )
-            }
-
-            if (showTimerPickerDialog) {
-                SleepTimerPickerDialog(
-                    initialSeconds = state.timerSeconds,
-                    onDismiss = { showTimerPickerDialog = false },
-                    onSet = { seconds ->
-                        viewModel.onSetTimerSeconds(seconds)
-                        showTimerPickerDialog = false
-                    },
-                    onDisable = {
-                        viewModel.onDisableTimer()
-                        showTimerPickerDialog = false
-                    }
-                )
-            }
-            if (showImportSourceDialog) {
-                AlertDialog(
-                    onDismissRequest = { showImportSourceDialog = false },
-                    title = { Text(text = localizedRes.string(R.string.import_from)) },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            TextButton(onClick = { openSource(BackgroundImportSource.PEXELS) }) {
-                                Text("Pexels")
-                            }
-                            TextButton(onClick = { openSource(BackgroundImportSource.UNSPLASH) }) {
-                                Text("Unsplash")
-                            }
-                            TextButton(onClick = { openSource(BackgroundImportSource.PHOTOS) }) {
-                                Text("Photos")
-                            }
-                        }
-                    },
-                    confirmButton = {},
-                    dismissButton = {
-                        TextButton(onClick = { showImportSourceDialog = false }) {
-                            Text(text = localizedRes.string(R.string.cancel))
-                        }
-                    }
-                )
-            }
-
-            if (showUnsplashPicker || showPexelsPicker) {
-                ModalBottomSheet(
-                    onDismissRequest = {
-                        showUnsplashPicker = false
-                        showPexelsPicker = false
-                    },
-                    sheetState = soundsPickerSheetState,
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    containerColor = BottomSheetBackground
-                ) {
-                    BackgroundSearchSheet(
-                        title = if (showUnsplashPicker) "Unsplash" else "Pexels",
-                        query = state.backgroundSearchQuery,
-                        isPexels = showPexelsPicker,
-                        pexelsVideoTabSelected = state.pexelsVideoTabSelected,
-                        onPexelsTabChange = { selectedVideo ->
-                            viewModel.onPexelsImportVideoTabChange(selectedVideo)
-                        },
-                        onQueryChange = { viewModel.onBackgroundImportQueryChange(it) },
-                        items = state.backgroundSearchItems,
-                        loading = state.backgroundSearchLoading,
-                        error = state.backgroundSearchError,
-                        onItemClick = { item ->
-                            if (item.isVideo) {
-                                viewModel.onBackgroundVideoSelected(
-                                    videoUrl = item.mediaUrl,
-                                    previewImageUrl = item.previewUrl
-                                )
-                            } else {
-                                viewModel.onBackgroundImageSelected(item.mediaUrl)
-                            }
-                            showUnsplashPicker = false
-                            showPexelsPicker = false
-                            showPreferences = false
-                        },
-                        onClose = {
-                            showUnsplashPicker = false
-                            showPexelsPicker = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(0.98f)
-                            .navigationBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    )
-                }
-            }
-
-            val cropUri = pendingCropImageUri
-            if (cropUri != null) {
-                LocalImageCropDialog(
-                    sourceUri = cropUri,
-                    onDismiss = { pendingCropImageUri = null },
-                    onApply = { croppedImageUrl ->
-                        pendingCropImageUri = null
-                        viewModel.onBackgroundCroppedLocalImageSelected(croppedImageUrl)
-                        showPreferences = false
-                    }
-                )
             }
         }
     }
-
-
 }
 
 @OptIn(UnstableApi::class)

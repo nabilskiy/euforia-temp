@@ -521,7 +521,7 @@ class SoundscapeSceneViewModel @Inject constructor(
         analyticSender.soundscapeLayerVolumeChanged(layerKey = layerKey, volume = volume)
         playbackController.setLayerVolume(layerKey, volume)
         intent {
-            reduce { state.copy(isDirty = true) }
+            reduce { state.markDirty() }
             persistLocalSceneState()
         }
     }
@@ -529,16 +529,17 @@ class SoundscapeSceneViewModel @Inject constructor(
     fun onLayerRepeatInterval(layerKey: String, seconds: Int) {
         playbackController.setLayerRepeatInterval(layerKey, seconds)
         intent {
-            reduce { state.copy(isDirty = true) }
+            reduce { state.markDirty() }
         }
     }
+    
     fun onLayerRepeatIntervalChangeFinished() {
         intent { persistLocalSceneState() }
     }
     fun onLayerMute(layerKey: String, muted: Boolean) {
         playbackController.muteLayer(layerKey, muted)
         intent {
-            reduce { state.copy(isDirty = true) }
+            reduce { state.markDirty() }
             persistLocalSceneState()
         }
     }
@@ -554,14 +555,14 @@ class SoundscapeSceneViewModel @Inject constructor(
         playbackController.removeLayer(layerKey)
         intent {
             analyticSender.soundscapeLayerRemoved()
-            reduce { state.copy(isDirty = true) }
+            reduce { state.markDirty() }
             persistLocalSceneState()
         }
     }
     fun onTimerChange(minutes: Int?) {
         playbackController.setTimer(minutes?.times(60))
         intent {
-            reduce { state.copy(isDirty = true) }
+            reduce { state.markDirty() }
             persistLocalSceneState()
         }
     }
@@ -570,39 +571,55 @@ class SoundscapeSceneViewModel @Inject constructor(
         val normalized = seconds.coerceAtLeast(0)
         playbackController.setTimer(normalized.takeIf { it > 0 })
         intent {
-            reduce { state.copy(isDirty = true) }
+            reduce { state.markDirty() }
             persistLocalSceneState()
         }
     }
 
     fun onDisableTimer() = onSetTimerSeconds(0)
 
+    private fun SoundscapeSceneState.markDirty(): SoundscapeSceneState =
+        copy(isDirty = true)
+
+    private fun SoundscapeSceneState.openBackgroundSearchPicker(
+        pexelsVideoTab: Boolean?
+    ): SoundscapeSceneState = copy(
+        pexelsVideoTabSelected = pexelsVideoTab ?: pexelsVideoTabSelected,
+        backgroundSearchQuery = "",
+        backgroundSearchItems = emptyList(),
+        backgroundSearchError = null,
+        backgroundSearchLoading = true,
+        backgroundSearchRequestNonce = backgroundSearchRequestNonce + 1,
+    )
+
+    private fun SoundscapeSceneState.searchLoading(): SoundscapeSceneState =
+        copy(backgroundSearchLoading = true, backgroundSearchError = null)
+
+    private fun SoundscapeSceneState.applyBackgroundSearchResult(
+        result: ResultWrapper<List<BackgroundMediaItem>>
+    ): SoundscapeSceneState = when (result) {
+        is ResultWrapper.Success -> copy(
+            backgroundSearchLoading = false,
+            backgroundSearchItems = result.data,
+            backgroundSearchError = null,
+        )
+        is ResultWrapper.Failure -> copy(
+            backgroundSearchLoading = false,
+            backgroundSearchItems = emptyList(),
+            backgroundSearchError = result.throwable.message
+                ?: result.throwable::class.java.simpleName,
+        )
+    }
+
     fun onUnsplashBackgroundPickerOpened() {
         intent {
-            reduce {
-                state.copy(
-                    backgroundSearchQuery = "",
-                    backgroundSearchItems = emptyList(),
-                    backgroundSearchError = null,
-                    backgroundSearchLoading = true,
-                    backgroundSearchRequestNonce = state.backgroundSearchRequestNonce + 1,
-                )
-            }
+            reduce { state.openBackgroundSearchPicker(pexelsVideoTab = null) }
         }
     }
 
     fun onPexelsBackgroundPickerOpened(initialVideoTab: Boolean = true) {
         intent {
-            reduce {
-                state.copy(
-                    pexelsVideoTabSelected = initialVideoTab,
-                    backgroundSearchQuery = "",
-                    backgroundSearchItems = emptyList(),
-                    backgroundSearchError = null,
-                    backgroundSearchLoading = true,
-                    backgroundSearchRequestNonce = state.backgroundSearchRequestNonce + 1,
-                )
-            }
+            reduce { state.openBackgroundSearchPicker(pexelsVideoTab = initialVideoTab) }
         }
     }
 
@@ -625,27 +642,13 @@ class SoundscapeSceneViewModel @Inject constructor(
         viewModelScope.launch {
             val query = container.stateFlow.value.backgroundSearchQuery
             intent {
-                reduce { state.copy(backgroundSearchLoading = true, backgroundSearchError = null) }
+                reduce { state.searchLoading() }
             }
             val result = withContext(Dispatchers.IO) {
                 backgroundImportRepository.searchUnsplashPhotos(query)
             }
             intent {
-                reduce {
-                    when (result) {
-                        is ResultWrapper.Success -> state.copy(
-                            backgroundSearchLoading = false,
-                            backgroundSearchItems = result.data,
-                            backgroundSearchError = null,
-                        )
-                        is ResultWrapper.Failure -> state.copy(
-                            backgroundSearchLoading = false,
-                            backgroundSearchItems = emptyList(),
-                            backgroundSearchError = result.throwable.message
-                                ?: result.throwable::class.java.simpleName,
-                        )
-                    }
-                }
+                reduce { state.applyBackgroundSearchResult(result) }
             }
         }
     }
@@ -656,27 +659,13 @@ class SoundscapeSceneViewModel @Inject constructor(
             val query = snapshot.backgroundSearchQuery
             val videos = snapshot.pexelsVideoTabSelected
             intent {
-                reduce { state.copy(backgroundSearchLoading = true, backgroundSearchError = null) }
+                reduce { state.searchLoading() }
             }
             val result = withContext(Dispatchers.IO) {
                 backgroundImportRepository.searchPexels(query, videos)
             }
             intent {
-                reduce {
-                    when (result) {
-                        is ResultWrapper.Success -> state.copy(
-                            backgroundSearchLoading = false,
-                            backgroundSearchItems = result.data,
-                            backgroundSearchError = null,
-                        )
-                        is ResultWrapper.Failure -> state.copy(
-                            backgroundSearchLoading = false,
-                            backgroundSearchItems = emptyList(),
-                            backgroundSearchError = result.throwable.message
-                                ?: result.throwable::class.java.simpleName,
-                        )
-                    }
-                }
+                reduce { state.applyBackgroundSearchResult(result) }
             }
         }
     }
@@ -858,12 +847,11 @@ class SoundscapeSceneViewModel @Inject constructor(
                 }
             }
 
-            val currentButtonsByKey = state.soundFloatingButtons.associateBy { it.instanceKey }
-            val nextButtons = selected.mapIndexedNotNull { index, soundId ->
-                currentButtonsByKey.values.firstOrNull { it.id == soundId } ?: availableById[soundId]?.let { sound ->
-                    createFloatingButton(sound, index, selected.size, "$soundId:manual")
-                }
-            }
+            val nextButtons = rebuildSoundFloatingButtons(
+                currentButtons = state.soundFloatingButtons,
+                selectedSoundIds = selected.toList(),
+                availableById = availableById
+            )
             reduce { state.copy(soundFloatingButtons = nextButtons, isDirty = true) }
             persistLocalSceneState()
         }
@@ -894,7 +882,7 @@ class SoundscapeSceneViewModel @Inject constructor(
         playbackController.setMusicVolume(volume)
         intent {
             appPreferences.setSoundscapesLevel((volume * 100).toInt())
-            reduce { state.copy(isDirty = true) }
+            reduce { state.markDirty() }
             persistLocalSceneState()
         }
     }
@@ -938,18 +926,47 @@ class SoundscapeSceneViewModel @Inject constructor(
 
     fun onSoundButtonPositionChanged(instanceKey: String, posXFraction: Float, posYFraction: Float) {
         intent {
-            val updated = state.soundFloatingButtons.map { button ->
-                if (button.instanceKey == instanceKey) {
-                    button.copy(
-                        posXFraction = posXFraction.coerceIn(0f, 1f),
-                        posYFraction = posYFraction.coerceIn(0f, 1f),
-                    )
-                } else {
-                    button
-                }
-            }
+            val updated = updateSoundButtonPosition(
+                buttons = state.soundFloatingButtons,
+                instanceKey = instanceKey,
+                posXFraction = posXFraction,
+                posYFraction = posYFraction
+            )
             reduce { state.copy(soundFloatingButtons = updated, isDirty = true) }
             persistLocalSceneState()
+        }
+    }
+
+    private fun rebuildSoundFloatingButtons(
+        currentButtons: List<SoundFloatingButtonUi>,
+        selectedSoundIds: List<Int>,
+        availableById: Map<Int, AvailableSoundUi>
+    ): List<SoundFloatingButtonUi> {
+        val currentButtonsByKey = currentButtons.associateBy { it.instanceKey }
+        return selectedSoundIds.mapIndexedNotNull { index, soundId ->
+            currentButtonsByKey.values.firstOrNull { it.id == soundId } ?: availableById[soundId]?.let { sound ->
+                createFloatingButton(sound, index, selectedSoundIds.size, "$soundId:manual")
+            }
+        }
+    }
+
+    private fun updateSoundButtonPosition(
+        buttons: List<SoundFloatingButtonUi>,
+        instanceKey: String,
+        posXFraction: Float,
+        posYFraction: Float
+    ): List<SoundFloatingButtonUi> {
+        val safeX = posXFraction.coerceIn(0f, 1f)
+        val safeY = posYFraction.coerceIn(0f, 1f)
+        return buttons.map { button ->
+            if (button.instanceKey == instanceKey) {
+                button.copy(
+                    posXFraction = safeX,
+                    posYFraction = safeY,
+                )
+            } else {
+                button
+            }
         }
     }
 
@@ -988,7 +1005,7 @@ class SoundscapeSceneViewModel @Inject constructor(
         if (title.isBlank()) return
         playbackController.renameCurrentScene(title)
         intent {
-            reduce { state.copy(title = title, isDirty = true) }
+            reduce { state.copy(title = title).markDirty() }
             persistLocalSceneState()
         }
     }
