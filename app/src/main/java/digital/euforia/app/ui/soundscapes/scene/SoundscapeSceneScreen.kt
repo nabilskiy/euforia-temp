@@ -12,6 +12,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,6 +47,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -148,6 +151,10 @@ fun SoundscapeSceneScreen(
     var showUnsplashPicker by remember { mutableStateOf(false) }
     var showPexelsPicker by remember { mutableStateOf(false) }
     var pendingCropImageUri by remember { mutableStateOf<Uri?>(null) }
+    var draggingSoundKey by remember { mutableStateOf<String?>(null) }
+    var pressedSoundKey by remember { mutableStateOf<String?>(null) }
+    var tapPulseSoundKey by remember { mutableStateOf<String?>(null) }
+    var trashHovered by remember { mutableStateOf(false) }
     var interactionNonce by remember { mutableLongStateOf(0L) }
     val inertiaScope = rememberCoroutineScope()
     val inertiaJobs = remember { mutableMapOf<String, Job>() }
@@ -311,11 +318,76 @@ fun SoundscapeSceneScreen(
                 val maxHpx = with(density) { maxHeight.toPx() }
                 val btnPx = with(density) { btnSize.toPx() }
                 val tapSlopPx = with(density) { 12.dp.toPx() }
+                val trashSizePx = with(density) { 50.dp.toPx() }
+                val trashTopPx = 0f
+                val trashLeftPx = (maxWpx - trashSizePx) / 2f
+                val trashRightPx = trashLeftPx + trashSizePx
+                val trashBottomPx = trashTopPx + trashSizePx
+                val trashCenterX = (trashLeftPx + trashRightPx) / 2f
+                val trashCenterY = (trashTopPx + trashBottomPx) / 2f
+                val removeDistancePx = with(density) { 80.dp.toPx() }
+                fun isOverTrash(centerX: Float, centerY: Float): Boolean {
+                    val dx = centerX - trashCenterX
+                    val dy = centerY - trashCenterY
+                    return hypot(dx, dy) < removeDistancePx
+                }
                 val visibleIds = state.layers.map { it.instanceKey }.toSet()
                 val layersByKey = state.layers.associateBy { it.instanceKey }
+                AnimatedVisibility(
+                    visible = controlsVisible && draggingSoundKey != null,
+                    enter = fadeIn(animationSpec = tween(120)),
+                    exit = fadeOut(animationSpec = tween(120)),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 0.dp)
+                        .zIndex(8f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .background(
+                                color = if (trashHovered) {
+                                    Color.Red.copy(alpha = 0.3f)
+                                } else {
+                                    Color.Black.copy(alpha = 0.3f)
+                                },
+                                shape = RoundedCornerShape(25.dp)
+                            )
+                            .border(
+                                width = 1.5.dp,
+                                color = White.copy(alpha = 0.9f),
+                                shape = RoundedCornerShape(25.dp)
+                            )
+                            .graphicsLayer {
+                                val scale = if (trashHovered) 1.1f else 1f
+                                scaleX = scale
+                                scaleY = scale
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = localizedRes.string(R.string.delete),
+                            tint = White.copy(alpha = if (trashHovered) 1f else 0.86f)
+                        )
+                    }
+                }
                 state.soundFloatingButtons
                     .filter { it.instanceKey in visibleIds }
                     .forEach { btn ->
+                        val soundScale by animateFloatAsState(
+                            targetValue = when {
+                                draggingSoundKey == btn.instanceKey -> 1.1f
+                                pressedSoundKey == btn.instanceKey -> 0.94f
+                                tapPulseSoundKey == btn.instanceKey -> 1.05f
+                                else -> 1f
+                            },
+                            animationSpec = spring(
+                                dampingRatio = 0.58f,
+                                stiffness = 430f
+                            ),
+                            label = "sound_button_scale"
+                        )
                         val extra = soundDragOffsets[btn.instanceKey] ?: Offset.Zero
                         val baseXpx = maxWpx * btn.posXFraction - btnPx / 2f
                         val baseYpx = maxHpx * btn.posYFraction - btnPx / 2f
@@ -338,6 +410,10 @@ fun SoundscapeSceneScreen(
                             },
                             modifier = Modifier
                                 .offset(xOff, yOff)
+                                .graphicsLayer {
+                                    scaleX = soundScale
+                                    scaleY = soundScale
+                                }
                                 .pointerInput(
                                     btn.instanceKey,
                                     maxWpx,
@@ -348,6 +424,7 @@ fun SoundscapeSceneScreen(
                                     awaitEachGesture {
                                         val down = awaitFirstDown(requireUnconsumed = false)
                                         markInteraction()
+                                        pressedSoundKey = btn.instanceKey
                                         inertiaJobs.remove(btn.instanceKey)?.cancel()
                                         var dragTotal = Offset.Zero
                                         var dragging = false
@@ -365,6 +442,13 @@ fun SoundscapeSceneScreen(
                                                         dragTotal.y
                                                     ) < tapSlopPx
                                                 ) {
+                                                    tapPulseSoundKey = btn.instanceKey
+                                                    inertiaScope.launch {
+                                                        delay(110)
+                                                        if (tapPulseSoundKey == btn.instanceKey) {
+                                                            tapPulseSoundKey = null
+                                                        }
+                                                    }
                                                     showMusicOptions = false
                                                     showPreferences = false
                                                     selectedSoundLayerKey = btn.instanceKey
@@ -379,16 +463,34 @@ fun SoundscapeSceneScreen(
                                                 } else if (dragging) {
                                                     val savedOffset =
                                                         soundDragOffsets[btn.instanceKey] ?: Offset.Zero
+                                                    val dropX = (baseXpx + savedOffset.x)
+                                                        .coerceIn(0f, (maxWpx - btnPx).coerceAtLeast(0f))
+                                                    val dropY = (baseYpx + savedOffset.y)
+                                                        .coerceIn(0f, (maxHpx - btnPx).coerceAtLeast(0f))
+                                                    val dropCenterX = dropX + btnPx / 2f
+                                                    val dropCenterY = dropY + btnPx / 2f
+                                                    if (isOverTrash(dropCenterX, dropCenterY)) {
+                                                        viewModel.onLayerRemove(btn.instanceKey)
+                                                        if (selectedSoundLayerKey == btn.instanceKey) {
+                                                            selectedSoundLayerKey = null
+                                                        }
+                                                        soundDragOffsets = soundDragOffsets
+                                                            .toMutableMap()
+                                                            .apply { remove(btn.instanceKey) }
+                                                        break
+                                                    }
                                                     val flingVx = velocityX * 0.1f
                                                     val flingVy = velocityY * 0.1f
                                                     val minVelocity = 35f
-                                                    if (hypot(flingVx, flingVy) >= minVelocity) {
+                                                    val boostedFlingVx = flingVx * 1.8f
+                                                    val boostedFlingVy = flingVy * 1.8f
+                                                    if (hypot(boostedFlingVx, boostedFlingVy) >= minVelocity) {
                                                         inertiaJobs[btn.instanceKey] = inertiaScope.launch {
-                                                            var vx = flingVx
-                                                            var vy = flingVy
+                                                            var vx = boostedFlingVx
+                                                            var vy = boostedFlingVy
                                                             var currentOffset = savedOffset
                                                             val dt = 1f / 60f
-                                                            val friction = 0.92f
+                                                            val friction = 0.95f
                                                             while (isActive && hypot(vx, vy) > minVelocity) {
                                                                 val proposedOffset = Offset(
                                                                     x = currentOffset.x + vx * dt,
@@ -413,8 +515,8 @@ fun SoundscapeSceneScreen(
                                                                 soundDragOffsets = soundDragOffsets
                                                                     .toMutableMap()
                                                                     .apply { this[btn.instanceKey] = currentOffset }
-                                                                if (hitHorizontal) vx = -vx * 0.35f
-                                                                if (hitVertical) vy = -vy * 0.35f
+                                                                if (hitHorizontal) vx = -vx * 0.45f
+                                                                if (hitVertical) vy = -vy * 0.45f
                                                                 vx *= friction
                                                                 vy *= friction
                                                                 delay(16)
@@ -494,6 +596,8 @@ fun SoundscapeSceneScreen(
                                                     ) < tapSlopPx
                                                 ) continue
                                                 dragging = true
+                                                pressedSoundKey = null
+                                                draggingSoundKey = btn.instanceKey
                                             }
                                             markInteraction()
                                             change.consume()
@@ -513,7 +617,19 @@ fun SoundscapeSceneScreen(
                                                     )
                                                     this[btn.instanceKey] =
                                                         Offset(cx - baseXpx, cy - baseYpx)
+                                                    if (draggingSoundKey == btn.instanceKey) {
+                                                        val centerX = cx + btnPx / 2f
+                                                        val centerY = cy + btnPx / 2f
+                                                        trashHovered = isOverTrash(centerX, centerY)
+                                                    }
                                                 }
+                                        }
+                                        if (draggingSoundKey == btn.instanceKey) {
+                                            draggingSoundKey = null
+                                            trashHovered = false
+                                        }
+                                        if (pressedSoundKey == btn.instanceKey) {
+                                            pressedSoundKey = null
                                         }
                                     }
                                 }

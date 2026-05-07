@@ -1,4 +1,8 @@
 import java.util.Properties
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import com.android.build.gradle.internal.api.ApkVariantOutputImpl
 
 plugins {
     alias(libs.plugins.android.application)
@@ -142,6 +146,19 @@ android {
             "ModuleCompanionObjectsNotInModuleParent"
         )
     }
+
+    applicationVariants.all {
+        if (buildType.name != "debug") return@all
+        val buildDate = ZonedDateTime.now(ZoneId.of("UTC"))
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
+        val appId = applicationId
+        val vName = versionName ?: "0.0"
+        val vCode = versionCode
+        outputs.all {
+            (this as? ApkVariantOutputImpl)?.outputFileName =
+                "${appId}-v${vName}(${vCode})-${buildDate}-${buildType.name}.apk"
+        }
+    }
 }
 
 dependencies {
@@ -255,3 +272,4 @@ dependencies {
 //    implementation("com.github.jeziellago:compose-markdown:0.2.6")
 
 }
+
