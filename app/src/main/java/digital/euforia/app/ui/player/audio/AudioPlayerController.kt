@@ -18,6 +18,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import digital.euforia.app.service.AudioPlaybackService
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+
+private const val AUDIO_PLAYER_INTERRUPTION_TOKEN = "audio_player_screen"
 
 @Composable
 fun rememberMediaController(
@@ -65,7 +68,10 @@ fun rememberMediaController(
                     .build()
                 c.setMediaItem(mediaItem)
                 c.prepare()
-                if (playWhenReady) c.playWhenReady = true
+                if (playWhenReady) {
+                    beginSoundscapeInterruption(context, AUDIO_PLAYER_INTERRUPTION_TOKEN)
+                    c.playWhenReady = true
+                }
 //                c.play()
             }, context.mainExecutor)
         }

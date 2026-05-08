@@ -111,7 +111,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 private const val ActiveSceneBackgroundDimAlpha = 0.55f
-private val ActiveSceneBackgroundBlurRadiusDp = 16.dp
+private val ActiveSceneBackgroundBlurRadiusDp = 24.dp
 private const val SoundscapesSharedTitleKey = "soundscapes_title"
 
 @Composable

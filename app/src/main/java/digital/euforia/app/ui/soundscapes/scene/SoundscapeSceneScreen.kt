@@ -7,6 +7,7 @@ package digital.euforia.app.ui.soundscapes.scene
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -47,8 +48,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -74,6 +77,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -176,6 +180,10 @@ fun SoundscapeSceneScreen(
         controlsVisible = true
         interactionNonce++
     }
+    fun requestCloseScene() {
+        if (state.isDirty) showUnsavedExitDialog = true
+        else navController.popBackStack()
+    }
     val pickBackgroundMediaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -211,6 +219,10 @@ fun SoundscapeSceneScreen(
         if (state.layers.none { it.instanceKey == key }) {
             selectedSoundLayerKey = null
         }
+    }
+
+    BackHandler(enabled = true) {
+        requestCloseScene()
     }
     LaunchedEffect(selectedSoundLayerKey) {
         if (selectedSoundLayerKey != null) {
@@ -316,10 +328,7 @@ fun SoundscapeSceneScreen(
                 isDownloaded = state.downloadState == SoundscapeDownloadItem.STATUS_READY,
                 hasActiveTimer = (state.timerSeconds ?: 0) > 0,
                 canShare = state.presetId == null,
-                onCollapse = {
-                    if (state.isDirty) showUnsavedExitDialog = true
-                    else navController.popBackStack()
-                },
+                onCollapse = ::requestCloseScene,
                 onSaveChanges = viewModel::onSavePreset,
                 onSaveAndDownload = viewModel::onSaveAndDownload,
                 onRenameScene = viewModel::onRenameScene,
@@ -651,15 +660,72 @@ private fun SceneDialogsHost(
             onDismissRequest = { onShowImportSourceDialogChange(false) },
             title = { Text(text = localizedRes.string(R.string.import_from)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TextButton(onClick = { onOpenSource(BackgroundImportSource.PEXELS) }) {
-                        Text("Pexels")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(White.copy(alpha = 0.06f))
+                            .clickable { onOpenSource(BackgroundImportSource.PEXELS) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Collections,
+                            contentDescription = null,
+                            tint = White.copy(alpha = 0.9f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Pexels",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = White
+                        )
                     }
-                    TextButton(onClick = { onOpenSource(BackgroundImportSource.UNSPLASH) }) {
-                        Text("Unsplash")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(White.copy(alpha = 0.06f))
+                            .clickable { onOpenSource(BackgroundImportSource.UNSPLASH) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = null,
+                            tint = White.copy(alpha = 0.9f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Unsplash",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = White
+                        )
                     }
-                    TextButton(onClick = { onOpenSource(BackgroundImportSource.PHOTOS) }) {
-                        Text("Photos")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(White.copy(alpha = 0.06f))
+                            .clickable { onOpenSource(BackgroundImportSource.PHOTOS) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PhotoLibrary,
+                            contentDescription = null,
+                            tint = White.copy(alpha = 0.9f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Photos",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = White
+                        )
                     }
                 }
             },

@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import digital.euforia.app.service.soundscapes.pauseActiveSoundscapeIfNeeded
 
 
 @Composable
@@ -25,6 +26,7 @@ fun rememberExoPlayer(
         repeatMode = ExoPlayer.REPEAT_MODE_OFF
         setMediaItem(MediaItem.fromUri(uri))
         prepare()
+        pauseActiveSoundscapeIfNeeded(context)
         playWhenReady = true
 
         if (onPlaybackComplete != null) {

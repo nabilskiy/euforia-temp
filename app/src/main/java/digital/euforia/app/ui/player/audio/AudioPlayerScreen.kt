@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.SessionCommand
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.navigation.Home
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
@@ -99,6 +101,7 @@ fun SharedTransitionScope.AudioPlayerScreen(
         // Release player when leaving the screen
         DisposableEffect(Unit) {
             onDispose {
+                endSoundscapeInterruption(context, "audio_player_screen")
                 controller?.let { c ->
                     c.pause()
                     c.clearMediaItems()
@@ -173,6 +176,7 @@ fun SharedTransitionScope.AudioPlayerScreen(
             },
             onPageSelected = viewModel::onPageSelected,
             onPlay = {
+                beginSoundscapeInterruption(context, "audio_player_screen")
                 controller?.play()
                 viewModel.logPlayClicked()
             },

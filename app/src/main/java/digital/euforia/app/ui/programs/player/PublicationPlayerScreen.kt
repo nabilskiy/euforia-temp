@@ -74,6 +74,8 @@ import digital.euforia.app.ui.player.audio.playSfx
 import digital.euforia.app.ui.player.audio.setSfxVolume
 import digital.euforia.app.ui.player.audio.stopSfx
 import digital.euforia.app.ui.programs.publication.PublicationType
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.DarkGray
@@ -93,6 +95,8 @@ import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import timber.log.Timber
+
+private const val PUBLICATION_PLAYER_INTERRUPTION_TOKEN = "publication_player_screen"
 
 @Composable
 fun PublicationPlayerScreen(
@@ -182,6 +186,12 @@ private fun PublicationPlayerContent(
     var volume by remember { mutableFloatStateOf(0.35f) }
 
     val context = LocalContext.current
+    DisposableEffect(Unit) {
+        onDispose {
+            endSoundscapeInterruption(context, PUBLICATION_PLAYER_INTERRUPTION_TOKEN)
+        }
+    }
+
     var controllerPlayer by remember { mutableStateOf<Player?>(null) }
     LaunchedEffect(Unit) {
         controllerPlayer = getController(context)
@@ -321,8 +331,10 @@ private fun ExerciseVideoPlayer(
         val currentMediaId =
             (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id
         if (controller.playbackState == Player.STATE_IDLE || currentMediaId != publicationInfo.id) {
+            beginSoundscapeInterruption(context, PUBLICATION_PLAYER_INTERRUPTION_TOKEN)
             onPrepareAndPlay(publicationInfo)
         } else if (!controller.isPlaying) {
+            beginSoundscapeInterruption(context, PUBLICATION_PLAYER_INTERRUPTION_TOKEN)
             controller.play()
         }
     }
@@ -334,6 +346,7 @@ private fun ExerciseVideoPlayer(
         val currentMediaId =
             (controller.currentMediaItem?.localConfiguration?.tag as? PublicationInfo)?.id
         if (controller.playbackState == Player.STATE_IDLE || currentMediaId != publicationInfo.id) {
+            beginSoundscapeInterruption(context, PUBLICATION_PLAYER_INTERRUPTION_TOKEN)
             onPrepareAndPlay(publicationInfo)
         }
     }
@@ -581,6 +594,7 @@ private fun BoxScope.PlayerControlsOverlay(
     onScrubbingChange: (Boolean) -> Unit,
     onSeek: () -> Unit,
 ) {
+    val context = LocalContext.current
     var durationMs by remember {
         androidx.compose.runtime.mutableLongStateOf(
             player.duration.coerceAtLeast(
@@ -638,6 +652,7 @@ private fun BoxScope.PlayerControlsOverlay(
                 if (player.isPlaying) {
                     player.pause()
                 } else {
+                    beginSoundscapeInterruption(context, PUBLICATION_PLAYER_INTERRUPTION_TOKEN)
                     player.play()
                 }
             },

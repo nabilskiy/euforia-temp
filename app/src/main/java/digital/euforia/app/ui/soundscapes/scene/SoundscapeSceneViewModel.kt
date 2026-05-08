@@ -249,24 +249,7 @@ class SoundscapeSceneViewModel @Inject constructor(
             intent {
                 reduce { state.copy(isPreparing = false, preparingCompleted = 0, preparingTotal = 0) }
             }
-            val layersForPlayback = preparedLayers.ifEmpty {
-                listOf(
-                    SoundscapeLayerState(
-                        id = sceneId * 100 + 1,
-                        instanceKey = "${sceneId}:fallback:1",
-                        title = "Rain",
-                        audioUrl = null,
-                        volume = 0.55f
-                    ),
-                    SoundscapeLayerState(
-                        id = sceneId * 100 + 2,
-                        instanceKey = "${sceneId}:fallback:2",
-                        title = "Forest",
-                        audioUrl = null,
-                        volume = 0.45f
-                    ),
-                )
-            }
+            val layersForPlayback = preparedLayers
             Timber.tag("SOUNDSCAPES_AUDIO").d(
                 "scene_prepared sceneId=%s layers=%s withAudio=%s",
                 sceneId,
@@ -1095,7 +1078,6 @@ class SoundscapeSceneViewModel @Inject constructor(
     }
     private suspend fun persistLocalSceneState() {
         val sceneState = container.stateFlow.value
-        if (sceneState.presetId == null) return
         persistLocalSceneState(
             repository = soundscapesRepository,
             sceneState = sceneState,

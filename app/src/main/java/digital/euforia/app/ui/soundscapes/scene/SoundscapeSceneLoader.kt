@@ -105,7 +105,7 @@ internal suspend fun buildLoadedSceneData(
         }
         .orEmpty()
     val finalLayers = when {
-        localLayers.isNotEmpty() -> {
+        localState != null -> {
         localLayers.map { localLayer ->
             val restoredButton = localButtonsById[localLayer.id]?.firstOrNull()
             val remoteLayer = sceneLayers.firstOrNull { layer -> layer.id == localLayer.id }

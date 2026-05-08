@@ -16,8 +16,12 @@ import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionError
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.R
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.MainActivity
 import timber.log.Timber
+
+private const val EXERCISE_SERVICE_MAIN_TOKEN = "exercise_service_main"
 
 @AndroidEntryPoint
 @UnstableApi
@@ -35,6 +39,11 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
         exo.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 Timber.tag("PUBLICATION_PLAYBACK").d("Service: onIsPlayingChanged=$isPlaying")
+                if (isPlaying) {
+                    beginSoundscapeInterruption(this@ExerciseVideoPlaybackService, EXERCISE_SERVICE_MAIN_TOKEN)
+                } else {
+                    endSoundscapeInterruption(this@ExerciseVideoPlaybackService, EXERCISE_SERVICE_MAIN_TOKEN)
+                }
                 sfxPlayer?.let { sp ->
                     if (isPlaying) sp.play() else sp.pause()
                 }
@@ -63,6 +72,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        endSoundscapeInterruption(this, EXERCISE_SERVICE_MAIN_TOKEN)
         mediaSession?.release()
         mediaSession = null
         player?.release()
@@ -157,6 +167,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                                 p.stop()
                                 p.clearMediaItems()
                             }
+                            endSoundscapeInterruption(this@ExerciseVideoPlaybackService, EXERCISE_SERVICE_MAIN_TOKEN)
                             stopSelf()
                             com.google.common.util.concurrent.Futures.immediateFuture(
                                 SessionResult(SessionResult.RESULT_SUCCESS)

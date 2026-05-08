@@ -19,7 +19,11 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.R
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.MainActivity
+
+private const val AUDIO_SERVICE_MAIN_TOKEN = "audio_service_main"
 
 /**
  * MediaSessionService hosting a main ExoPlayer instance and exposing a MediaSession
@@ -57,6 +61,11 @@ class AudioPlaybackService : MediaSessionService() {
             .build()
         exo.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) {
+                    beginSoundscapeInterruption(this@AudioPlaybackService, AUDIO_SERVICE_MAIN_TOKEN)
+                } else {
+                    endSoundscapeInterruption(this@AudioPlaybackService, AUDIO_SERVICE_MAIN_TOKEN)
+                }
                 sfxPlayer?.let {
                     if (!isPlaying) {
                         it.pause()
@@ -218,6 +227,7 @@ class AudioPlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        endSoundscapeInterruption(this, AUDIO_SERVICE_MAIN_TOKEN)
         mediaSession?.release()
         mediaSession = null
         player?.release()

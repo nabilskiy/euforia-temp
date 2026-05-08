@@ -27,14 +27,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,6 +60,8 @@ import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.widget.BlurredAppBar
+import digital.euforia.app.ui.util.widget.MenuItem
+import digital.euforia.app.ui.util.widget.OptionsMenu
 import digital.euforia.app.ui.util.widget.titleItem
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -123,21 +121,21 @@ private fun SharedTransitionScope.DownloadsContent(
                 Box {
                     if (state.downloads.isNotEmpty()) IconButton(onClick = { showMenu = true }) {
                         Icon(
-                            imageVector = Icons.Filled.MoreHoriz,
+                            painter = painterResource(R.drawable.ic_menu),
                             contentDescription = null,
                             tint = White
                         )
                     }
-                    if (state.downloads.isNotEmpty()) DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(text = localizedRes.string(R.string.downloads_clear_all)) },
-                            onClick = {
-                                showMenu = false
-                                onClearAllClick()
-                            }
+                    if (state.downloads.isNotEmpty()) {
+                        OptionsMenu(
+                            expanded = showMenu,
+                            onExpandedChange = { showMenu = it },
+                            menuItems = listOf(
+                                MenuItem(
+                                    titleRes = R.string.downloads_clear_all,
+                                    onClick = onClearAllClick
+                                )
+                            )
                         )
                     }
                 }

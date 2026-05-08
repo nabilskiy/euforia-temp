@@ -3,6 +3,7 @@ package digital.euforia.app.ui.util
 import android.content.Context
 import android.media.MediaPlayer
 import android.media.SoundPool
+import digital.euforia.app.service.soundscapes.pauseActiveSoundscapeIfNeeded
 import kotlinx.coroutines.*
 
 object SoundPlayer {
@@ -40,6 +41,7 @@ object MediaPlayerHelper {
 
     fun play(context: Context, soundRes: Int, onCompletion: (() -> Unit)? = null) {
         mediaPlayer?.release()
+        pauseActiveSoundscapeIfNeeded(context)
         mediaPlayer = MediaPlayer.create(context, soundRes).apply {
             setOnCompletionListener {
                 onCompletion?.invoke()
@@ -132,6 +134,7 @@ object BackgroundPlayerHelper {
             mediaPlayer = null
         }
         mediaPlayer?.release()
+        pauseActiveSoundscapeIfNeeded(context)
         mediaPlayer = MediaPlayer.create(context, soundRes).apply {
             setVolume(targetVolume, targetVolume)
             isLooping = true

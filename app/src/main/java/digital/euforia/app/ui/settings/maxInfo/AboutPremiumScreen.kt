@@ -57,6 +57,8 @@ import digital.euforia.app.domain.model.subscription.MaxInfo
 import digital.euforia.app.domain.model.subscription.MaxInfoItem
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.MaxGradient
@@ -71,6 +73,8 @@ import digital.euforia.app.ui.util.widget.noRippleClickable
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+
+private const val ABOUT_PREMIUM_INTERRUPTION_TOKEN = "about_premium_video"
 
 @Composable
 fun AboutPremiumScreen(
@@ -276,12 +280,16 @@ fun AboutBottomSheet(
                     repeatMode = androidx.media3.exoplayer.ExoPlayer.REPEAT_MODE_ALL
                     setMediaItem(androidx.media3.common.MediaItem.fromUri(videoUrl))
                     prepare()
+                    beginSoundscapeInterruption(context, ABOUT_PREMIUM_INTERRUPTION_TOKEN)
                     playWhenReady = true
                 }
             }
 
             androidx.compose.runtime.DisposableEffect(exoPlayer) {
-                onDispose { exoPlayer.release() }
+                onDispose {
+                    endSoundscapeInterruption(context, ABOUT_PREMIUM_INTERRUPTION_TOKEN)
+                    exoPlayer.release()
+                }
             }
 
             AndroidView(

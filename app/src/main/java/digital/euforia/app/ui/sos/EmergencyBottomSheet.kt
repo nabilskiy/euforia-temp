@@ -43,9 +43,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import digital.euforia.app.R
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+
+private const val SOS_VIDEO_INTERRUPTION_TOKEN = "sos_emergency_video"
 
 @Composable
 fun EmergencyBottomSheet(
@@ -117,7 +121,10 @@ private fun VideoView(url: String) {
     var isPlaying by remember { mutableStateOf(false) }
 
     DisposableEffect(exoPlayer) {
-        onDispose { exoPlayer.release() }
+        onDispose {
+            endSoundscapeInterruption(context, SOS_VIDEO_INTERRUPTION_TOKEN)
+            exoPlayer.release()
+        }
     }
 
     Box(
@@ -159,6 +166,11 @@ private fun VideoView(url: String) {
                 .background(White.copy(alpha = 0.2f))
                 .clickable {
                     isPlaying = !isPlaying
+                    if (isPlaying) {
+                        beginSoundscapeInterruption(context, SOS_VIDEO_INTERRUPTION_TOKEN)
+                    } else {
+                        endSoundscapeInterruption(context, SOS_VIDEO_INTERRUPTION_TOKEN)
+                    }
                     exoPlayer.playWhenReady = isPlaying
                 },
             contentAlignment = Alignment.Center

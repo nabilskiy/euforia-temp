@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
@@ -91,11 +93,15 @@ fun SoundscapeSceneTopBar(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = title,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .basicMarquee(iterations = Int.MAX_VALUE),
                     color = White,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     maxLines = 1,
@@ -103,7 +109,9 @@ fun SoundscapeSceneTopBar(
                 )
                 if (showMaxBadge) {
                     Spacer(Modifier.size(8.dp))
-                    MaxView()
+                    MaxView(
+                        modifier = Modifier.wrapContentWidth(unbounded = true)
+                    )
                 }
             }
             if (subtitle.isNotBlank()) {

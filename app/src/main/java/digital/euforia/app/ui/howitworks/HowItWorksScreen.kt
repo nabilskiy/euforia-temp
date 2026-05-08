@@ -22,10 +22,14 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.navigation.NavHostController
 import digital.euforia.app.R
+import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
+import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.theme.PrimaryBackground
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+
+private const val HOW_IT_WORKS_INTERRUPTION_TOKEN = "how_it_works_video"
 
 @Composable
 fun HowItWorksScreen(
@@ -53,12 +57,16 @@ private fun HowItWorksContent(videoUrl: String?) {
             repeatMode = ExoPlayer.REPEAT_MODE_OFF
             setMediaItem(MediaItem.fromUri(videoUrl))
             prepare()
+            beginSoundscapeInterruption(context, HOW_IT_WORKS_INTERRUPTION_TOKEN)
             playWhenReady = true
         }
     }
 
     DisposableEffect(exoPlayer) {
-        onDispose { exoPlayer.release() }
+        onDispose {
+            endSoundscapeInterruption(context, HOW_IT_WORKS_INTERRUPTION_TOKEN)
+            exoPlayer.release()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {

@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.with
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -54,6 +56,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontWeight.Companion.Normal
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -516,6 +519,9 @@ fun HeaderView(
             verticalAlignment = CenterVertically
         ) {
             TitleText(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .basicMarquee(iterations = Int.MAX_VALUE),
                 dayIndex = dayIndex,
                 isDemo = isDemo,
                 isPremium = isPremium,
@@ -524,12 +530,10 @@ fun HeaderView(
                 todayOffset = todayOffset
 //                daysOffset = dayIndex - completedDays
             )
-
-            Box(
-                modifier = Modifier.weight(1f)
-            ) {
-                MaxBadge(isMax = day.isLockedByPremium())
-            }
+            MaxBadge(
+                isMax = day.isLockedByPremium(),
+                modifier = Modifier.wrapContentWidth(unbounded = true)
+            )
             ActionButton(
                 iconRes = R.drawable.ic_arrow_back,
                 isEnabled = isPrevEnabled,
@@ -553,6 +557,7 @@ fun HeaderView(
 
 @Composable
 private fun TitleText(
+    modifier: Modifier = Modifier,
     dayIndex: Int,
     isDemo: Boolean,
     isPremium: Boolean,
@@ -581,9 +586,12 @@ private fun TitleText(
         }
 
     Text(
+        modifier = modifier,
         text = todayText,
         style = MaterialTheme.typography.displaySmall,
-        color = White
+        color = White,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
     )
 }
 
@@ -637,8 +645,9 @@ private fun LockText(
 }
 
 @Composable
-fun MaxBadge(isMax: Boolean) {
+fun MaxBadge(isMax: Boolean, modifier: Modifier = Modifier) {
     AnimatedVisibility(
+        modifier = modifier,
         visible = isMax,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300))
