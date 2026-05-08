@@ -91,6 +91,7 @@ private fun HomeContent(
                 title = miniPlayer.title,
                 imageUrl = miniPlayer.imageUrl,
                 isPlaying = miniPlayer.isPlaying,
+                timerRemainingSeconds = miniPlayer.timerRemainingSeconds,
                 onClick = onMiniPlayerOpen,
                 onTogglePlayPause = onMiniPlayerTogglePlayPause,
                 onClose = onMiniPlayerClose,

@@ -561,22 +561,16 @@ class SoundscapeSceneViewModel @Inject constructor(
     }
     fun onTimerChange(minutes: Int?) {
         playbackController.setTimer(minutes?.times(60))
-        intent {
-            reduce { state.markDirty() }
-            persistLocalSceneState()
-        }
     }
 
     fun onSetTimerSeconds(seconds: Int) {
         val normalized = seconds.coerceAtLeast(0)
         playbackController.setTimer(normalized.takeIf { it > 0 })
-        intent {
-            reduce { state.markDirty() }
-            persistLocalSceneState()
-        }
     }
 
-    fun onDisableTimer() = onSetTimerSeconds(0)
+    fun onDisableTimer() {
+        playbackController.setTimer(null)
+    }
 
     private fun SoundscapeSceneState.markDirty(): SoundscapeSceneState =
         copy(isDirty = true)

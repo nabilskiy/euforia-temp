@@ -66,9 +66,12 @@ import kotlinx.coroutines.flow.filter
 
 private const val MINUTE_STEP = 5
 private const val MINUTE_SLOT_COUNT = 12 // 0,5,…,55
+private const val DEFAULT_TIMER_MINUTES = 60
 
 private fun totalMinutesFromSeconds(seconds: Int?): Int =
-    ((seconds ?: 0).coerceAtLeast(0)) / 60
+    (((seconds ?: 0).coerceAtLeast(0)) / 60).let { minutes ->
+        if (minutes > 0) minutes else DEFAULT_TIMER_MINUTES
+    }
 
 private fun minuteValueToSlot(minutes0to59: Int): Int =
     (minutes0to59.coerceIn(0, 59) / MINUTE_STEP).coerceIn(0, MINUTE_SLOT_COUNT - 1)
@@ -101,7 +104,7 @@ fun SleepTimerPickerDialog(
     val canSet = (hours * 60 + minuteValue) > 0
     val hasActiveTimer = (initialSeconds ?: 0) > 0
 
-    val itemHeight = 44.dp
+    val itemHeight = 46.dp
     val pickerHeight = 216.dp
     val verticalPad = (pickerHeight - itemHeight) / 2
 
@@ -199,7 +202,7 @@ fun SleepTimerPickerDialog(
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(12.dp))
 
                 Box(
                     modifier = Modifier
@@ -220,7 +223,7 @@ fun SleepTimerPickerDialog(
                             .fillMaxSize()
                             .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         TimerWheelColumn(
                             count = 24,
@@ -229,30 +232,30 @@ fun SleepTimerPickerDialog(
                             listState = hoursListState,
                             formatValue = { it.toString() },
                             modifier = Modifier
-                                .weight(1f)
+                                .widthIn(min = 44.dp, max = 56.dp)
                                 .fillMaxHeight(),
                         )
                         Text(
                             text = localizedRes.string(R.string.sleep_timer_hour_label),
                             color = White.copy(alpha = 0.55f),
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(horizontal = 4.dp),
+                            modifier = Modifier.padding(start = 8.dp, end = 14.dp),
                         )
                         TimerWheelColumn(
                             count = MINUTE_SLOT_COUNT,
                             itemHeight = itemHeight,
                             verticalPadding = verticalPad,
                             listState = minutesListState,
-                            formatValue = { slot -> "%02d".format(minuteSlotToValue(slot)) },
+                            formatValue = { slot -> minuteSlotToValue(slot).toString() },
                             modifier = Modifier
-                                .weight(1f)
+                                .widthIn(min = 44.dp, max = 56.dp)
                                 .fillMaxHeight(),
                         )
                         Text(
                             text = localizedRes.string(R.string.sleep_timer_minute_label),
                             color = White.copy(alpha = 0.55f),
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(horizontal = 4.dp),
+                            modifier = Modifier.padding(start = 8.dp),
                         )
                     }
                 }
@@ -271,7 +274,7 @@ fun SleepTimerPickerDialog(
                         )
                     }
                 } else {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 Row(
@@ -345,18 +348,22 @@ private fun TimerWheelColumn(
     ) {
         items(count, key = { it }) { index ->
             val isHighlight = index == highlightIndex && highlightIndex >= 0
-            Text(
-                text = formatValue(index),
-                color = if (isHighlight) White else White.copy(alpha = 0.28f),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = if (isHighlight) FontWeight.SemiBold else FontWeight.Normal,
-                ),
-                textAlign = TextAlign.Center,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(itemHeight)
                     .padding(horizontal = 2.dp),
-            )
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = formatValue(index),
+                    color = if (isHighlight) White else White.copy(alpha = 0.28f),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = if (isHighlight) FontWeight.SemiBold else FontWeight.Normal,
+                    ),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -574,17 +576,17 @@ private fun SectionBlock(
 ) {
     val sortedScenes = scenes.sortedBy { it.pro }
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
             text = title,
             color = White,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
         LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (singleRow) {
@@ -634,7 +636,11 @@ fun SceneCard(
 
     Card(
         modifier = modifier
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
         shape = cardShape,
         border = if (isActive) BorderStroke(2.dp, White) else null,
         colors = CardDefaults.cardColors(containerColor = PrimaryBackground),
@@ -786,12 +792,15 @@ fun SoundscapesMiniPlayer(
     title: String,
     imageUrl: String?,
     isPlaying: Boolean,
+    timerRemainingSeconds: Int?,
     onClick: () -> Unit,
     onTogglePlayPause: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val localizedRes = LocalLocalizedRes.current
+    val hasTimer = (timerRemainingSeconds ?: 0) > 0
+    val coverSize = 46.dp
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -804,7 +813,7 @@ fun SoundscapesMiniPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
@@ -812,21 +821,39 @@ fun SoundscapesMiniPlayer(
                     model = imageUrl,
                     contentDescription = null,
                     modifier = Modifier
-                        .size(46.dp)
+                        .size(coverSize)
                         .clip(RoundedCornerShape(10.dp))
                         .background(White.copy(alpha = 0.15f)),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.width(12.dp))
-                Text(
-                    text = title.ifBlank { localizedRes.string(R.string.soundscape_title_fallback) },
-                    style = MaterialTheme.typography.titleSmall,
-                    color = White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = onTogglePlayPause) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(coverSize),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = title.ifBlank { localizedRes.string(R.string.soundscape_title_fallback) },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (hasTimer) {
+                        Text(
+                            text = formatMiniPlayerTimer(timerRemainingSeconds ?: 0),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = White.copy(alpha = 0.72f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = onTogglePlayPause,
+                    modifier = Modifier.size(coverSize)
+                ) {
                     Icon(
                         painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
                         contentDescription = localizedRes.string(
@@ -835,7 +862,10 @@ fun SoundscapesMiniPlayer(
                         tint = White.copy(alpha = 0.85f)
                     )
                 }
-                IconButton(onClick = onClose) {
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.size(coverSize)
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_close),
                         contentDescription = localizedRes.string(R.string.next),
@@ -850,5 +880,17 @@ fun SoundscapesMiniPlayer(
                     .navigationBarsPadding()
             )
         }
+    }
+}
+
+private fun formatMiniPlayerTimer(totalSeconds: Int): String {
+    val safe = totalSeconds.coerceAtLeast(0)
+    val hh = safe / 3600
+    val mm = (safe % 3600) / 60
+    val ss = safe % 60
+    return if (hh > 0) {
+        String.format("%02d:%02d:%02d", hh, mm, ss)
+    } else {
+        String.format("%02d:%02d", mm, ss)
     }
 }

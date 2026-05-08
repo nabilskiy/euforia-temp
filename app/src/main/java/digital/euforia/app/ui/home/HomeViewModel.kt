@@ -71,7 +71,8 @@ class HomeViewModel @Inject constructor(
                             sceneId = playback.sceneId,
                             title = playback.sceneTitle,
                             isPlaying = playback.isPlaying,
-                            imageUrl = playback.sceneImageUrl
+                            imageUrl = playback.sceneImageUrl,
+                            timerRemainingSeconds = playback.timerRemainingSeconds
                         )
                     )
                 }
@@ -105,6 +106,7 @@ data class HomeSoundscapeMiniPlayer(
     val title: String = "",
     val isPlaying: Boolean = false,
     val imageUrl: String? = null,
+    val timerRemainingSeconds: Int? = null,
 )
 
 sealed class HomeSideEffect {

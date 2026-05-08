@@ -8,6 +8,7 @@ package digital.euforia.app.service.soundscapes
 import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
+import android.os.SystemClock
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -63,7 +64,7 @@ class SoundscapePlaybackService : MediaSessionService() {
     private var sleepTimerJob: Job? = null
     private var sleepTimerTickJob: Job? = null
     private var musicPauseFadeJob: Job? = null
-    private var sleepDeadlineMs: Long? = null
+    private var sleepDeadlineElapsedMs: Long? = null
     private var sleepTimerSeconds: Int? = null
     private val lastRepeatRemainingSecondByLayer = mutableMapOf<String, Long?>()
 
@@ -232,29 +233,26 @@ class SoundscapePlaybackService : MediaSessionService() {
             cancelSleepTimer()
             return
         }
-        val expectedDeadline = if (sleepTimerSeconds == seconds && sleepDeadlineMs != null) {
-            sleepDeadlineMs!!
+        val expectedDeadline = if (sleepTimerSeconds == seconds && sleepDeadlineElapsedMs != null) {
+            sleepDeadlineElapsedMs!!
         } else {
-            System.currentTimeMillis() + seconds * 1000L
+            SystemClock.elapsedRealtime() + seconds * 1000L
         }
-        if (sleepTimerJob != null && sleepDeadlineMs == expectedDeadline) return
+        if (sleepTimerJob != null && sleepDeadlineElapsedMs == expectedDeadline) return
         sleepTimerSeconds = seconds
-        sleepDeadlineMs = expectedDeadline
-        playbackController.updateTimerRemaining(
-            ((expectedDeadline - System.currentTimeMillis()) / 1000L).toInt().coerceAtLeast(0)
-        )
+        sleepDeadlineElapsedMs = expectedDeadline
+        playbackController.updateTimerRemaining(secondsUntilDeadline(expectedDeadline))
         sleepTimerJob?.cancel()
         sleepTimerJob = serviceScope.launch {
-            val delayMs = (expectedDeadline - System.currentTimeMillis()).coerceAtLeast(0L)
+            val delayMs = (expectedDeadline - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
             delay(delayMs)
-            playbackController.stop(fadeOut = true)
+            playbackController.setPlaying(false)
+            playbackController.setTimer(null)
         }
         sleepTimerTickJob?.cancel()
         sleepTimerTickJob = serviceScope.launch {
             while (true) {
-                val left = ((expectedDeadline - System.currentTimeMillis()) / 1000L)
-                    .toInt()
-                    .coerceAtLeast(0)
+                val left = secondsUntilDeadline(expectedDeadline)
                 playbackController.updateTimerRemaining(left)
                 if (left <= 0) break
                 delay(1000L)
@@ -267,9 +265,14 @@ class SoundscapePlaybackService : MediaSessionService() {
         sleepTimerTickJob?.cancel()
         sleepTimerJob = null
         sleepTimerTickJob = null
-        sleepDeadlineMs = null
+        sleepDeadlineElapsedMs = null
         sleepTimerSeconds = null
         playbackController.updateTimerRemaining(null)
+    }
+
+    private fun secondsUntilDeadline(deadlineElapsedMs: Long): Int {
+        val remainingMs = (deadlineElapsedMs - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+        return ((remainingMs + 999L) / 1000L).toInt()
     }
 
 
