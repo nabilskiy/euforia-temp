@@ -12,8 +12,9 @@ import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.di.ApplicationCoroutineScopeIO
 import digital.euforia.app.domain.util.ResultWrapper
 import digital.euforia.app.domain.util.retry
-import digital.euforia.app.ui.soundscapes.scene.copySceneIdFromPresetId
-import digital.euforia.app.ui.soundscapes.scene.presetIdFromDownloadId
+import digital.euforia.app.data.soundscapes.toLocalStateForEditor
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
+import digital.euforia.app.domain.soundscapes.presetIdFromDownloadId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.firstOrNull
@@ -66,9 +67,14 @@ class SoundscapeDownloadsProcessor @Inject constructor(
         repository.updateDownload(startedItem)
 
         try {
+            repository.ensureSavedSoundscapesSeeded()
             val scene = repository.getSceneDetails(item.sceneId).dataOrNull
-            val localStateSceneId = presetIdFromDownloadId(item.id)?.let(::copySceneIdFromPresetId) ?: item.sceneId
-            val localState = repository.getLocalSceneState(localStateSceneId)
+            val presetId = presetIdFromDownloadId(item.id)
+            val localStateSceneId = presetId?.let(::copySceneIdFromPresetId) ?: item.sceneId
+            val localFromSaved = presetId?.let { pid ->
+                repository.getSavedSoundscape(pid)?.toLocalStateForEditor(localStateSceneId)
+            }
+            val localState = localFromSaved ?: repository.getLocalSceneState(localStateSceneId)
             val assetsToDownload = buildOfflineAssetRefs(
                 scene = scene,
                 localLayerSoundIds = parseLocalLayerSoundIds(localState?.layersJson),
@@ -77,7 +83,10 @@ class SoundscapeDownloadsProcessor @Inject constructor(
                 localSoundFileUrlsById = repository.getAllSounds()
                     .associate { sound -> sound.id to sound.fileUrl.takeIf { it.isNotBlank() } },
                 localSoundImageUrlsById = repository.getAllSounds()
-                    .associate { sound -> sound.id to sound.imageUrl.takeIf { it.isNotBlank() } }
+                    .associate { sound -> sound.id to sound.imageUrl.takeIf { it.isNotBlank() } },
+                localBackgroundImageUrl = localState?.backgroundImageUrl,
+                localBackgroundVideoUrl = localState?.backgroundVideoUrl,
+                localBackgroundSource = localState?.backgroundSource,
             )
 
             if (assetsToDownload.isEmpty()) {
@@ -85,7 +94,11 @@ class SoundscapeDownloadsProcessor @Inject constructor(
                     startedItem.copy(
                         status = SoundscapeDownloadItem.STATUS_READY,
                         progress = 100,
-                        localPath = SoundscapeOfflineManifest(sceneId = item.sceneId, assets = emptyList()).toJson(),
+                        localPath = SoundscapeOfflineManifest(
+                            sceneId = item.sceneId,
+                            savedId = presetId,
+                            assets = emptyList(),
+                        ).toJson(),
                         updatedAt = System.currentTimeMillis()
                     )
                 )
@@ -127,6 +140,7 @@ class SoundscapeDownloadsProcessor @Inject constructor(
                     progress = 100,
                     localPath = SoundscapeOfflineManifest(
                         sceneId = item.sceneId,
+                        savedId = presetId,
                         assets = downloadedAssets
                     ).toJson(),
                     updatedAt = System.currentTimeMillis()
@@ -158,6 +172,9 @@ internal fun buildOfflineAssetRefs(
     localSelectedMusicUrl: String? = null,
     localSoundFileUrlsById: Map<Int, String?> = emptyMap(),
     localSoundImageUrlsById: Map<Int, String?> = emptyMap(),
+    localBackgroundImageUrl: String? = null,
+    localBackgroundVideoUrl: String? = null,
+    localBackgroundSource: String? = null,
 ): List<OfflineAssetRef> {
     val sceneSoundIds = scene?.sceneSounds
         ?.mapNotNull { it.sound?.id }
@@ -210,6 +227,19 @@ internal fun buildOfflineAssetRefs(
     val backgroundAssets = listOfNotNull(
         scene?.imageUrl?.takeIf { it.isNotBlank() }
     ).map { OfflineAssetRef(type = SoundscapeAssetType.IMAGE_BACKGROUND, url = it) }
+    val isLocalImageOnly = localBackgroundSource == "image" || localBackgroundSource == "local_image"
+    val localBgVideoUrl = when {
+        isLocalImageOnly -> null
+        localBackgroundVideoUrl?.isNotBlank() == true -> localBackgroundVideoUrl
+        else -> null
+    }
+    val localBgImageUrl = localBackgroundImageUrl?.takeIf { it.isNotBlank() }
+    val localVideoAssets = listOfNotNull(localBgVideoUrl)
+        .map { OfflineAssetRef(type = SoundscapeAssetType.VIDEO, url = it) }
+    val localPreviewAssets = listOfNotNull(localBgImageUrl)
+        .map { OfflineAssetRef(type = SoundscapeAssetType.IMAGE_PREVIEW, url = it) }
+    val localBackgroundAssets = listOfNotNull(localBgImageUrl)
+        .map { OfflineAssetRef(type = SoundscapeAssetType.IMAGE_BACKGROUND, url = it) }
     return (
         soundAssets +
             localEditedSoundAssets +
@@ -221,7 +251,10 @@ internal fun buildOfflineAssetRefs(
             localEditedMusicAssets +
             videoAssets +
             previewAssets +
-            backgroundAssets
+            backgroundAssets +
+            localVideoAssets +
+            localPreviewAssets +
+            localBackgroundAssets
         )
         .distinctBy { "${it.type}:${it.url}" }
 }

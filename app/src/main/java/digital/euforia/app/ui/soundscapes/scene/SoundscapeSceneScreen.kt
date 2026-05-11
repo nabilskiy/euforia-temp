@@ -429,8 +429,9 @@ fun SoundscapeSceneScreen(
             }
 
             ScenePreparingOverlay(
-                visible = state.isPreparing || state.isSceneDownloadInProgress,
+                visible = state.isPreparing || state.isSceneDownloadInProgress || state.isBackgroundMediaApplying,
                 isSceneDownloadInProgress = state.isSceneDownloadInProgress,
+                isBackgroundMediaApplying = state.isBackgroundMediaApplying,
                 downloadProgress = state.downloadProgress,
                 preparingTotal = state.preparingTotal,
                 preparingCompleted = state.preparingCompleted,
@@ -611,6 +612,20 @@ private fun SceneDialogsHost(
     soundsPickerSheetState: androidx.compose.material3.SheetState
 ) {
     val localizedRes = LocalLocalizedRes.current
+    var pendingExitAfterSave by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(
+        pendingExitAfterSave,
+        state.isSceneDownloadInProgress,
+        state.downloadState,
+    ) {
+        if (!pendingExitAfterSave) return@LaunchedEffect
+        val finished = !state.isSceneDownloadInProgress &&
+            state.downloadState == SoundscapeDownloadItem.STATUS_READY
+        if (finished) {
+            pendingExitAfterSave = false
+            onCloseAfterExitAction()
+        }
+    }
     if (showUnsavedExitDialog) {
         AlertDialog(
             onDismissRequest = { onShowUnsavedExitDialogChange(false) },
@@ -620,7 +635,7 @@ private fun SceneDialogsHost(
                 TextButton(onClick = {
                     onSavePreset()
                     onShowUnsavedExitDialogChange(false)
-                    onCloseAfterExitAction()
+                    pendingExitAfterSave = true
                 }) { Text(text = localizedRes.string(R.string.audio_scene_unsaved_changes_alert_save)) }
             },
             dismissButton = {
@@ -1385,6 +1400,7 @@ private fun BoxScope.SceneBottomControls(
 private fun ScenePreparingOverlay(
     visible: Boolean,
     isSceneDownloadInProgress: Boolean,
+    isBackgroundMediaApplying: Boolean,
     downloadProgress: Int,
     preparingTotal: Int,
     preparingCompleted: Int,
@@ -1405,32 +1421,36 @@ private fun ScenePreparingOverlay(
             modifier = Modifier.padding(horizontal = 24.dp)
         ) {
             ProgressIndicator()
-            val progressText = if (isSceneDownloadInProgress) {
-                localizedRes.string(R.string.downloads_progress_format, downloadProgress)
-            } else {
-                if (preparingTotal > 0) {
+            val progressText = when {
+                isSceneDownloadInProgress ->
+                    localizedRes.string(R.string.downloads_progress_format, downloadProgress)
+                isBackgroundMediaApplying ->
+                    "" // avoid duplicate "Loading.." line
+                preparingTotal > 0 ->
                     localizedRes.string(R.string.scene_preparing_progress_format, preparingCompleted, preparingTotal)
-                } else {
-                    localizedRes.string(R.string.loading)
-                }
+                else -> localizedRes.string(R.string.loading)
             }
             Text(
-                text = if (isSceneDownloadInProgress) {
-                    localizedRes.string(R.string.audio_scene_saving)
-                } else {
-                    localizedRes.string(R.string.scene_preparing)
+                text = when {
+                    isSceneDownloadInProgress ->
+                        localizedRes.string(R.string.audio_scene_saving)
+                    isBackgroundMediaApplying ->
+                        localizedRes.string(R.string.loading)
+                    else -> localizedRes.string(R.string.scene_preparing)
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = White,
                 textAlign = TextAlign.Center
             )
-            Text(
-                text = progressText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = White.copy(alpha = 0.82f),
-                textAlign = TextAlign.Center
-            )
-            if (!isSceneDownloadInProgress) {
+            if (progressText.isNotBlank()) {
+                Text(
+                    text = progressText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = White.copy(alpha = 0.82f),
+                    textAlign = TextAlign.Center
+                )
+            }
+            if (!isSceneDownloadInProgress && !isBackgroundMediaApplying) {
                 TextButton(onClick = onCancel) {
                     Text(text = localizedRes.string(R.string.cancel), color = White)
                 }

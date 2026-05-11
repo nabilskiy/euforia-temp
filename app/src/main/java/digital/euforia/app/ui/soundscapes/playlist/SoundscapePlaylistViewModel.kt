@@ -12,9 +12,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.domain.usecase.soundscapes.mergeSoundscapeSceneLocalBackground
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.ui.util.reduceState
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -73,13 +75,21 @@ class SoundscapePlaylistViewModel @Inject constructor(
     }
 
     private fun observePlaylist() {
-        intent {
-            repository.getPlaylistFlow(playlistId).collectLatest { playlist ->
+        viewModelScope.launch {
+            combine(
+                repository.getPlaylistFlow(playlistId),
+                repository.getScenesFlow(),
+                repository.getLocalSceneStatesFlow(),
+            ) { playlist, scenes, localBySceneId ->
+                Triple(playlist, scenes, localBySceneId)
+            }.collectLatest { (playlist, scenes, localBySceneId) ->
                 if (playlist == null) return@collectLatest
-                val scenesById = repository.getScenesByIds(playlist.sceneIds).associateBy { it.id }
-                val orderedScenes = playlist.sceneIds.mapNotNull(scenesById::get)
-                reduce {
-                    state.copy(
+                val scenesById = scenes.associateBy { it.id }
+                val orderedScenes = playlist.sceneIds.mapNotNull { id ->
+                    scenesById[id]?.mergeSoundscapeSceneLocalBackground(localBySceneId[id])
+                }
+                reduceState {
+                    copy(
                         title = playlist.name,
                         scenes = orderedScenes
                     )

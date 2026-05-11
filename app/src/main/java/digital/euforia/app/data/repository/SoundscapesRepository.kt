@@ -6,6 +6,7 @@
 package digital.euforia.app.data.repository
 
 import digital.euforia.app.data.api.EuforiaApi
+import digital.euforia.app.data.db.dao.SavedSoundscapeDao
 import digital.euforia.app.data.db.dao.SceneCategoryDao
 import digital.euforia.app.data.db.dao.SceneDao
 import digital.euforia.app.data.db.dao.SoundscapeDownloadDao
@@ -13,6 +14,7 @@ import digital.euforia.app.data.db.dao.SoundscapePlaylistDao
 import digital.euforia.app.data.db.dao.SoundscapePresetDao
 import digital.euforia.app.data.db.dao.SoundscapeSceneLocalStateDao
 import digital.euforia.app.data.db.dao.SoundscapeSoundDao
+import digital.euforia.app.data.db.entity.SavedSoundscape
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SceneCategory
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
@@ -24,9 +26,17 @@ import digital.euforia.app.data.db.entity.SoundscapeSoundCategory
 import digital.euforia.app.data.model.NetworkCategory
 import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.toEntity
+import digital.euforia.app.data.soundscapes.encodeSavedPayloadJson
+import digital.euforia.app.data.soundscapes.emptySavedPayloadJson
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
+import digital.euforia.app.domain.usecase.soundscapes.mergeSoundscapeSceneLocalBackground
+import digital.euforia.app.domain.usecase.soundscapes.mergeSoundscapeScenesWithLocalBackground
 import digital.euforia.app.domain.util.ResultWrapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,7 +50,48 @@ class SoundscapesRepository @Inject constructor(
     private val playlistDao: SoundscapePlaylistDao,
     private val presetDao: SoundscapePresetDao,
     private val downloadDao: SoundscapeDownloadDao,
+    private val savedSoundscapeDao: SavedSoundscapeDao,
 ) {
+    private val seedMutex = Mutex()
+    @Volatile
+    private var savedSeeded = false
+
+    suspend fun ensureSavedSoundscapesSeeded() {
+        if (savedSeeded) return
+        seedMutex.withLock {
+            if (savedSeeded) return
+            seedSavedSoundscapesFromLegacy()
+            savedSeeded = true
+        }
+    }
+
+    private suspend fun seedSavedSoundscapesFromLegacy() {
+        val presets = presetDao.getAll()
+        for (preset in presets) {
+            if (savedSoundscapeDao.getById(preset.id) != null) continue
+            val copyId = copySceneIdFromPresetId(preset.id)
+            val localAtCopy = localStateDao.getBySceneId(copyId)
+            val localAtSource = localStateDao.getBySceneId(preset.sceneId)
+            if (localAtCopy == null && localAtSource != null) {
+                localStateDao.upsert(localAtSource.copy(sceneId = copyId))
+            }
+            val effective = localStateDao.getBySceneId(copyId)
+            val payloadJson = if (effective != null) {
+                encodeSavedPayloadJson(preset.sceneId, effective)
+            } else {
+                emptySavedPayloadJson(preset.sceneId)
+            }
+            savedSoundscapeDao.upsert(
+                SavedSoundscape(
+                    id = preset.id,
+                    sourceCatalogSceneId = preset.sceneId,
+                    name = preset.name,
+                    payloadJson = payloadJson,
+                )
+            )
+        }
+    }
+
     suspend fun syncCatalog(): ResultWrapper<Unit> {
         val categories = api.getSceneCategories().dataOrNull.orEmpty()
         return api.scenes().flatMap { flatScenes ->
@@ -83,9 +134,50 @@ class SoundscapesRepository @Inject constructor(
 
     fun getSceneCategoriesFlow(): Flow<List<SceneCategory>> = sceneCategoryDao.getAllOrderedFlow()
     fun getScenesFlow(): Flow<List<Scene>> = sceneDao.getAllFlow()
+
     fun getSceneFlow(id: Int): Flow<Scene?> = sceneDao.getByIdFlow(id)
 
-    suspend fun getSceneById(id: Int): Scene? = sceneDao.getById(id)
+    fun getLocalSceneStatesFlow(): Flow<Map<Int, SoundscapeSceneLocalState>> =
+        localStateDao.observeAll().map { rows -> rows.associateBy { it.sceneId } }
+
+    fun getSavedSoundscapesFlow(): Flow<List<SavedSoundscape>> = savedSoundscapeDao.observeAllFlow()
+
+    suspend fun getSavedSoundscape(id: Int): SavedSoundscape? = savedSoundscapeDao.getById(id)
+
+    suspend fun upsertSavedSoundscape(item: SavedSoundscape) = savedSoundscapeDao.upsert(item)
+
+    suspend fun ensureSavedRowForNewPreset(preset: SoundscapePreset) {
+        if (savedSoundscapeDao.getById(preset.id) != null) return
+        val copyId = copySceneIdFromPresetId(preset.id)
+        val localAtCopy = localStateDao.getBySceneId(copyId)
+        val localAtSource = localStateDao.getBySceneId(preset.sceneId)
+        if (localAtCopy == null && localAtSource != null) {
+            localStateDao.upsert(localAtSource.copy(sceneId = copyId))
+        }
+        val effective = localStateDao.getBySceneId(copyId)
+        val payloadJson = if (effective != null) {
+            encodeSavedPayloadJson(preset.sceneId, effective)
+        } else {
+            emptySavedPayloadJson(preset.sceneId)
+        }
+        savedSoundscapeDao.upsert(
+            SavedSoundscape(
+                id = preset.id,
+                sourceCatalogSceneId = preset.sceneId,
+                name = preset.name,
+                payloadJson = payloadJson,
+            )
+        )
+    }
+
+    suspend fun deleteSavedSoundscape(id: Int) {
+        savedSoundscapeDao.deleteById(id)
+    }
+
+    suspend fun getSceneById(id: Int): Scene? {
+        val scene = sceneDao.getById(id) ?: return null
+        return scene.mergeSoundscapeSceneLocalBackground(localStateDao.getBySceneId(id))
+    }
     suspend fun getSceneDetails(id: Int): ResultWrapper<NetworkScene> {
         return api.scene(id).onSuccess { networkScene ->
             sceneDao.upsertAll(listOf(networkScene.toEntity()))
@@ -120,7 +212,13 @@ class SoundscapesRepository @Inject constructor(
     fun getPlaylistsFlow(): Flow<List<SoundscapePlaylist>> = playlistDao.getAllFlow()
     fun getPlaylistFlow(id: Int): Flow<SoundscapePlaylist?> = playlistDao.getByIdFlow(id)
     suspend fun getPlaylistById(id: Int): SoundscapePlaylist? = playlistDao.getById(id)
-    suspend fun getScenesByIds(ids: List<Int>): List<Scene> = sceneDao.getByIds(ids)
+    suspend fun getScenesByIds(ids: List<Int>): List<Scene> {
+        if (ids.isEmpty()) return emptyList()
+        val scenes = sceneDao.getByIds(ids)
+        if (scenes.isEmpty()) return emptyList()
+        val locals = localStateDao.getBySceneIds(ids)
+        return mergeSoundscapeScenesWithLocalBackground(scenes, locals.associateBy { it.sceneId })
+    }
     suspend fun getPlaylistDetails(id: Int): ResultWrapper<SoundscapePlaylist> {
         return api.playlist(id).map { playlist ->
             val sceneEntities = playlist.scenes.map { it.toEntity() }
@@ -172,4 +270,3 @@ private fun NetworkCategory.toSceneCategoryEntity(index: Int) = SceneCategory(
     name = name,
     position = position ?: index,
 )
-

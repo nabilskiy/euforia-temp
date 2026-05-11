@@ -10,6 +10,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import digital.euforia.app.data.db.entity.SoundscapeSceneLocalState
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SoundscapeSceneLocalStateDao {
@@ -21,4 +22,10 @@ interface SoundscapeSceneLocalStateDao {
 
     @Query("DELETE FROM soundscape_scene_local_state WHERE scene_id = :sceneId")
     suspend fun deleteBySceneId(sceneId: Int)
+
+    @Query("SELECT * FROM soundscape_scene_local_state")
+    fun observeAll(): Flow<List<SoundscapeSceneLocalState>>
+
+    @Query("SELECT * FROM soundscape_scene_local_state WHERE scene_id IN (:sceneIds)")
+    suspend fun getBySceneIds(sceneIds: List<Int>): List<SoundscapeSceneLocalState>
 }

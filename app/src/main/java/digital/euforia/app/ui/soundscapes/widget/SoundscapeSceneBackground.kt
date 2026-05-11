@@ -72,32 +72,8 @@ fun SoundscapeSceneBackground(
     onPlaybackProgress: (positionMs: Long, durationMs: Long) -> Unit,
 ) {
     val context = LocalContext.current
-    var displayImageUrl by remember(imageUrl) { mutableStateOf(imageUrl) }
-    LaunchedEffect(imageUrl) {
-        if (!imageUrl.isNullOrBlank()) {
-            displayImageUrl = imageUrl
-        }
-    }
 
     val parallaxScale = if (isParallaxEnabled) 1.06f else 1f
-
-    // Base layer: when there is no video (or while it isn't ready), image must stay visible.
-    if (!displayImageUrl.isNullOrBlank()) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(displayImageUrl)
-                .allowHardware(false)
-                .crossfade(false)
-                .build(),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale),
-            contentScale = ContentScale.Crop
-        )
-    } else {
-        Box(Modifier.fillMaxSize().background(Black))
-    }
 
     val videoExo = remember(videoUrl) {
         if (videoUrl.isNullOrBlank()) null else {
@@ -165,6 +141,38 @@ fun SoundscapeSceneBackground(
         playbackState = v.playbackState
         if (shouldPlay) v.play() else v.pause()
     }
+    val playerReadyNow = videoExo?.playbackState == Player.STATE_READY || playbackState == Player.STATE_READY
+    val showBlurredVideoPreview = videoExo != null &&
+        !(hasRenderedFirstFrame || isVideoReady || playerReadyNow)
+
+    // Image-only: always sharp. Video: blurred first-frame preview until the player has painted a frame
+    // (drawn under PlayerView so the video layer replaces the blur once frames are visible).
+    if (!imageUrl.isNullOrBlank()) {
+        val useBlur = showBlurredVideoPreview
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(imageUrl)
+                .allowHardware(false)
+                .crossfade(false)
+                .build(),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale)
+                .then(if (useBlur) Modifier.blur(34.dp) else Modifier),
+            contentScale = ContentScale.Crop
+        )
+        if (useBlur) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.38f))
+            )
+        }
+    } else {
+        Box(Modifier.fillMaxSize().background(Black))
+    }
+
     if (videoExo != null) {
         AndroidView(
             factory = { ctx ->
@@ -178,29 +186,6 @@ fun SoundscapeSceneBackground(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale)
-        )
-    }
-
-    val playerReadyNow = videoExo?.playbackState == Player.STATE_READY || playbackState == Player.STATE_READY
-    val showBlurredPlaceholder = !(hasRenderedFirstFrame || isVideoReady || playerReadyNow)
-    if (showBlurredPlaceholder && videoExo != null && !displayImageUrl.isNullOrBlank()) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(displayImageUrl)
-                .allowHardware(false)
-                .crossfade(false)
-                .build(),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale)
-                .blur(34.dp),
-            contentScale = ContentScale.Crop
-        )
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.38f))
         )
     }
 

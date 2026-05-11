@@ -5,14 +5,18 @@
 
 package digital.euforia.app.domain.usecase.soundscapes
 
+import digital.euforia.app.data.db.entity.SavedSoundscape
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
+import digital.euforia.app.data.db.entity.SoundscapePreset
+import digital.euforia.app.data.db.entity.SoundscapeSceneLocalState
 import digital.euforia.app.data.repository.SoundscapesRepository
+import digital.euforia.app.data.soundscapes.toLocalStateForEditor
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
+import digital.euforia.app.domain.soundscapes.presetIdFromDownloadId
 import digital.euforia.app.service.soundscapes.SoundscapeAssetType
-import digital.euforia.app.service.soundscapes.SoundscapeOfflineManifest
 import digital.euforia.app.service.soundscapes.SoundscapeAudioCacheManager
-import digital.euforia.app.ui.soundscapes.scene.copySceneIdFromPresetId
-import digital.euforia.app.ui.soundscapes.scene.presetIdFromDownloadId
+import digital.euforia.app.service.soundscapes.SoundscapeOfflineManifest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
@@ -26,6 +30,13 @@ data class SoundscapeDownloadCard(
     val presetId: Int?,
 )
 
+private data class DownloadMergeInputs(
+    val downloads: List<SoundscapeDownloadItem>,
+    val scenes: List<Scene>,
+    val presets: List<SoundscapePreset>,
+    val localBySceneId: Map<Int, SoundscapeSceneLocalState>,
+)
+
 class GetSoundscapeDownloadsFlowUseCase @Inject constructor(
     private val repository: SoundscapesRepository
 ) {
@@ -37,24 +48,43 @@ class GetSoundscapeDownloadCardsFlowUseCase @Inject constructor(
 ) {
     operator fun invoke(): Flow<List<SoundscapeDownloadCard>> {
         return combine(
-            repository.getDownloadsFlow(),
-            repository.getScenesFlow(),
-            repository.getPresetsFlow(),
-        ) { downloads, scenes, presets ->
-            val scenesById = scenes.associateBy { it.id }
+            combine(
+                repository.getDownloadsFlow(),
+                repository.getScenesFlow(),
+                repository.getPresetsFlow(),
+                repository.getLocalSceneStatesFlow(),
+            ) { downloads, scenes, presets, localBySceneId ->
+                DownloadMergeInputs(downloads, scenes, presets, localBySceneId)
+            },
+            repository.getSavedSoundscapesFlow(),
+        ) { slice, savedRows ->
+            val downloads = slice.downloads
+            val scenes = slice.scenes
+            val presets = slice.presets
+            val localBySceneId = slice.localBySceneId
+            val scenesById = scenes
+                .map { it.mergeSoundscapeSceneLocalBackground(localBySceneId[it.id]) }
+                .associateBy { it.id }
             val presetsById = presets.associateBy { it.id }
+            val savedByPresetId = savedRows.associateBy { it.id }
             downloads.map { item ->
                 val scene = scenesById[item.sceneId]
                 val preset = presetIdFromDownloadId(item.id)?.let(presetsById::get)
+                val saved = preset?.id?.let(savedByPresetId::get)
                 val manifest = SoundscapeOfflineManifest.fromJsonOrNull(item.localPath)
-                val imageUrl = manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_PREVIEW)
-                    ?: manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_BACKGROUND)
-                    ?: scene?.imagePreviewUrl?.takeIf { it.isNotBlank() }
-                    ?: scene?.imageUrl?.takeIf { it.isNotBlank() }
+                val imageUrl = resolveDownloadCardImageUrl(
+                    item = item,
+                    scene = scene,
+                    preset = preset,
+                    saved = saved,
+                    manifest = manifest,
+                    localBySceneId = localBySceneId,
+                )
                 SoundscapeDownloadCard(
                     download = item,
                     scene = scene,
-                    title = preset?.name?.takeIf { it.isNotBlank() }
+                    title = saved?.name?.takeIf { it.isNotBlank() }
+                        ?: preset?.name?.takeIf { it.isNotBlank() }
                         ?: scene?.name?.takeIf { it.isNotBlank() }
                         ?: item.title,
                     imageUrl = imageUrl,
@@ -66,17 +96,56 @@ class GetSoundscapeDownloadCardsFlowUseCase @Inject constructor(
     }
 }
 
+private fun resolveDownloadCardImageUrl(
+    item: SoundscapeDownloadItem,
+    scene: Scene?,
+    preset: SoundscapePreset?,
+    saved: SavedSoundscape?,
+    manifest: SoundscapeOfflineManifest?,
+    localBySceneId: Map<Int, SoundscapeSceneLocalState>,
+): String? {
+    // Prefer saved payload (custom image or video first frame) so the row matches catalog / mini player
+    // before falling back to manifest paths (which may still reflect stock previews in edge cases).
+    if (preset != null && saved != null) {
+        val copyId = copySceneIdFromPresetId(preset.id)
+        val fromSaved = saved.toLocalStateForEditor(copyId)
+        if (fromSaved != null && scene != null) {
+            val merged = scene.mergeSoundscapeSceneLocalBackground(fromSaved)
+            merged.imagePreviewUrl?.takeIf { it.isNotBlank() }?.let { return it }
+            merged.imageUrl?.takeIf { it.isNotBlank() }?.let { return it }
+        }
+    }
+    manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_PREVIEW)?.takeIf { it.isNotBlank() }?.let { return it }
+    manifest?.firstLocalUrlByType(SoundscapeAssetType.IMAGE_BACKGROUND)?.takeIf { it.isNotBlank() }?.let { return it }
+    val stock = scene?.mergeSoundscapeSceneLocalBackground(localBySceneId[item.sceneId])
+    return stock?.imagePreviewUrl?.takeIf { it.isNotBlank() }
+        ?: stock?.imageUrl?.takeIf { it.isNotBlank() }
+}
+
 class GetReadyDownloadedScenesFlowUseCase @Inject constructor(
     private val repository: SoundscapesRepository
 ) {
     operator fun invoke(): Flow<List<Scene>> {
         return combine(
-            repository.getDownloadsFlow(),
-            repository.getScenesFlow(),
-            repository.getPresetsFlow(),
-        ) { downloads, scenes, presets ->
-            val scenesById = scenes.associateBy { it.id }
+            combine(
+                repository.getDownloadsFlow(),
+                repository.getScenesFlow(),
+                repository.getPresetsFlow(),
+                repository.getLocalSceneStatesFlow(),
+            ) { downloads, scenes, presets, localBySceneId ->
+                DownloadMergeInputs(downloads, scenes, presets, localBySceneId)
+            },
+            repository.getSavedSoundscapesFlow(),
+        ) { slice, savedRows ->
+            val downloads = slice.downloads
+            val scenes = slice.scenes
+            val presets = slice.presets
+            val localBySceneId = slice.localBySceneId
+            val scenesById = scenes
+                .map { it.mergeSoundscapeSceneLocalBackground(localBySceneId[it.id]) }
+                .associateBy { it.id }
             val presetsById = presets.associateBy { it.id }
+            val savedByPresetId = savedRows.associateBy { it.id }
             downloads
                 .asSequence()
                 .filter { it.status == SoundscapeDownloadItem.STATUS_READY }
@@ -84,10 +153,14 @@ class GetReadyDownloadedScenesFlowUseCase @Inject constructor(
                     val presetId = presetIdFromDownloadId(item.id) ?: return@mapNotNull null
                     val preset = presetsById[presetId] ?: return@mapNotNull null
                     val original = scenesById[preset.sceneId] ?: return@mapNotNull null
-                    original.copy(
-                        id = copySceneIdFromPresetId(preset.id),
-                        name = preset.name.ifBlank { original.name },
-                    )
+                    val saved = savedByPresetId[presetId]
+                    val copyId = copySceneIdFromPresetId(preset.id)
+                    val fromSaved = saved?.toLocalStateForEditor(copyId)
+                    val card = original.copy(
+                        id = copyId,
+                        name = saved?.name?.ifBlank { preset.name } ?: preset.name.ifBlank { original.name },
+                    ).mergeSoundscapeSceneLocalBackground(fromSaved)
+                    card
                 }
                 .toList()
         }
@@ -125,6 +198,7 @@ class DeleteSoundscapeDownloadUseCase @Inject constructor(
         }
         repository.deleteDownload(id)
         if (presetId != null) {
+            repository.deleteSavedSoundscape(presetId)
             repository.deletePreset(presetId)
             repository.deleteLocalSceneState(copySceneIdFromPresetId(presetId))
         }
@@ -144,6 +218,7 @@ class ClearSoundscapeDownloadsUseCase @Inject constructor(
             }
             val presetId = presetIdFromDownloadId(item.id)
             if (presetId != null) {
+                repository.deleteSavedSoundscape(presetId)
                 repository.deletePreset(presetId)
                 repository.deleteLocalSceneState(copySceneIdFromPresetId(presetId))
             }

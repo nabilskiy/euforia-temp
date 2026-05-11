@@ -93,6 +93,7 @@ internal suspend fun importLocalVideo(context: Context, sourceUri: Uri): Importe
             val retriever = MediaMetadataRetriever()
             retriever.setDataSource(videoFile.absolutePath)
             val frame = retriever.getFrameAtTime(0L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                ?: retriever.getFrameAtTime(1_000_000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
             retriever.release()
             if (frame != null) {
                 val cropped = frame.centerCropToRatio(9f / 16f)

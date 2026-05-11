@@ -189,6 +189,7 @@ class RepositoryModule {
             playlistDao = database.soundscapePlaylistDao(),
             presetDao = database.soundscapePresetDao(),
             downloadDao = database.soundscapeDownloadDao(),
+            savedSoundscapeDao = database.savedSoundscapeDao(),
         )
     }
 

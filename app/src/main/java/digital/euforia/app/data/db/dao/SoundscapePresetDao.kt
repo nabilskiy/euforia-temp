@@ -20,6 +20,9 @@ interface SoundscapePresetDao {
     @Query("SELECT * FROM soundscape_presets ORDER BY created_at DESC")
     fun getAllFlow(): Flow<List<SoundscapePreset>>
 
+    @Query("SELECT * FROM soundscape_presets ORDER BY created_at DESC")
+    suspend fun getAll(): List<SoundscapePreset>
+
     @Query("SELECT * FROM soundscape_presets WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): SoundscapePreset?
 

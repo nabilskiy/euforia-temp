@@ -4,6 +4,7 @@ import android.net.Uri
 import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.deeplink.DeepLinkCommand
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
@@ -24,7 +25,19 @@ class ParseDeepLinkUseCase @Inject constructor(
         if (isSupportedWebLink) {
             val segments = uri.pathSegments
             if (segments.firstOrNull().equals("scenes", ignoreCase = true)) {
-                val sceneId = segments.getOrNull(1)?.toIntOrNull()
+                val seg1 = segments.getOrNull(1)
+                if (seg1?.equals("mysaved", ignoreCase = true) == true) {
+                    val savedId = segments.getOrNull(2)?.toIntOrNull()
+                    return if (savedId == null) {
+                        HomeDestination.Soundscapes
+                    } else {
+                        HomeDestination.SoundscapesScene(
+                            sceneId = copySceneIdFromPresetId(savedId),
+                            savedId = savedId,
+                        )
+                    }
+                }
+                val sceneId = seg1?.toIntOrNull()
                 return if (sceneId == null) HomeDestination.Soundscapes
                 else HomeDestination.SoundscapesScene(sceneId = sceneId)
             }
@@ -75,11 +88,24 @@ class ParseDeepLinkUseCase @Inject constructor(
 
             // Audio scenes (audioscene://... + scenes://...)
             "audioscene", "scenes" -> {
-                val id = segInt(0)
-                if (id == null) {
-                    HomeDestination.Soundscapes
+                val s0 = segments.firstOrNull()
+                if (s0.equals("mysaved", ignoreCase = true)) {
+                    val savedId = segInt(1)
+                    if (savedId == null) {
+                        HomeDestination.Soundscapes
+                    } else {
+                        HomeDestination.SoundscapesScene(
+                            sceneId = copySceneIdFromPresetId(savedId),
+                            savedId = savedId,
+                        )
+                    }
                 } else {
-                    HomeDestination.SoundscapesScene(sceneId = id)
+                    val id = segInt(0)
+                    if (id == null) {
+                        HomeDestination.Soundscapes
+                    } else {
+                        HomeDestination.SoundscapesScene(sceneId = id)
+                    }
                 }
             }
 

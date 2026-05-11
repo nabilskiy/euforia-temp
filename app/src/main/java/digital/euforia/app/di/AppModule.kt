@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.db.AppDatabase
+import digital.euforia.app.data.db.MIGRATION_17_18
 import digital.euforia.app.data.network.TokensProvider
 import javax.inject.Singleton
 
@@ -23,7 +24,8 @@ class AppModule {
         return Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java, DB_NAME
-        ).fallbackToDestructiveMigration()
+        ).addMigrations(MIGRATION_17_18)
+            .fallbackToDestructiveMigration()
             .build()
     }
 

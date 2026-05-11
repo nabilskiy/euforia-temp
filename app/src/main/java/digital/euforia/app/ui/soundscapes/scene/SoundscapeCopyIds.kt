@@ -5,22 +5,18 @@
 
 package digital.euforia.app.ui.soundscapes.scene
 
-private const val COPY_SCENE_ID_OFFSET = 1_000_000
-private const val DOWNLOAD_COPY_PREFIX = "copy_"
+import digital.euforia.app.domain.soundscapes.copyDownloadIdFromPresetId as domainCopyDownloadIdFromPresetId
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId as domainCopySceneIdFromPresetId
+import digital.euforia.app.domain.soundscapes.isCopySceneId as domainIsCopySceneId
+import digital.euforia.app.domain.soundscapes.presetIdFromCopySceneId as domainPresetIdFromCopySceneId
+import digital.euforia.app.domain.soundscapes.presetIdFromDownloadId as domainPresetIdFromDownloadId
 
-fun copySceneIdFromPresetId(presetId: Int): Int = -(COPY_SCENE_ID_OFFSET + presetId)
+fun copySceneIdFromPresetId(presetId: Int): Int = domainCopySceneIdFromPresetId(presetId)
 
-fun presetIdFromCopySceneId(sceneId: Int): Int? {
-    if (sceneId >= 0) return null
-    val raw = -sceneId - COPY_SCENE_ID_OFFSET
-    return raw.takeIf { it > 0 }
-}
+fun presetIdFromCopySceneId(sceneId: Int): Int? = domainPresetIdFromCopySceneId(sceneId)
 
-fun isCopySceneId(sceneId: Int): Boolean = presetIdFromCopySceneId(sceneId) != null
+fun isCopySceneId(sceneId: Int): Boolean = domainIsCopySceneId(sceneId)
 
-fun copyDownloadIdFromPresetId(presetId: Int): String = "$DOWNLOAD_COPY_PREFIX$presetId"
+fun copyDownloadIdFromPresetId(presetId: Int): String = domainCopyDownloadIdFromPresetId(presetId)
 
-fun presetIdFromDownloadId(downloadId: String): Int? {
-    if (!downloadId.startsWith(DOWNLOAD_COPY_PREFIX)) return null
-    return downloadId.removePrefix(DOWNLOAD_COPY_PREFIX).toIntOrNull()
-}
+fun presetIdFromDownloadId(downloadId: String): Int? = domainPresetIdFromDownloadId(downloadId)

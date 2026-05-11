@@ -32,6 +32,7 @@ import digital.euforia.app.data.db.dao.FaqCategoryDao
 import digital.euforia.app.data.db.dao.FaqItemDao
 import digital.euforia.app.data.db.dao.FavouritePublicationsDao
 import digital.euforia.app.data.db.dao.FeedbackFormDao
+import digital.euforia.app.data.db.dao.SavedSoundscapeDao
 import digital.euforia.app.data.db.dao.SoundscapeDownloadDao
 import digital.euforia.app.data.db.dao.SoundscapeSceneLocalStateDao
 import digital.euforia.app.data.db.dao.SoundscapePlaylistDao
@@ -58,6 +59,7 @@ import digital.euforia.app.data.db.entity.FavouritePublication
 import digital.euforia.app.data.db.entity.FeedbackForm
 import digital.euforia.app.data.db.entity.FeedbackOption
 import digital.euforia.app.data.db.entity.FeedbackQuestion
+import digital.euforia.app.data.db.entity.SavedSoundscape
 import digital.euforia.app.data.db.entity.SoundscapeDownloadItem
 import digital.euforia.app.data.db.entity.SoundscapeSceneLocalState
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
@@ -67,7 +69,7 @@ import digital.euforia.app.data.db.entity.SoundscapeSoundCategory
 
 @TypeConverters(value = [AccompanimentTypeConverters::class, PhraseListConverters::class, FeedbackTypeConverters::class, IntListConverter::class, PublicationTypeConverter::class])
 @Database(
-    version = 17,
+    version = 18,
     entities = [
         SampleEntity::class,
         Accompaniment::class,
@@ -96,6 +98,7 @@ import digital.euforia.app.data.db.entity.SoundscapeSoundCategory
         SoundscapeSound::class,
         SoundscapeSoundCategory::class,
         SoundscapeSceneLocalState::class,
+        SavedSoundscape::class,
     ]
 )
 
@@ -124,4 +127,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun soundscapeDownloadDao(): SoundscapeDownloadDao
     abstract fun soundscapeSoundDao(): SoundscapeSoundDao
     abstract fun soundscapeSceneLocalStateDao(): SoundscapeSceneLocalStateDao
+    abstract fun savedSoundscapeDao(): SavedSoundscapeDao
 }

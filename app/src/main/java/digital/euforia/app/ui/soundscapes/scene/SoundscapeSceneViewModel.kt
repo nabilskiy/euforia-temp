@@ -28,11 +28,13 @@ import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.model.toEntity
 import digital.euforia.app.domain.model.config.ScenePlayerConfig
 import digital.euforia.app.domain.util.ResultWrapper
+import digital.euforia.app.data.soundscapes.toLocalStateForEditor
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapeDownloadsFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.DeleteSoundscapeDownloadUseCase
 import digital.euforia.app.domain.usecase.soundscapes.QueueSoundscapeDownloadUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SaveSoundscapePresetUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SyncSoundscapesCatalogUseCase
+import digital.euforia.app.domain.usecase.soundscapes.mergeSoundscapeSceneLocalBackground
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.service.soundscapes.SoundscapeAudioCacheManager
@@ -91,6 +93,16 @@ class SoundscapeSceneViewModel @Inject constructor(
 
     private fun ensureSceneLoaded() {
         intent {
+            soundscapesRepository.ensureSavedSoundscapesSeeded()
+            // Avoid showing the previous screen's background until this scene's URLs are resolved.
+            reduce {
+                state.copy(
+                    imageUrl = null,
+                    videoUrl = null,
+                    backgroundSource = null,
+                    error = null,
+                )
+            }
             val openedPreset = openedPresetId?.let { soundscapesRepository.getPresetById(it) }
             val originalSceneId = openedPreset?.sceneId ?: sceneId
             val localStateSceneId = if (openedPreset != null) sceneId else null
@@ -98,14 +110,25 @@ class SoundscapeSceneViewModel @Inject constructor(
             // Load local scene first to avoid black screen while network sync/details are pending.
             val localScene = soundscapesRepository.getSceneById(originalSceneId)
             if (localScene != null) {
-                val localAlias = localScene.categoryId?.let(sceneCategoryAliasesById::get)
+                // Preset editor state is stored under the copy scene id, not the catalog row id.
+                val earlyPayloadLocal = if (openedPreset != null) {
+                    soundscapesRepository.getLocalSceneState(sceneId)
+                        ?: openedPreset.id.let { pid ->
+                            soundscapesRepository.getSavedSoundscape(pid)?.toLocalStateForEditor(sceneId)
+                        }
+                } else {
+                    null
+                }
+                val earlyScene = earlyPayloadLocal?.let { localScene.mergeSoundscapeSceneLocalBackground(it) }
+                    ?: localScene
+                val localAlias = earlyScene.categoryId?.let(sceneCategoryAliasesById::get)
                 reduce {
                     state.copy(
-                        title = openedPreset?.name?.ifBlank { localScene.name } ?: localScene.name,
-                        videoUrl = localScene.videoUrl,
-                        imageUrl = localScene.imagePreviewUrl ?: localScene.imageUrl,
-                        isPro = localScene.pro,
-                        sceneCategoryId = localScene.categoryId,
+                        title = openedPreset?.name?.ifBlank { earlyScene.name } ?: earlyScene.name,
+                        videoUrl = earlyScene.videoUrl,
+                        imageUrl = earlyScene.imagePreviewUrl ?: earlyScene.imageUrl,
+                        isPro = earlyScene.pro,
+                        sceneCategoryId = earlyScene.categoryId,
                         sceneCategoryAlias = localAlias,
                         originalSceneId = originalSceneId,
                         presetId = openedPreset?.id,
@@ -139,12 +162,16 @@ class SoundscapeSceneViewModel @Inject constructor(
                 ?.let { id -> soundscapesRepository.getPlaylistById(id)?.sceneIds }
                 .orEmpty()
             playbackController.setPlaylist(playlistSceneIds)
+            val localFromSaved = openedPreset?.id?.let { pid ->
+                soundscapesRepository.getSavedSoundscape(pid)?.toLocalStateForEditor(sceneId)
+            }
             val loaded = buildLoadedSceneData(
                 repository = soundscapesRepository,
                 sceneId = originalSceneId,
                 remoteScene = remoteScene,
                 localStateSceneId = localStateSceneId,
                 preset = openedPreset,
+                localStateFromSnapshot = localFromSaved,
                 fallbackMusicVolume = level,
                 createFloatingButton = { sound, index, total, instanceKey ->
                     createFloatingButton(sound, index, total, instanceKey)
@@ -167,6 +194,23 @@ class SoundscapeSceneViewModel @Inject constructor(
                 preferredUrl = loaded.selectedMusicUrl ?: remoteScene.resolveDefaultSceneMusicUrl(),
                 manifest = manifest
             )
+            val usesImageBackground = loaded.backgroundSource == "image" || loaded.backgroundSource == "local_image"
+            val usesVideoBackground = loaded.backgroundSource == "video" || loaded.backgroundSource == "local_video"
+            val resolvedBackgroundVideoUrl = when {
+                usesImageBackground -> null
+                !loaded.backgroundVideoUrl.isNullOrBlank() -> loaded.backgroundVideoUrl
+                !loaded.hasLocalState -> resolvedVideoUrl
+                else -> if (usesVideoBackground) resolvedVideoUrl else null
+            }
+            val resolvedBackgroundImageUrl = listOf(
+                loaded.backgroundImageUrl,
+                resolvedImageUrl,
+                scene.imageUrl,
+                scene.imagePreviewUrl,
+                remoteScene?.imageCoverUrl,
+                remoteScene?.imageUrl,
+                remoteScene?.imagePreviewUrl
+            ).firstOrNull { !it.isNullOrBlank() }
             playbackController.setMusicVolume(loaded.resolvedMusicVolume)
             playbackController.setSceneMusic(
                 musicUrl = resolvedSceneMusicUrl,
@@ -183,16 +227,8 @@ class SoundscapeSceneViewModel @Inject constructor(
                 state.copy(
                     title = openedPreset?.name?.ifBlank { scene.name } ?: scene.name,
                     subtitle = remoteScene?.subtitle.orEmpty(),
-                    videoUrl = loaded.backgroundVideoUrl ?: resolvedVideoUrl,
-                    imageUrl = listOf(
-                        loaded.backgroundImageUrl,
-                        resolvedImageUrl,
-                        scene.imageUrl,
-                        scene.imagePreviewUrl,
-                        remoteScene?.imageCoverUrl,
-                        remoteScene?.imageUrl,
-                        remoteScene?.imagePreviewUrl
-                    ).firstOrNull { !it.isNullOrBlank() },
+                    videoUrl = resolvedBackgroundVideoUrl,
+                    imageUrl = resolvedBackgroundImageUrl,
                     selectedMusicId = loaded.selectedMusicId ?: remoteScene?.sceneMusics?.firstOrNull()?.music?.id,
                     sceneMusicUrl = resolvedSceneMusicUrl,
                     sceneMusicTitle = loaded.selectedMusicTitle
@@ -250,16 +286,17 @@ class SoundscapeSceneViewModel @Inject constructor(
                 reduce { state.copy(isPreparing = false, preparingCompleted = 0, preparingTotal = 0) }
             }
             val layersForPlayback = preparedLayers
+            val activeSceneId = container.stateFlow.value.sceneId
             Timber.tag("SOUNDSCAPES_AUDIO").d(
                 "scene_prepared sceneId=%s layers=%s withAudio=%s",
-                sceneId,
+                activeSceneId,
                 layersForPlayback.size,
                 layersForPlayback.count { !it.audioUrl.isNullOrBlank() }
             )
-            if (playbackController.playback.value.sceneId != sceneId) {
+            if (playbackController.playback.value.sceneId != activeSceneId) {
                 val ambientMode = container.stateFlow.value.scenePlayerConfig.ambientMode
                 playbackController.start(
-                    sceneId = sceneId,
+                    sceneId = activeSceneId,
                     sceneTitle = sceneTitle,
                     sceneImageUrl = container.stateFlow.value.imageUrl,
                     sceneMusicUrl = container.stateFlow.value.sceneMusicUrl,
@@ -650,62 +687,113 @@ class SoundscapeSceneViewModel @Inject constructor(
     fun onBackgroundImageSelected(imageUrl: String) {
         val normalized = imageUrl.trim()
         if (normalized.isBlank()) return
-        intent {
-            reduce {
-                state.copy(
-                    imageUrl = normalized,
-                    videoUrl = null,
-                    backgroundSource = "image",
-                    isDirty = true,
-                )
+        viewModelScope.launch {
+            intent { reduce { state.copy(isBackgroundMediaApplying = true) } }
+            try {
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        audioCacheManager.ensureCached(normalized, SoundscapeAssetType.IMAGE_PREVIEW)
+                    }
+                }
+                intent {
+                    reduce {
+                        state.copy(
+                            imageUrl = normalized,
+                            videoUrl = null,
+                            backgroundSource = "image",
+                            isDirty = true,
+                        )
+                    }
+                }
+                persistLocalSceneState()
+            } finally {
+                intent { reduce { state.copy(isBackgroundMediaApplying = false) } }
             }
-            persistLocalSceneState()
         }
     }
 
     fun onBackgroundVideoSelected(videoUrl: String, previewImageUrl: String? = null) {
         val normalized = videoUrl.trim()
         if (normalized.isBlank()) return
-        intent {
-            reduce {
-                state.copy(
-                    videoUrl = normalized,
-                    imageUrl = previewImageUrl?.takeIf { it.isNotBlank() } ?: state.imageUrl,
-                    backgroundSource = "video",
-                    isDirty = true,
-                )
+        viewModelScope.launch {
+            intent { reduce { state.copy(isBackgroundMediaApplying = true) } }
+            try {
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        audioCacheManager.ensureCached(normalized, SoundscapeAssetType.VIDEO)
+                    }
+                    val preview = previewImageUrl?.trim()?.takeIf { it.isNotBlank() }
+                    if (preview != null) {
+                        runCatching {
+                            audioCacheManager.ensureCached(preview, SoundscapeAssetType.IMAGE_PREVIEW)
+                        }
+                    }
+                }
+                val snapshot = container.stateFlow.value
+                intent {
+                    reduce {
+                        snapshot.copy(
+                            videoUrl = normalized,
+                            imageUrl = previewImageUrl?.takeIf { it.isNotBlank() } ?: snapshot.imageUrl,
+                            backgroundSource = "video",
+                            isDirty = true,
+                        )
+                    }
+                }
+                persistLocalSceneState()
+            } finally {
+                intent { reduce { state.copy(isBackgroundMediaApplying = false) } }
             }
-            persistLocalSceneState()
         }
     }
 
     fun onBackgroundLocalFileSelected(uri: Uri, mimeType: String?) {
         viewModelScope.launch {
-            val lowerMime = mimeType?.lowercase().orEmpty()
-            if (lowerMime.startsWith("video/")) {
-                val imported = importLocalVideo(applicationContext, uri)
-                if (imported != null) {
-                    intent {
-                        reduce {
-                            state.copy(
-                                videoUrl = imported.videoUrl,
-                                imageUrl = imported.previewImageUrl ?: state.imageUrl,
-                                backgroundSource = "local_video",
-                                isDirty = true,
-                            )
+            intent { reduce { state.copy(isBackgroundMediaApplying = true) } }
+            try {
+                val lowerMime = mimeType?.lowercase().orEmpty()
+                if (lowerMime.startsWith("video/")) {
+                    val imported = importLocalVideo(applicationContext, uri)
+                    if (imported != null) {
+                        intent {
+                            reduce {
+                                state.copy(
+                                    videoUrl = imported.videoUrl,
+                                    imageUrl = imported.previewImageUrl ?: state.imageUrl,
+                                    backgroundSource = "local_video",
+                                    isDirty = true,
+                                )
+                            }
                         }
                         persistLocalSceneState()
                     }
                 }
+            } finally {
+                intent { reduce { state.copy(isBackgroundMediaApplying = false) } }
             }
         }
     }
 
     fun onBackgroundCroppedLocalImageSelected(imageUrl: String) {
-        onBackgroundImageSelected(imageUrl)
-        intent {
-            reduce { state.copy(backgroundSource = "local_image") }
-            persistLocalSceneState()
+        val normalized = imageUrl.trim()
+        if (normalized.isBlank()) return
+        viewModelScope.launch {
+            intent { reduce { state.copy(isBackgroundMediaApplying = true) } }
+            try {
+                intent {
+                    reduce {
+                        state.copy(
+                            imageUrl = normalized,
+                            videoUrl = null,
+                            backgroundSource = "local_image",
+                            isDirty = true,
+                        )
+                    }
+                }
+                persistLocalSceneState()
+            } finally {
+                intent { reduce { state.copy(isBackgroundMediaApplying = false) } }
+            }
         }
     }
 
@@ -739,19 +827,20 @@ class SoundscapeSceneViewModel @Inject constructor(
                 sceneState = nextState,
                 playbackState = playback
             )
+            reduce { nextState }
+            playbackController.retargetActiveSceneIdentity(
+                sceneId = copySceneId,
+                sceneTitle = nextState.title,
+                sceneImageUrl = nextState.imageUrl,
+            )
             val sceneTitle = nextState.title.ifBlank { "Scene ${nextState.originalSceneId}" }
             analyticSender.soundscapeDownloadQueued(nextState.originalSceneId)
-            queueDownloadUseCase(
-                SoundscapeDownloadItem(
-                    id = copyDownloadIdFromPresetId(savedPreset.id),
-                    sceneId = nextState.originalSceneId,
-                    title = sceneTitle,
-                    url = "scene://${nextState.originalSceneId}",
-                    status = SoundscapeDownloadItem.STATUS_QUEUED,
-                    progress = 0
-                )
+            ensureDownloadRowForSavedPreset(
+                presetId = savedPreset.id,
+                catalogSceneId = nextState.originalSceneId,
+                title = sceneTitle,
+                forceRequeueIfReady = true,
             )
-            reduce { nextState }
         }
     }
 
@@ -974,6 +1063,19 @@ class SoundscapeSceneViewModel @Inject constructor(
                 playbackState = playback
             )
             reduce { nextState }
+            playbackController.retargetActiveSceneIdentity(
+                sceneId = copySceneId,
+                sceneTitle = nextState.title,
+                sceneImageUrl = nextState.imageUrl,
+            )
+            val sceneTitle = nextState.title.ifBlank { "Scene ${nextState.originalSceneId}" }
+            ensureDownloadRowForSavedPreset(
+                presetId = savedPreset.id,
+                catalogSceneId = nextState.originalSceneId,
+                title = sceneTitle,
+                forceRequeueIfReady = true,
+            )
+            analyticSender.soundscapeDownloadQueued(nextState.originalSceneId)
         }
     }
 
@@ -996,34 +1098,75 @@ class SoundscapeSceneViewModel @Inject constructor(
     fun onDownloadScene() {
         intent {
             val sceneTitle = state.title.ifBlank { "Scene ${state.originalSceneId}" }
-            val presetId = state.presetId
-            if (presetId == null) return@intent
+            val presetId = state.presetId ?: return@intent
             analyticSender.soundscapeDownloadQueued(state.originalSceneId)
-            queueDownloadUseCase(
-                SoundscapeDownloadItem(
-                    id = copyDownloadIdFromPresetId(presetId),
-                    sceneId = state.originalSceneId,
-                    title = sceneTitle,
-                    url = "scene://${state.originalSceneId}",
-                    status = SoundscapeDownloadItem.STATUS_QUEUED,
-                    progress = 0
-                )
+            ensureDownloadRowForSavedPreset(
+                presetId = presetId,
+                catalogSceneId = state.originalSceneId,
+                title = sceneTitle,
             )
         }
+    }
+
+    private suspend fun ensureDownloadRowForSavedPreset(
+        presetId: Int,
+        catalogSceneId: Int,
+        title: String,
+        forceRequeueIfReady: Boolean = false,
+    ) {
+        val id = copyDownloadIdFromPresetId(presetId)
+        val existing = soundscapesRepository.getDownload(id)
+        when (existing?.status) {
+            SoundscapeDownloadItem.STATUS_QUEUED,
+            SoundscapeDownloadItem.STATUS_DOWNLOADING -> return
+            SoundscapeDownloadItem.STATUS_READY -> {
+                if (!forceRequeueIfReady) return
+                queueDownloadUseCase(
+                    existing.copy(
+                        sceneId = catalogSceneId,
+                        title = title,
+                        status = SoundscapeDownloadItem.STATUS_QUEUED,
+                        progress = 0,
+                        localPath = null,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                )
+                return
+            }
+            else -> Unit
+        }
+        queueDownloadUseCase(
+            SoundscapeDownloadItem(
+                id = id,
+                sceneId = catalogSceneId,
+                title = title,
+                url = "scene://$catalogSceneId",
+                status = SoundscapeDownloadItem.STATUS_QUEUED,
+                progress = 0
+            )
+        )
     }
 
     fun onCancelPreparation() {
         preparationJob?.cancel()
         analyticSender.soundscapePreparationCancelled()
         intent {
-            reduce { state.copy(isPreparing = false, preparingCompleted = 0, preparingTotal = 0) }
+            reduce {
+                state.copy(
+                    isPreparing = false,
+                    preparingCompleted = 0,
+                    preparingTotal = 0,
+                    isBackgroundMediaApplying = false,
+                )
+            }
         }
     }
 
     private fun observePlayback() {
         intent {
             playbackController.playback.collectLatest { playback ->
-                if (playback.sceneId != sceneId) return@collectLatest
+                val editorSceneId = container.stateFlow.value.sceneId
+                if (playback.sceneId != editorSceneId) return@collectLatest
                 reduce {
                     state.copy(
                         title = playback.sceneTitle,
@@ -1125,6 +1268,7 @@ data class SoundscapeSceneState(
     val downloadItemId: String? = null,
     val downloadProgress: Int = 0,
     val isSceneDownloadInProgress: Boolean = false,
+    val isBackgroundMediaApplying: Boolean = false,
     val engineHealth: String = "OK",
     val availableSounds: List<AvailableSoundUi> = emptyList(),
     val suggestedSoundIds: List<Int> = emptyList(),

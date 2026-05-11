@@ -49,6 +49,8 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     data class SoundscapesScene(
         val sceneId: Int,
         val playlistId: Int? = null,
+        /** Room `soundscape_presets.id` when opened via `mysaved/{id}` deep link; [sceneId] remains the synthetic copy id. */
+        val savedId: Int? = null,
     ) : HomeDestination(showNavBar = false)
 
     @Serializable

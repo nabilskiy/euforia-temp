@@ -136,6 +136,21 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
         _playback.update { it.copy(sceneTitle = title) }
     }
 
+    /**
+     * After saving a catalog scene as «My» copy, playback keeps the same audio but the logical scene id
+     * becomes the synthetic copy id so catalog / mini-player highlight the saved row.
+     */
+    fun retargetActiveSceneIdentity(sceneId: Int, sceneTitle: String? = null, sceneImageUrl: String? = null) {
+        _playback.update { state ->
+            if (state.sceneId == null) state
+            else state.copy(
+                sceneId = sceneId,
+                sceneTitle = sceneTitle?.takeIf { it.isNotBlank() } ?: state.sceneTitle,
+                sceneImageUrl = sceneImageUrl?.takeIf { it.isNotBlank() } ?: state.sceneImageUrl,
+            )
+        }
+    }
+
     override fun canPlayPrev(): Boolean = prevSceneId() != null
 
     override fun canPlayNext(): Boolean = nextSceneId() != null

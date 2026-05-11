@@ -3,6 +3,7 @@ package digital.euforia.app.domain.usecase
 import android.net.Uri
 import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
 import digital.euforia.app.ui.navigation.HomeDestination
 import io.mockk.mockk
 import io.mockk.every
@@ -35,6 +36,40 @@ class ParseDeepLinkUseCaseTest {
         every { uri.getQueryParameter(any()) } returns null
         val destination = useCase(uri)
         assertEquals(HomeDestination.SoundscapesScene(sceneId = 123), destination)
+    }
+
+    @Test
+    fun `mysaved deep link opens scene with copy id and savedId`() = runBlocking {
+        val uri = mockk<Uri>()
+        every { uri.scheme } returns "euforia"
+        every { uri.host } returns "scenes"
+        every { uri.pathSegments } returns listOf("mysaved", "7")
+        every { uri.getQueryParameter(any()) } returns null
+        val destination = useCase(uri)
+        assertEquals(
+            HomeDestination.SoundscapesScene(
+                sceneId = copySceneIdFromPresetId(7),
+                savedId = 7,
+            ),
+            destination,
+        )
+    }
+
+    @Test
+    fun `https mysaved deep link`() = runBlocking {
+        val uri = mockk<Uri>()
+        every { uri.scheme } returns "https"
+        every { uri.host } returns "euforia.digital"
+        every { uri.pathSegments } returns listOf("scenes", "mysaved", "3")
+        every { uri.getQueryParameter(any()) } returns null
+        val destination = useCase(uri)
+        assertEquals(
+            HomeDestination.SoundscapesScene(
+                sceneId = copySceneIdFromPresetId(3),
+                savedId = 3,
+            ),
+            destination,
+        )
     }
 
     @Test

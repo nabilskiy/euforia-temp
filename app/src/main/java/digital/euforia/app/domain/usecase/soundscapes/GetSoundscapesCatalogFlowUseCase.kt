@@ -5,12 +5,17 @@
 
 package digital.euforia.app.domain.usecase.soundscapes
 
+import digital.euforia.app.data.db.entity.SavedSoundscape
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SceneCategory
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
+import digital.euforia.app.data.db.entity.SoundscapePreset
+import digital.euforia.app.data.db.entity.SoundscapeSceneLocalState
 import digital.euforia.app.data.repository.SoundscapesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 const val SOUNDSCAPE_SECTION_FALLBACK_ALL = -2
@@ -28,6 +33,7 @@ data class SoundscapesCatalog(
     val scenes: List<Scene>,
     val playlists: List<SoundscapePlaylist>,
     val categorySections: List<SoundscapeCategorySection>,
+    val savedSoundscapes: List<SavedSoundscape> = emptyList(),
 )
 
 internal fun buildSoundscapeCategorySections(
@@ -54,21 +60,45 @@ internal fun buildSoundscapeCategorySections(
     return result
 }
 
+private data class SoundscapeCatalogInputs(
+    val categories: List<SceneCategory>,
+    val scenes: List<Scene>,
+    val playlists: List<SoundscapePlaylist>,
+    val localBySceneId: Map<Int, SoundscapeSceneLocalState>,
+    val presets: List<SoundscapePreset>,
+)
+
 class GetSoundscapesCatalogFlowUseCase @Inject constructor(
     private val repository: SoundscapesRepository
 ) {
-    operator fun invoke(): Flow<SoundscapesCatalog> {
-        return combine(
-            repository.getSceneCategoriesFlow(),
-            repository.getScenesFlow(),
-            repository.getPlaylistsFlow()
-        ) { categories, scenes, playlists ->
+    operator fun invoke(): Flow<SoundscapesCatalog> = flow {
+        repository.ensureSavedSoundscapesSeeded()
+        emit(Unit)
+    }.flatMapLatest {
+        combine(
+            combine(
+                repository.getSceneCategoriesFlow(),
+                repository.getScenesFlow(),
+                repository.getPlaylistsFlow(),
+                repository.getLocalSceneStatesFlow(),
+                repository.getPresetsFlow(),
+            ) { c, s, p, l, pr ->
+                SoundscapeCatalogInputs(c, s, p, l, pr)
+            },
+            repository.getSavedSoundscapesFlow(),
+        ) { inputs, savedSoundscapes ->
+            val presetBaseIds = inputs.presets.map { it.sceneId }.toSet()
+            val mergedScenes = mergeSoundscapeScenesWithLocalBackgroundExcludingPresetBases(
+                inputs.scenes,
+                inputs.localBySceneId,
+                presetBaseIds,
+            )
             SoundscapesCatalog(
-                scenes = scenes,
-                playlists = playlists,
-                categorySections = buildSoundscapeCategorySections(categories, scenes),
+                scenes = mergedScenes,
+                playlists = inputs.playlists,
+                categorySections = buildSoundscapeCategorySections(inputs.categories, mergedScenes),
+                savedSoundscapes = savedSoundscapes,
             )
         }
     }
 }
-

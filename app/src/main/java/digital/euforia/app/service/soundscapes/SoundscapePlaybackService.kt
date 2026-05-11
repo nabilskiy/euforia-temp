@@ -86,6 +86,24 @@ class SoundscapePlaybackService : MediaSessionService() {
         exo.addListener(object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 if (syncingFromPlaybackState) return
+                // Metadata-only session player must not drive global playback: navigation, focus, system UI,
+                // etc. can toggle ExoPlayer without user intent. Only mirror changes we trust as real transport
+                // commands (local request + remote/session: notification, headset, MediaSession).
+                val trustedTransportReason =
+                    reason == Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST ||
+                        reason == Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE
+                if (!trustedTransportReason) {
+                    val desiredPlaying = playbackController.playback.value.isPlaying
+                    if (exo.playWhenReady != desiredPlaying) {
+                        syncingFromPlaybackState = true
+                        try {
+                            exo.playWhenReady = desiredPlaying
+                        } finally {
+                            syncingFromPlaybackState = false
+                        }
+                    }
+                    return
+                }
                 val current = playbackController.playback.value.isPlaying
                 if (current != playWhenReady) {
                     playbackController.setPlaying(playWhenReady)

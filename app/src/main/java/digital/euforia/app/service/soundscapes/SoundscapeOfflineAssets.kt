@@ -25,6 +25,8 @@ data class SoundscapeOfflineAsset(
 
 data class SoundscapeOfflineManifest(
     val sceneId: Int,
+    /** Room `soundscape_presets.id` when this manifest is for a user-saved scene download. */
+    val savedId: Int? = null,
     val assets: List<SoundscapeOfflineAsset>,
 ) {
     fun findLocalUrl(remoteUrl: String?, type: SoundscapeAssetType? = null): String? {
@@ -41,6 +43,7 @@ data class SoundscapeOfflineManifest(
     fun toJson(): String {
         val root = JSONObject()
         root.put("sceneId", sceneId)
+        if (savedId != null) root.put("savedId", savedId)
         val arr = JSONArray()
         assets.forEach { asset ->
             arr.put(
@@ -60,6 +63,7 @@ data class SoundscapeOfflineManifest(
             return runCatching {
                 val root = JSONObject(value)
                 val sceneId = root.optInt("sceneId", 0)
+                val savedId = root.optInt("savedId", 0).takeIf { it > 0 }
                 val arr = root.optJSONArray("assets") ?: JSONArray()
                 val assets = buildList {
                     for (index in 0 until arr.length()) {
@@ -80,7 +84,7 @@ data class SoundscapeOfflineManifest(
                         )
                     }
                 }
-                if (assets.isEmpty()) null else SoundscapeOfflineManifest(sceneId = sceneId, assets = assets)
+                if (assets.isEmpty()) null else SoundscapeOfflineManifest(sceneId = sceneId, savedId = savedId, assets = assets)
             }.getOrNull()
         }
     }

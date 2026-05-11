@@ -10,11 +10,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import digital.euforia.app.data.analytics.AnalyticSender
 import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
+import digital.euforia.app.data.db.entity.SavedSoundscape
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
 import digital.euforia.app.data.db.entity.SoundscapePreset
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
+import digital.euforia.app.data.soundscapes.toLocalStateForEditor
 import digital.euforia.app.domain.usecase.soundscapes.GetDefaultSoundscapeScenesUseCase
 import digital.euforia.app.domain.usecase.soundscapes.GetReadyDownloadedScenesFlowUseCase
 import digital.euforia.app.domain.usecase.soundscapes.GetSoundscapePresetsFlowUseCase
@@ -24,10 +26,11 @@ import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_DEFAULT
 import digital.euforia.app.domain.usecase.soundscapes.SOUNDSCAPE_SECTION_MY
 import digital.euforia.app.domain.usecase.soundscapes.SaveSoundscapePresetUseCase
 import digital.euforia.app.domain.usecase.soundscapes.SyncSoundscapesCatalogUseCase
+import digital.euforia.app.domain.usecase.soundscapes.mergeSoundscapeSceneLocalBackground
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackController
 import digital.euforia.app.ui.util.reduceState
-import digital.euforia.app.ui.soundscapes.scene.copySceneIdFromPresetId
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
@@ -237,8 +240,8 @@ class SoundscapesViewModel @Inject constructor(
     fun onSavePreset(name: String, sceneId: Int, layersJson: String) {
         intent {
             val preset = SoundscapePreset(name = name, sceneId = sceneId, layersJson = layersJson)
-            saveSoundscapePresetUseCase(preset)
-            appPreferences.setSoundscapesLastPreset(preset.id)
+            val saved = saveSoundscapePresetUseCase(preset)
+            appPreferences.setSoundscapesLastPreset(saved.id)
         }
     }
 
@@ -257,10 +260,12 @@ class SoundscapesViewModel @Inject constructor(
                         defaultScenes = defaultScenes,
                         playlists = catalog.playlists,
                         searchSuggestions = remoteConfigFetcher.getScenesSearchSuggestions(),
+                        savedSoundscapes = catalog.savedSoundscapes,
                         popularScenes = resolvePopularScenes(catalog.scenes),
                         myScenes = resolveMyScenes(
                             allScenes = catalog.scenes,
                             presets = state.presets,
+                            savedSoundscapes = catalog.savedSoundscapes,
                         ),
                         displaySections = buildDisplaySections(
                             sections = nextSections,
@@ -268,6 +273,7 @@ class SoundscapesViewModel @Inject constructor(
                             myScenes = resolveMyScenes(
                                 allScenes = catalog.scenes,
                                 presets = state.presets,
+                                savedSoundscapes = catalog.savedSoundscapes,
                             ),
                             query = state.query,
                             quickFilter = state.quickFilter
@@ -297,6 +303,7 @@ class SoundscapesViewModel @Inject constructor(
                     val nextMy = resolveMyScenes(
                         allScenes = state.scenes,
                         presets = presets,
+                        savedSoundscapes = state.savedSoundscapes,
                     )
                     state.copy(
                         presets = presets,
@@ -337,15 +344,21 @@ class SoundscapesViewModel @Inject constructor(
     private fun resolveMyScenes(
         allScenes: List<Scene>,
         presets: List<SoundscapePreset>,
+        savedSoundscapes: List<SavedSoundscape>,
     ): List<Scene> {
         if (allScenes.isEmpty()) return emptyList()
         val byId = allScenes.associateBy { it.id }
+        val savedById = savedSoundscapes.associateBy { it.id }
         return presets.mapNotNull { preset ->
             val original = byId[preset.sceneId] ?: return@mapNotNull null
+            val saved = savedById[preset.id]
+            val copyId = copySceneIdFromPresetId(preset.id)
+            val payloadLocal = saved?.toLocalStateForEditor(copyId)
+            val displayName = saved?.name?.ifBlank { preset.name } ?: preset.name
             original.copy(
-                id = copySceneIdFromPresetId(preset.id),
-                name = preset.name.ifBlank { original.name },
-            )
+                id = copyId,
+                name = displayName.ifBlank { original.name },
+            ).mergeSoundscapeSceneLocalBackground(payloadLocal)
         }
     }
 
@@ -397,6 +410,7 @@ data class SoundscapesState(
     val popularScenes: List<Scene> = emptyList(),
     val playlists: List<SoundscapePlaylist> = emptyList(),
     val presets: List<SoundscapePreset> = emptyList(),
+    val savedSoundscapes: List<SavedSoundscape> = emptyList(),
     val downloadedScenes: List<Scene> = emptyList(),
     val myScenes: List<Scene> = emptyList(),
     val miniPlayer: MiniPlayerUi = MiniPlayerUi(),

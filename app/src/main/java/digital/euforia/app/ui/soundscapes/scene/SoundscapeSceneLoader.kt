@@ -5,8 +5,9 @@
 
 package digital.euforia.app.ui.soundscapes.scene
 
-import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.db.entity.SoundscapePreset
+import digital.euforia.app.data.db.entity.SoundscapeSceneLocalState
+import digital.euforia.app.data.model.NetworkScene
 import digital.euforia.app.data.repository.SoundscapesRepository
 import digital.euforia.app.service.soundscapes.SoundscapeLayerState
 
@@ -22,6 +23,7 @@ internal data class LoadedSceneData(
     val backgroundImageUrl: String?,
     val backgroundVideoUrl: String?,
     val backgroundSource: String?,
+    val hasLocalState: Boolean,
 )
 
 internal suspend fun buildLoadedSceneData(
@@ -30,6 +32,8 @@ internal suspend fun buildLoadedSceneData(
     remoteScene: NetworkScene?,
     localStateSceneId: Int? = sceneId,
     preset: SoundscapePreset? = null,
+    /** Snapshot from [digital.euforia.app.data.db.entity.SavedSoundscape] when editing a preset. */
+    localStateFromSnapshot: SoundscapeSceneLocalState? = null,
     fallbackMusicVolume: Float,
     createFloatingButton: (sound: AvailableSoundUi, index: Int, total: Int, instanceKey: String) -> SoundFloatingButtonUi,
 ): LoadedSceneData {
@@ -76,7 +80,8 @@ internal suspend fun buildLoadedSceneData(
         }
         .orEmpty()
     val remoteButtonsByLayerKey = floatingButtons.associateBy { it.instanceKey }
-    val localState = localStateSceneId?.let { repository.getLocalSceneState(it) }
+    val localState = localStateFromSnapshot
+        ?: localStateSceneId?.let { repository.getLocalSceneState(it) }
     val localLayers = localState?.parseLayers().orEmpty()
     val localButtons = localState?.parseButtons().orEmpty()
     val localButtonsByKey = localButtons.associateBy { it.instanceKey }
@@ -184,5 +189,6 @@ internal suspend fun buildLoadedSceneData(
         backgroundImageUrl = localState?.backgroundImageUrl,
         backgroundVideoUrl = localState?.backgroundVideoUrl,
         backgroundSource = localState?.backgroundSource,
+        hasLocalState = localState != null,
     )
 }

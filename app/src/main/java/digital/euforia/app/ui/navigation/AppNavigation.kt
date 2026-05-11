@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -53,6 +54,15 @@ import digital.euforia.app.ui.sos.contacts.ContactsScreen
 import digital.euforia.app.ui.splash.SplashScreen
 import digital.euforia.app.ui.video.VideoScreen
 import timber.log.Timber
+
+/**
+ * Type-safe [composable] routes use a string that includes the destination class name; the reified
+ * [androidx.navigation.NavDestination.hasRoute] overload is not always on the classpath for the IDE/compiler.
+ */
+private fun NavDestination.hasSoundscapesSceneRoute(): Boolean {
+    val r = route ?: return false
+    return r.contains("SoundscapesScene") && !r.contains("SoundscapesPlaylist")
+}
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -172,8 +182,20 @@ fun AppNavigation(
 
                 composable<HomeDestination.Soundscapes>(
                     enterTransition = NavAnimations.enter,
-                    exitTransition = NavAnimations.exit,
-                    popEnterTransition = NavAnimations.popEnter,
+                    exitTransition = {
+                        if (targetState.destination.hasSoundscapesSceneRoute()) {
+                            fadeOut(animationSpec = tween(NavAnimations.SOUNDSCAPE_SCENE_TRANSITION_MS))
+                        } else {
+                            NavAnimations.exit(this)
+                        }
+                    },
+                    popEnterTransition = {
+                        if (initialState.destination.hasSoundscapesSceneRoute()) {
+                            fadeIn(animationSpec = tween(NavAnimations.SOUNDSCAPE_SCENE_TRANSITION_MS))
+                        } else {
+                            NavAnimations.popEnter(this)
+                        }
+                    },
                     popExitTransition = NavAnimations.popExit
                 ) {
                     isBottomBarShown.value = true
@@ -184,10 +206,12 @@ fun AppNavigation(
                     )
                 }
                 composable<HomeDestination.SoundscapesScene>(
-                    enterTransition = NavAnimations.enter,
-                    exitTransition = NavAnimations.exit,
-                    popEnterTransition = NavAnimations.popEnter,
-                    popExitTransition = NavAnimations.popExit
+                    enterTransition = NavAnimations.soundscapeSceneEnter,
+                    exitTransition = NavAnimations.soundscapeSceneExit,
+                    popEnterTransition = {
+                        fadeIn(animationSpec = tween(NavAnimations.SOUNDSCAPE_SCENE_TRANSITION_MS))
+                    },
+                    popExitTransition = NavAnimations.soundscapeSceneExit
                 ) {
                     isBottomBarShown.value = false
                     SoundscapeSceneScreen(

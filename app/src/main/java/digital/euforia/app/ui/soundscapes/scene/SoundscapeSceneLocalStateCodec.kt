@@ -5,8 +5,12 @@
 
 package digital.euforia.app.ui.soundscapes.scene
 
+import digital.euforia.app.data.db.entity.SavedSoundscape
 import digital.euforia.app.data.db.entity.SoundscapeSceneLocalState
 import digital.euforia.app.data.repository.SoundscapesRepository
+import digital.euforia.app.data.soundscapes.encodeSavedPayloadJson
+import digital.euforia.app.data.soundscapes.withUpdatedPayloadFromLocal
+import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
 import digital.euforia.app.service.soundscapes.SoundscapePlaybackState
 import kotlin.math.roundToInt
 
@@ -76,18 +80,31 @@ internal suspend fun persistLocalSceneState(
         val safeImage = btn.imageUrl.orEmpty().replace("|", "%7C")
         "${btn.id}:$safeKey:${(btn.posXFraction * 100f).roundToInt()}:${(btn.posYFraction * 100f).roundToInt()}:$safeTitle:$safeImage"
     }
-    repository.upsertLocalSceneState(
-        SoundscapeSceneLocalState(
-            sceneId = sceneState.sceneId,
-            musicVolume = playbackState.musicVolume.coerceIn(0f, 1f),
-            selectedMusicId = sceneState.selectedMusicId,
-            selectedMusicUrl = sceneState.sceneMusicUrl,
-            selectedMusicTitle = sceneState.sceneMusicTitle,
-            layersJson = layersJson,
-            buttonsJson = buttonsJson,
-            backgroundImageUrl = sceneState.imageUrl,
-            backgroundVideoUrl = sceneState.videoUrl,
-            backgroundSource = sceneState.backgroundSource,
-        )
+    val storageSceneId = sceneState.presetId?.let(::copySceneIdFromPresetId) ?: sceneState.sceneId
+    val localEntity = SoundscapeSceneLocalState(
+        sceneId = storageSceneId,
+        musicVolume = playbackState.musicVolume.coerceIn(0f, 1f),
+        selectedMusicId = sceneState.selectedMusicId,
+        selectedMusicUrl = sceneState.sceneMusicUrl,
+        selectedMusicTitle = sceneState.sceneMusicTitle,
+        layersJson = layersJson,
+        buttonsJson = buttonsJson,
+        backgroundImageUrl = sceneState.imageUrl,
+        backgroundVideoUrl = sceneState.videoUrl,
+        backgroundSource = sceneState.backgroundSource,
     )
+    repository.upsertLocalSceneState(localEntity)
+    val presetId = sceneState.presetId ?: return
+    val existing = repository.getSavedSoundscape(presetId)
+    val row = existing?.withUpdatedPayloadFromLocal(
+        sourceCatalogSceneId = sceneState.originalSceneId,
+        displayName = sceneState.title.ifBlank { existing.name },
+        local = localEntity,
+    ) ?: SavedSoundscape(
+        id = presetId,
+        sourceCatalogSceneId = sceneState.originalSceneId,
+        name = sceneState.title.ifBlank { "Scene" },
+        payloadJson = encodeSavedPayloadJson(sceneState.originalSceneId, localEntity),
+    )
+    repository.upsertSavedSoundscape(row)
 }
