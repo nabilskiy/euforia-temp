@@ -94,15 +94,6 @@ class SoundscapeSceneViewModel @Inject constructor(
     private fun ensureSceneLoaded() {
         intent {
             soundscapesRepository.ensureSavedSoundscapesSeeded()
-            // Avoid showing the previous screen's background until this scene's URLs are resolved.
-            reduce {
-                state.copy(
-                    imageUrl = null,
-                    videoUrl = null,
-                    backgroundSource = null,
-                    error = null,
-                )
-            }
             val openedPreset = openedPresetId?.let { soundscapesRepository.getPresetById(it) }
             val originalSceneId = openedPreset?.sceneId ?: sceneId
             val localStateSceneId = if (openedPreset != null) sceneId else null
@@ -136,9 +127,14 @@ class SoundscapeSceneViewModel @Inject constructor(
                 }
             }
 
-            syncSoundscapesCatalogUseCase()
+            val catalogSyncJob = viewModelScope.launch { syncSoundscapesCatalogUseCase() }
             val remoteScene = soundscapesRepository.getSceneDetails(originalSceneId).dataOrNull
-            val scene = remoteScene?.toEntity() ?: soundscapesRepository.getSceneById(originalSceneId) ?: localScene
+            val scene = remoteScene?.toEntity()
+                ?: run {
+                    catalogSyncJob.join()
+                    soundscapesRepository.getSceneById(originalSceneId)
+                }
+                ?: localScene
             if (scene == null) {
                 reduce {
                     state.copy(

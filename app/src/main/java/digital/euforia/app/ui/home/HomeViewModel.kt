@@ -67,7 +67,7 @@ class HomeViewModel @Inject constructor(
                 reduceState {
                     copy(
                         soundscapeMiniPlayer = HomeSoundscapeMiniPlayer(
-                            isVisible = playback.sceneId != null,
+                            isVisible = playback.sceneId != null && !playback.stopWithFadeOut,
                             sceneId = playback.sceneId,
                             title = playback.sceneTitle,
                             isPlaying = playback.isPlaying,
@@ -90,7 +90,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onSoundscapeMiniPlayerClose() {
-        soundscapePlaybackController.stop()
+        soundscapePlaybackController.stop(fadeOut = true)
     }
 }
 

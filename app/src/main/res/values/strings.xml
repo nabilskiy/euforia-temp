@@ -540,6 +540,7 @@
     <string name="audio_scene_select_background_sound">Select music</string>
     <string name="audio_scene_audio_settings">Audio options</string>
     <string name="audio_scene_background_music_settings">Music options</string>
+    <string name="audio_scene_menu_timer_1m">Set 1-minute timer</string>
     <string name="audio_scene_menu_timer_1h">Set 1-hour timer</string>
     <string name="audio_scene_menu_timer_2h">Set 2-hour timer</string>
     <string name="audio_scene_menu_timer_set">Set timer</string>

@@ -28,8 +28,10 @@ import javax.inject.Singleton
 class SoundscapeSoundsManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    private companion object {
-        const val MAX_SOUND_LAYERS = 12
+    companion object {
+        private const val MAX_SOUND_LAYERS = 12
+        const val PAUSE_FADE_DURATION_MS = 2_500L
+        const val STOP_FADE_DURATION_MS = 10_000L
     }
     private val mainHandler = Handler(Looper.getMainLooper())
     private val players = LinkedHashMap<String, ExoPlayer>()
@@ -126,7 +128,11 @@ class SoundscapeSoundsManager @Inject constructor(
             } else {
                 cancelDelayedStart(layer.instanceKey)
                 repeatRemainingUpdater(layer.instanceKey, null)
-                startFadeOut(layer.instanceKey, player)
+                startFadeOut(
+                    layerId = layer.instanceKey,
+                    player = player,
+                    durationMs = PAUSE_FADE_DURATION_MS,
+                )
             }
         }
         updateRepeatCountdowns()
@@ -141,7 +147,7 @@ class SoundscapeSoundsManager @Inject constructor(
 
 
 
-    suspend fun fadeOutAndReleaseAll(durationMs: Long = 320L) {
+    suspend fun fadeOutAndReleaseAll(durationMs: Long = PAUSE_FADE_DURATION_MS) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             releaseAll()
             return
@@ -166,6 +172,33 @@ class SoundscapeSoundsManager @Inject constructor(
             delay(stepDelayMs)
         }
         releaseAll()
+    }
+
+    suspend fun fadeOutAndPauseAll(durationMs: Long = STOP_FADE_DURATION_MS) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            return
+        }
+        val currentPlayers = players.values.toList()
+        if (currentPlayers.isEmpty()) return
+        players.keys.forEach { key ->
+            fadeGeneration[key] = (fadeGeneration[key] ?: 0) + 1
+        }
+        val startVolumes = currentPlayers.map { it.volume.coerceIn(0f, 1f) }
+        val steps = 10
+        val stepDelayMs = (durationMs / steps).coerceAtLeast(1L)
+        for (step in 1..steps) {
+            val t = step / steps.toFloat()
+            currentPlayers.forEachIndexed { idx, player ->
+                val v = startVolumes[idx] * (1f - t)
+                player.volume = v.coerceIn(0f, 1f)
+            }
+            delay(stepDelayMs)
+        }
+        currentPlayers.forEach { player ->
+            player.pause()
+            player.playWhenReady = false
+        }
+        isScenePlaying = false
     }
 
     fun releaseAll() {
@@ -227,7 +260,7 @@ class SoundscapeSoundsManager @Inject constructor(
         fadeGeneration[layerId] = (fadeGeneration[layerId] ?: 0) + 1
     }
 
-    private fun startFadeOut(layerId: String, player: ExoPlayer) {
+    private fun startFadeOut(layerId: String, player: ExoPlayer, durationMs: Long = PAUSE_FADE_DURATION_MS) {
         val gen = (fadeGeneration[layerId] ?: 0) + 1
         fadeGeneration[layerId] = gen
         val startVolume = player.volume.coerceIn(0f, 1f)
@@ -237,7 +270,7 @@ class SoundscapeSoundsManager @Inject constructor(
             return
         }
         val steps = 10
-        val stepDelayMs = 100L
+        val stepDelayMs = (durationMs / steps).coerceAtLeast(1L)
         for (step in 1..steps) {
             mainHandler.postDelayed({
                 if (fadeGeneration[layerId] != gen) return@postDelayed

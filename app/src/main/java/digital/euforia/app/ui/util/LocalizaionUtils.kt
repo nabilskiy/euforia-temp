@@ -25,6 +25,18 @@ class LocalizedResources(
         res.getQuantityString(id, quantity, *args)
 }
 
+fun Context.localizedResources(langTag: String): LocalizedResources {
+    val cfg = Configuration(resources.configuration)
+    cfg.setLocales(LocaleList.forLanguageTags(langTag))
+    val locCtx = createConfigurationContext(cfg)
+    val locale = Locale.forLanguageTag(langTag)
+    return LocalizedResources(
+        context = locCtx,
+        res = locCtx.resources,
+        locale = locale
+    )
+}
+
 val LocalLangTag = compositionLocalOf { "en" }
 val LocalLocalizedRes = staticCompositionLocalOf<LocalizedResources> {
     error("LocalizedResources is not provided")

@@ -494,6 +494,7 @@
     <string name="audio_scene_select_background_sound">Обрати музику</string>
     <string name="audio_scene_audio_settings">Налаштування звуку</string>
     <string name="audio_scene_background_music_settings">Налаштування музики</string>
+    <string name="audio_scene_menu_timer_1m">Таймер на 1 хвилину</string>
     <string name="audio_scene_menu_timer_1h">Таймер на 1 годину</string>
     <string name="audio_scene_menu_timer_2h">Таймер на 2 години</string>
     <string name="audio_scene_menu_timer_set">Встановити таймер</string>

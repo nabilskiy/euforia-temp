@@ -79,7 +79,6 @@ import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
 import digital.euforia.app.data.db.entity.Scene
 import digital.euforia.app.data.db.entity.SoundscapePlaylist
-import digital.euforia.app.ui.home.NavBarHeight
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.theme.NavBarBackground
@@ -787,6 +786,8 @@ private fun PlaylistsInlineBlock(
     }
 }
 
+val SoundscapeMiniPlayerContentHeight = 78.dp
+
 @Composable
 fun SoundscapesMiniPlayer(
     title: String,
@@ -804,81 +805,73 @@ fun SoundscapesMiniPlayer(
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .height(SoundscapeMiniPlayerContentHeight)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         color = NavBarBackground.copy(alpha = 0.98f)
     ) {
-        Column(Modifier.fillMaxWidth()) {
-            Row(
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                    .size(coverSize)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(White.copy(alpha = 0.15f)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(coverSize),
+                verticalArrangement = Arrangement.Center
             ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(coverSize)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(White.copy(alpha = 0.15f)),
-                    contentScale = ContentScale.Crop
+                Text(
+                    text = title.ifBlank { localizedRes.string(R.string.soundscape_title_fallback) },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.width(12.dp))
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(coverSize),
-                    verticalArrangement = Arrangement.Center
-                ) {
+                if (hasTimer) {
                     Text(
-                        text = title.ifBlank { localizedRes.string(R.string.soundscape_title_fallback) },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = White,
+                        text = formatMiniPlayerTimer(timerRemainingSeconds ?: 0),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = White.copy(alpha = 0.72f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (hasTimer) {
-                        Text(
-                            text = formatMiniPlayerTimer(timerRemainingSeconds ?: 0),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = White.copy(alpha = 0.72f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                IconButton(
-                    onClick = onTogglePlayPause,
-                    modifier = Modifier.size(coverSize)
-                ) {
-                    Icon(
-                        painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                        contentDescription = localizedRes.string(
-                            if (isPlaying) R.string.soundscape_miniplayer_pause else R.string.soundscape_miniplayer_play
-                        ),
-                        tint = White.copy(alpha = 0.85f)
-                    )
-                }
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier.size(coverSize)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_close),
-                        contentDescription = localizedRes.string(R.string.next),
-                        tint = White.copy(alpha = 0.85f)
-                    )
                 }
             }
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(NavBarHeight)
-                    .navigationBarsPadding()
-            )
+            IconButton(
+                onClick = onTogglePlayPause,
+                modifier = Modifier.size(coverSize)
+            ) {
+                Icon(
+                    painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                    contentDescription = localizedRes.string(
+                        if (isPlaying) R.string.soundscape_miniplayer_pause else R.string.soundscape_miniplayer_play
+                    ),
+                    tint = White.copy(alpha = 0.85f)
+                )
+            }
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.size(coverSize)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_close),
+                    contentDescription = localizedRes.string(R.string.next),
+                    tint = White.copy(alpha = 0.85f)
+                )
+            }
         }
     }
 }

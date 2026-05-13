@@ -336,6 +336,7 @@ fun SoundscapeSceneScreen(
                     viewModel.onDeleteDownloadedScene()
                     navController.popBackStack()
                 },
+                onTimer1mClick = { viewModel.onSetTimerSeconds(60) },
                 onTimer1hClick = { viewModel.onSetTimerSeconds(60 * 60) },
                 onTimer2hClick = { viewModel.onSetTimerSeconds(60 * 60 * 2) },
                 onTimerSetupClick = { showTimerPickerDialog = true },
@@ -538,6 +539,7 @@ private fun BoxScope.SceneTopControls(
     onSaveAndDownload: (String) -> Unit,
     onRenameScene: (String) -> Unit,
     onDeleteDownloaded: () -> Unit,
+    onTimer1mClick: () -> Unit,
     onTimer1hClick: () -> Unit,
     onTimer2hClick: () -> Unit,
     onTimerSetupClick: () -> Unit,
@@ -568,6 +570,7 @@ private fun BoxScope.SceneTopControls(
                 onRenameScene = onRenameScene,
                 onDeleteDownloaded = onDeleteDownloaded,
                 hasActiveTimer = hasActiveTimer,
+                onTimer1mClick = onTimer1mClick,
                 onTimer1hClick = onTimer1hClick,
                 onTimer2hClick = onTimer2hClick,
                 onTimerSetupClick = onTimerSetupClick,
@@ -1421,27 +1424,31 @@ private fun ScenePreparingOverlay(
             modifier = Modifier.padding(horizontal = 24.dp)
         ) {
             ProgressIndicator()
+            val isLayerAudioPrep =
+                !isSceneDownloadInProgress && !isBackgroundMediaApplying && preparingTotal > 0
             val progressText = when {
                 isSceneDownloadInProgress ->
                     localizedRes.string(R.string.downloads_progress_format, downloadProgress)
                 isBackgroundMediaApplying ->
                     "" // avoid duplicate "Loading.." line
-                preparingTotal > 0 ->
-                    localizedRes.string(R.string.scene_preparing_progress_format, preparingCompleted, preparingTotal)
-                else -> localizedRes.string(R.string.loading)
+                isLayerAudioPrep ->
+                    ""
+                else -> ""
             }
-            Text(
-                text = when {
-                    isSceneDownloadInProgress ->
-                        localizedRes.string(R.string.audio_scene_saving)
-                    isBackgroundMediaApplying ->
-                        localizedRes.string(R.string.loading)
-                    else -> localizedRes.string(R.string.scene_preparing)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                color = White,
-                textAlign = TextAlign.Center
-            )
+            if (!isLayerAudioPrep) {
+                Text(
+                    text = when {
+                        isSceneDownloadInProgress ->
+                            localizedRes.string(R.string.audio_scene_saving)
+                        isBackgroundMediaApplying ->
+                            localizedRes.string(R.string.loading)
+                        else -> localizedRes.string(R.string.scene_preparing)
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = White,
+                    textAlign = TextAlign.Center
+                )
+            }
             if (progressText.isNotBlank()) {
                 Text(
                     text = progressText,

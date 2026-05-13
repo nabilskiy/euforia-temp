@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,6 +56,7 @@ fun SoundscapeSceneTopBar(
     onRenameScene: (String) -> Unit,
     onDeleteDownloaded: () -> Unit,
     hasActiveTimer: Boolean,
+    onTimer1mClick: () -> Unit,
     onTimer1hClick: () -> Unit,
     onTimer2hClick: () -> Unit,
     onTimerSetupClick: () -> Unit,
@@ -128,7 +129,7 @@ fun SoundscapeSceneTopBar(
         Row {
             IconButton(onClick = { showMenu = true }) {
                 Icon(
-                    imageVector = Icons.Filled.MoreVert,
+                    painter = painterResource(R.drawable.ic_menu),
                     contentDescription = localizedRes.string(R.string.soundscape_more_actions),
                     tint = White
                 )
@@ -138,6 +139,11 @@ fun SoundscapeSceneTopBar(
                 onExpandedChange = { showMenu = it },
                 menuItems = if (isDownloaded) {
                     val timerSubmenu = listOf(
+                        MenuItem(
+                            titleRes = R.string.audio_scene_menu_timer_1m,
+                            iconRes = R.drawable.ic_timer,
+                            onClick = onTimer1mClick
+                        ),
                         MenuItem(
                             titleRes = R.string.audio_scene_menu_timer_1h,
                             iconRes = R.drawable.ic_timer,
@@ -210,6 +216,11 @@ fun SoundscapeSceneTopBar(
                     }
                 } else {
                     val timerSubmenu = listOf(
+                        MenuItem(
+                            titleRes = R.string.audio_scene_menu_timer_1m,
+                            iconRes = R.drawable.ic_timer,
+                            onClick = onTimer1mClick
+                        ),
                         MenuItem(
                             titleRes = R.string.audio_scene_menu_timer_1h,
                             iconRes = R.drawable.ic_timer,

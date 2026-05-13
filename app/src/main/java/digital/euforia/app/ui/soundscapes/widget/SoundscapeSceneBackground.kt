@@ -6,6 +6,7 @@
 package digital.euforia.app.ui.soundscapes.widget
 
 import android.content.Context
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -49,13 +51,14 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import digital.euforia.app.App
 import digital.euforia.app.R
-import digital.euforia.app.ui.theme.Black
+import digital.euforia.app.ui.theme.SoundscapesScreenBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import kotlinx.coroutines.delay
@@ -77,54 +80,43 @@ fun SoundscapeSceneBackground(
 
     val videoExo = remember(videoUrl) {
         if (videoUrl.isNullOrBlank()) null else {
+            val trackSelector = DefaultTrackSelector(context).apply {
+                parameters = buildUponParameters()
+                    // Avoid ABR starting on a low rung then stepping up (looks blurry for ~1–2s).
+                    .setForceHighestSupportedBitrate(true)
+                    .build()
+            }
             val builder = ExoPlayer.Builder(context)
+                .setTrackSelector(trackSelector)
             if (!isLocalUri(videoUrl)) {
                 builder.setMediaSourceFactory(buildCachedMediaSourceFactory(context))
             }
             builder.build().apply {
-            setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                    .setUsage(C.USAGE_MEDIA)
-                    .build(),
-                /* handleAudioFocus */ false
-            )
-            setMediaItem(MediaItem.fromUri(videoUrl))
-            volume = 0f
-            repeatMode = Player.REPEAT_MODE_ALL
-            prepare()
-        }
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                        .setUsage(C.USAGE_MEDIA)
+                        .build(),
+                    /* handleAudioFocus */ false
+                )
+                setMediaItem(MediaItem.fromUri(videoUrl))
+                volume = 0f
+                repeatMode = Player.REPEAT_MODE_ALL
+                prepare()
+            }
         }
     }
     var hasRenderedFirstFrame by remember(videoUrl) { mutableStateOf(videoUrl.isNullOrBlank()) }
-    var isVideoReady by remember(videoUrl) { mutableStateOf(videoUrl.isNullOrBlank()) }
-    var playbackState by remember(videoUrl) { mutableStateOf(Player.STATE_IDLE) }
     DisposableEffect(videoExo) {
         val player = videoExo
         if (player == null) {
             hasRenderedFirstFrame = true
-            isVideoReady = true
             onDispose { }
         } else {
             hasRenderedFirstFrame = false
-            isVideoReady = false
             val listener = object : Player.Listener {
                 override fun onRenderedFirstFrame() {
                     hasRenderedFirstFrame = true
-                    isVideoReady = true
-                }
-
-                override fun onPlaybackStateChanged(state: Int) {
-                    when (state) {
-                        Player.STATE_READY -> {
-                            // Fallback for devices/streams where onRenderedFirstFrame is flaky.
-                            isVideoReady = true
-                        }
-                        Player.STATE_IDLE, Player.STATE_BUFFERING -> {
-                            isVideoReady = false
-                        }
-                    }
-                    playbackState = state
                 }
             }
             player.addListener(listener)
@@ -138,22 +130,20 @@ fun SoundscapeSceneBackground(
         val v = videoExo ?: return@LaunchedEffect
         val shouldPlay = isPlaying
         v.playWhenReady = shouldPlay
-        playbackState = v.playbackState
         if (shouldPlay) v.play() else v.pause()
     }
-    val playerReadyNow = videoExo?.playbackState == Player.STATE_READY || playbackState == Player.STATE_READY
-    val showBlurredVideoPreview = videoExo != null &&
-        !(hasRenderedFirstFrame || isVideoReady || playerReadyNow)
+    // Keep blurred poster until a real video frame is drawn — STATE_READY alone still looks soft/low
+    // and PlayerView can briefly show buffering/shutter chrome.
+    val showBlurredVideoPreview = videoExo != null && !hasRenderedFirstFrame
 
-    // Image-only: always sharp. Video: blurred first-frame preview until the player has painted a frame
-    // (drawn under PlayerView so the video layer replaces the blur once frames are visible).
+    // Image-only: always sharp. Video: blurred still preview until Exo paints the first frame; then video on top.
     if (!imageUrl.isNullOrBlank()) {
         val useBlur = showBlurredVideoPreview
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(imageUrl)
                 .allowHardware(false)
-                .crossfade(false)
+                .crossfade(220)
                 .build(),
             contentDescription = null,
             modifier = Modifier
@@ -170,7 +160,18 @@ fun SoundscapeSceneBackground(
             )
         }
     } else {
-        Box(Modifier.fillMaxSize().background(Black))
+        // Match soundscapes shell tone — avoids a harsh black flash before the first frame/url arrives.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        0f to SoundscapesScreenBackground,
+                        0.55f to Color(0xFF121318),
+                        1f to Color(0xFF0B0C10),
+                    )
+                )
+        )
     }
 
     if (videoExo != null) {
@@ -179,13 +180,25 @@ fun SoundscapeSceneBackground(
                 PlayerView(ctx).apply {
                     player = videoExo
                     useController = false
+                    setControllerAutoShow(false)
+                    setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+                    setShutterBackgroundColor(AndroidColor.TRANSPARENT)
+                    setKeepContentOnPlayerReset(true)
                     resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                 }
             },
-            update = { it.player = videoExo },
+            update = {
+                it.player = videoExo
+                it.useController = false
+                it.setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer(scaleX = parallaxScale, scaleY = parallaxScale)
+                .graphicsLayer(
+                    scaleX = parallaxScale,
+                    scaleY = parallaxScale,
+                    alpha = if (hasRenderedFirstFrame) 1f else 0f,
+                )
         )
     }
 

@@ -42,6 +42,7 @@ data class SoundscapePlaybackState(
     val playlistSceneIds: List<Int> = emptyList(),
     val sceneImageUrl: String? = null,
     val stopWithFadeOut: Boolean = false,
+    val sleepTimerFadeOut: Boolean = false,
 )
 
 private const val MAX_SOUND_LAYERS = 12
@@ -77,6 +78,9 @@ interface SoundEngine {
     fun addLayer(layer: SoundscapeLayerState)
     fun setTimer(seconds: Int?)
     fun updateTimerRemaining(seconds: Int?)
+    /** Sleep timer elapsed: pause scene and clear timer in one state update. */
+    fun completeSleepTimer()
+    fun acknowledgeSleepTimerFadeOut()
     fun stop(fadeOut: Boolean = false)
 }
 
@@ -95,16 +99,22 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
         ambientMode: Boolean,
     ) {
         val startedAt = System.currentTimeMillis()
+        val previous = _playback.value
         _playback.value = SoundscapePlaybackState(
             sceneId = sceneId,
             sceneTitle = sceneTitle,
             isPlaying = true,
+            musicVolume = previous.musicVolume,
             sceneMusicUrl = sceneMusicUrl,
             sceneMusicVolumeFactor = sceneMusicVolumeFactor.coerceIn(0f, 1f),
             ambientMode = ambientMode,
             sceneImageUrl = sceneImageUrl,
             layers = layers.take(MAX_SOUND_LAYERS),
+            playlistSceneIds = previous.playlistSceneIds,
+            timerSeconds = null,
+            timerRemainingSeconds = null,
             stopWithFadeOut = false,
+            sleepTimerFadeOut = false,
         )
         Timber.tag("SOUNDSCAPES_METRICS").d(
             "scene_start sceneId=%s layers=%s startupMs=%s",
@@ -115,12 +125,13 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
     }
 
     override fun playPause() {
-        _playback.update { it.copy(isPlaying = !it.isPlaying, stopWithFadeOut = false) }
+        _playback.update { it.copy(isPlaying = !it.isPlaying, stopWithFadeOut = false, sleepTimerFadeOut = false) }
     }
 
     override fun setPlaying(playing: Boolean) {
         _playback.update { state ->
-            if (state.isPlaying == playing && !state.stopWithFadeOut) state else state.copy(isPlaying = playing, stopWithFadeOut = false)
+            if (state.isPlaying == playing && !state.stopWithFadeOut) state
+            else state.copy(isPlaying = playing, stopWithFadeOut = false, sleepTimerFadeOut = false)
         }
     }
 
@@ -269,6 +280,24 @@ class SoundscapePlaybackController @Inject constructor() : SoundEngine {
 
     override fun updateTimerRemaining(seconds: Int?) {
         _playback.update { it.copy(timerRemainingSeconds = seconds) }
+    }
+
+    override fun completeSleepTimer() {
+        _playback.update { state ->
+            state.copy(
+                isPlaying = false,
+                timerSeconds = null,
+                timerRemainingSeconds = null,
+                stopWithFadeOut = false,
+                sleepTimerFadeOut = true,
+            )
+        }
+    }
+
+    override fun acknowledgeSleepTimerFadeOut() {
+        _playback.update { state ->
+            if (!state.sleepTimerFadeOut) state else state.copy(sleepTimerFadeOut = false)
+        }
     }
 
     override fun stop(fadeOut: Boolean) {

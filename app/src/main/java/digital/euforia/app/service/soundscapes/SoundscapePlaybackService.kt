@@ -9,6 +9,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
+import androidx.annotation.StringRes
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -29,12 +30,16 @@ import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
 import digital.euforia.app.App
 import digital.euforia.app.R
+import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.ui.MainActivity
+import digital.euforia.app.ui.util.localizedResources
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -52,8 +57,13 @@ class SoundscapePlaybackService : MediaSessionService() {
     @Inject
     lateinit var soundsManager: SoundscapeSoundsManager
 
+    @Inject
+    lateinit var appPreferences: AppPreferences
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var observeJob: Job? = null
+    private var languageObserveJob: Job? = null
+    private var localizedLangTag: String = Locale.getDefault().language
     private var mediaSession: MediaSession? = null
     private var player: ExoPlayer? = null
     private var musicPlayer: ExoPlayer? = null
@@ -66,6 +76,11 @@ class SoundscapePlaybackService : MediaSessionService() {
     private var musicPauseFadeJob: Job? = null
     private var sleepDeadlineElapsedMs: Long? = null
     private var sleepTimerSeconds: Int? = null
+    /** Scene the active sleep-timer jobs belong to; cleared on scene switch or cancel. */
+    private var sleepTimerSceneId: Int? = null
+    /** Wall-clock remaining frozen while scene playback is paused. */
+    private var sleepTimerPausedRemainingMs: Long? = null
+    private var observedPlaybackSceneId: Int? = null
     private val lastRepeatRemainingSecondByLayer = mutableMapOf<String, Long?>()
 
     override fun onCreate() {
@@ -175,6 +190,7 @@ class SoundscapePlaybackService : MediaSessionService() {
         observeJob = serviceScope.launch {
             playbackController.playback.collectLatest { playback ->
                 if (playback.sceneId == null) {
+                    observedPlaybackSceneId = null
                     cancelSleepTimer()
                     lastMediaId = null
                     lastSessionStreamUrl = null
@@ -186,11 +202,32 @@ class SoundscapePlaybackService : MediaSessionService() {
                     stopSelf()
                     return@collectLatest
                 }
+                if (
+                    observedPlaybackSceneId != null &&
+                    observedPlaybackSceneId != playback.sceneId
+                ) {
+                    cancelSleepTimer()
+                }
+                observedPlaybackSceneId = playback.sceneId
+                if (playback.sleepTimerFadeOut) {
+                    cancelSleepTimer()
+                    lastRepeatRemainingSecondByLayer.clear()
+                    runParallelFadeOut(
+                        playback = playback,
+                        durationMs = SoundscapeSoundsManager.STOP_FADE_DURATION_MS,
+                        stopMusic = false,
+                    )
+                    playbackController.acknowledgeSleepTimerFadeOut()
+                    return@collectLatest
+                }
                 if (playback.stopWithFadeOut) {
                     cancelSleepTimer()
                     lastRepeatRemainingSecondByLayer.clear()
-                    fadeOutAndStopMusic(durationMs = 10_000L)
-                    soundsManager.fadeOutAndReleaseAll(durationMs = 10_000L)
+                    runParallelFadeOut(
+                        playback = playback,
+                        durationMs = SoundscapeSoundsManager.PAUSE_FADE_DURATION_MS,
+                        stopMusic = true,
+                    )
                     playbackController.stop()
                     return@collectLatest
                 }
@@ -222,6 +259,12 @@ class SoundscapePlaybackService : MediaSessionService() {
                 }
             }
         }
+        languageObserveJob = serviceScope.launch {
+            localizedLangTag = appPreferences.getLanguage() ?: Locale.getDefault().language
+            appPreferences.getLanguageFlow().collectLatest { tag ->
+                localizedLangTag = tag ?: Locale.getDefault().language
+            }
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
@@ -234,6 +277,7 @@ class SoundscapePlaybackService : MediaSessionService() {
         cancelSleepTimer()
         musicPauseFadeJob?.cancel()
         observeJob?.cancel()
+        languageObserveJob?.cancel()
         mediaSession?.release()
         mediaSession = null
         player?.release()
@@ -246,26 +290,59 @@ class SoundscapePlaybackService : MediaSessionService() {
     }
 
     private fun syncSleepTimer(playback: SoundscapePlaybackState) {
+        val sceneId = playback.sceneId
+        if (sceneId != null && sleepTimerSceneId != null && sleepTimerSceneId != sceneId) {
+            cancelSleepTimer()
+        }
         val seconds = playback.timerSeconds
         if (seconds == null || seconds <= 0) {
             cancelSleepTimer()
             return
         }
-        val expectedDeadline = if (sleepTimerSeconds == seconds && sleepDeadlineElapsedMs != null) {
-            sleepDeadlineElapsedMs!!
-        } else {
-            SystemClock.elapsedRealtime() + seconds * 1000L
+        if (sleepTimerSeconds != null && sleepTimerSeconds != seconds) {
+            sleepTimerPausedRemainingMs = null
         }
-        if (sleepTimerJob != null && sleepDeadlineElapsedMs == expectedDeadline) return
+        if (!playback.isPlaying) {
+            pauseSleepTimerCountdown(sceneId)
+            return
+        }
+        val remainingSec = playback.timerRemainingSeconds ?: seconds
+        val isFreshTimerRequest = remainingSec >= seconds
+        val canReuseDeadline = !isFreshTimerRequest &&
+            sleepTimerSeconds == seconds &&
+            sleepDeadlineElapsedMs != null &&
+            sleepTimerSceneId == sceneId &&
+            sleepTimerPausedRemainingMs == null
+        val expectedDeadline = when {
+            sleepTimerPausedRemainingMs != null -> {
+                val remaining = sleepTimerPausedRemainingMs!!
+                sleepTimerPausedRemainingMs = null
+                SystemClock.elapsedRealtime() + remaining
+            }
+            canReuseDeadline -> {
+                sleepDeadlineElapsedMs!!
+            }
+            else -> {
+                SystemClock.elapsedRealtime() + seconds * 1000L
+            }
+        }
+        if (
+            sleepTimerJob != null &&
+            sleepTimerTickJob != null &&
+            sleepDeadlineElapsedMs == expectedDeadline &&
+            sleepTimerSceneId == sceneId
+        ) {
+            return
+        }
         sleepTimerSeconds = seconds
+        sleepTimerSceneId = sceneId
         sleepDeadlineElapsedMs = expectedDeadline
         playbackController.updateTimerRemaining(secondsUntilDeadline(expectedDeadline))
         sleepTimerJob?.cancel()
         sleepTimerJob = serviceScope.launch {
             val delayMs = (expectedDeadline - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
             delay(delayMs)
-            playbackController.setPlaying(false)
-            playbackController.setTimer(null)
+            playbackController.completeSleepTimer()
         }
         sleepTimerTickJob?.cancel()
         sleepTimerTickJob = serviceScope.launch {
@@ -278,13 +355,44 @@ class SoundscapePlaybackService : MediaSessionService() {
         }
     }
 
-    private fun cancelSleepTimer() {
+    private fun pauseSleepTimerCountdown(sceneId: Int?) {
+        if (sleepTimerSceneId != null && sceneId != null && sleepTimerSceneId != sceneId) {
+            cancelSleepTimer()
+            return
+        }
+        if (sleepTimerPausedRemainingMs != null) return
+        val deadline = sleepDeadlineElapsedMs
+        val remainingMs = when {
+            deadline != null ->
+                (deadline - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+            else -> {
+                val remainingSec = playbackController.playback.value.timerRemainingSeconds
+                if (remainingSec != null && remainingSec > 0) remainingSec * 1000L else null
+            }
+        }
+        if (remainingMs == null) return
+        if (remainingMs <= 0L) {
+            // Natural expiry: let sleepTimerJob call completeSleepTimer(); do not cancel that job.
+            return
+        }
+        sleepTimerPausedRemainingMs = remainingMs
+        playbackController.updateTimerRemaining(((remainingMs + 999L) / 1000L).toInt())
+        cancelSleepTimerJobsOnly()
+    }
+
+    private fun cancelSleepTimerJobsOnly() {
         sleepTimerJob?.cancel()
         sleepTimerTickJob?.cancel()
         sleepTimerJob = null
         sleepTimerTickJob = null
         sleepDeadlineElapsedMs = null
+    }
+
+    private fun cancelSleepTimer() {
+        cancelSleepTimerJobsOnly()
         sleepTimerSeconds = null
+        sleepTimerSceneId = null
+        sleepTimerPausedRemainingMs = null
         playbackController.updateTimerRemaining(null)
     }
 
@@ -295,7 +403,38 @@ class SoundscapePlaybackService : MediaSessionService() {
 
 
 
-    private suspend fun fadeOutAndStopMusic(durationMs: Long = 320L) {
+    private suspend fun runParallelFadeOut(
+        playback: SoundscapePlaybackState,
+        durationMs: Long,
+        stopMusic: Boolean,
+    ) {
+        musicPauseFadeJob?.cancel()
+        musicPauseFadeJob = null
+        val finalMusicVolume = (playback.musicVolume * playback.sceneMusicVolumeFactor).coerceIn(0f, 1f)
+        coroutineScope {
+            launch {
+                val p = musicPlayer ?: return@launch
+                if (stopMusic) {
+                    fadeOutAndStopMusic(durationMs = durationMs)
+                } else {
+                    fadeOutAndPauseMusic(
+                        player = p,
+                        restoreVolume = finalMusicVolume,
+                        durationMs = durationMs,
+                    )
+                }
+            }
+            launch {
+                if (stopMusic) {
+                    soundsManager.fadeOutAndReleaseAll(durationMs = durationMs)
+                } else {
+                    soundsManager.fadeOutAndPauseAll(durationMs = durationMs)
+                }
+            }
+        }
+    }
+
+    private suspend fun fadeOutAndStopMusic(durationMs: Long = SoundscapeSoundsManager.PAUSE_FADE_DURATION_MS) {
         val p = musicPlayer ?: return
         val startVolume = p.volume.coerceIn(0f, 1f)
         if (startVolume <= 0.0001f) {
@@ -319,7 +458,7 @@ class SoundscapePlaybackService : MediaSessionService() {
     private suspend fun fadeOutAndPauseMusic(
         player: ExoPlayer,
         restoreVolume: Float,
-        durationMs: Long = 1000L
+        durationMs: Long = SoundscapeSoundsManager.PAUSE_FADE_DURATION_MS
     ) {
         val startVolume = player.volume.coerceIn(0f, 1f)
         if (startVolume <= 0.0001f) {
@@ -363,7 +502,12 @@ class SoundscapePlaybackService : MediaSessionService() {
         )
         if (playback.isPlaying) {
             musicPauseFadeJob?.cancel()
+            musicPauseFadeJob = null
             p.volume = finalMusicVolume
+            if (p.playbackState == Player.STATE_IDLE) {
+                p.prepare()
+            }
+            p.playWhenReady = true
             p.play()
         } else {
             if ((p.playWhenReady || p.isPlaying) && (musicPauseFadeJob?.isActive != true)) {
@@ -371,7 +515,7 @@ class SoundscapePlaybackService : MediaSessionService() {
                     fadeOutAndPauseMusic(
                         player = p,
                         restoreVolume = finalMusicVolume,
-                        durationMs = 1000L
+                        durationMs = SoundscapeSoundsManager.PAUSE_FADE_DURATION_MS,
                     )
                 }
             } else if (!p.playWhenReady && !p.isPlaying) {
@@ -387,8 +531,8 @@ class SoundscapePlaybackService : MediaSessionService() {
         val sessionStreamUrl = playback.layers
             .firstNotNullOfOrNull { it.audioUrl?.takeIf(String::isNotBlank) }
         val metadata = MediaMetadata.Builder()
-            .setTitle(playback.sceneTitle.ifBlank { getString(R.string.scenes_title) })
-            .setArtist(getString(R.string.scenes_title))
+            .setTitle(playback.sceneTitle.ifBlank { localizedString(R.string.scenes_title) })
+            .setArtist(localizedString(R.string.scenes_title))
             .setArtworkUri(artworkUri)
             .build()
         if (sessionStreamUrl.isNullOrBlank()) {
@@ -417,6 +561,9 @@ class SoundscapePlaybackService : MediaSessionService() {
             exo.prepare()
         }
     }
+
+    private fun localizedString(@StringRes id: Int): String =
+        localizedResources(localizedLangTag).string(id)
 
     private fun mainActivityIntent(): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {

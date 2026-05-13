@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -32,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,21 +42,28 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
 import digital.euforia.app.domain.usecase.soundscapes.SoundscapeDownloadCard
 import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
+import digital.euforia.app.ui.theme.AvatarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
@@ -104,17 +113,29 @@ private fun SharedTransitionScope.DownloadsContent(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val localizedRes = LocalLocalizedRes.current
+    val listState = rememberLazyListState()
+    val hazeState = rememberHazeState()
+    val density = LocalDensity.current
+    val thresholdPx = with(density) { 16.dp.roundToPx() }
+    val shouldBlur by remember(listState) {
+        derivedStateOf {
+            val firstIndex = listState.firstVisibleItemIndex
+            val firstOffset = listState.firstVisibleItemScrollOffset
+            firstIndex > 0 || firstOffset > thresholdPx
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(PrimaryBackground)
     ) {
         BlurredAppBar(
-            shouldBlur = false,
+            shouldBlur = shouldBlur,
             titleRes = R.string.downloads_title,
             backTitleRes = R.string.profile_title,
             sharedElementKeyForBackTitle = "my_euforia_title",
             animatedVisibilityScope = animatedVisibilityScope,
+            hazeState = hazeState,
             navController = navController,
             onBackClick = onBackClick,
             actionButton = {
@@ -150,34 +171,44 @@ private fun SharedTransitionScope.DownloadsContent(
             )
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(hazeState),
+                state = listState,
                 contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
                     top = AppBarHeightMedium + 16.dp,
                     bottom = 56.dp
-                )
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                titleItem(titleRes = R.string.downloads_title)
-                item {
-                    Text(
-                        text = localizedRes.string(R.string.scenes_title),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                }
-                item {
-                    LazyRow(
+                titleItem(
+                    titleRes = R.string.downloads_title,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                item(key = "downloads_soundscapes_section") {
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(state.downloads, key = { it.download.id }) { item ->
-                            Box(modifier = Modifier.size(width = 186.dp, height = 306.dp)) {
-                                DownloadSceneCard(
-                                    item = item,
-                                    onClick = { onItemClick(item) },
-                                    modifier = Modifier.fillMaxSize()
-                                )
+                        Text(
+                            text = localizedRes.string(R.string.scenes_title),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = White,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(state.downloads, key = { it.download.id }) { item ->
+                                Box(modifier = Modifier.size(width = 186.dp, height = 306.dp)) {
+                                    DownloadSceneCard(
+                                        item = item,
+                                        onClick = { onItemClick(item) },
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
                             }
                         }
                     }
@@ -238,6 +269,7 @@ private fun DownloadSceneCard(
     modifier: Modifier = Modifier
 ) {
     val cardShape = RoundedCornerShape(26.dp)
+    val hazeState = rememberHazeState()
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -250,62 +282,57 @@ private fun DownloadSceneCard(
                 .fillMaxSize()
                 .clip(cardShape)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(242.dp)
-            ) {
-                if (!item.imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = item.imageUrl,
-                        contentDescription = item.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2C2E3A)))
-                }
+            if (!item.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(hazeState),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.2f))
+                        .hazeSource(hazeState)
+                        .background(Color(0xFF2C2E3A))
                 )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.35f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_play),
-                        contentDescription = null,
-                        tint = White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
             }
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
+                    .align(Alignment.Center)
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.35f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_play),
+                    contentDescription = null,
+                    tint = White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color(0x24231F1A),
-                            1f to Color(0xAA1E2C1D)
-                        )
+                    .hazeEffect(
+                        state = hazeState,
+                        style = HazeMaterials.ultraThin(AvatarBackground)
                     )
+                    .zIndex(1f)
+                    .padding(horizontal = 14.dp, vertical = 14.dp)
             ) {
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = White,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Start,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 14.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }

@@ -10,11 +10,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,49 +82,53 @@ private fun HomeContent(
     onMiniPlayerClose: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(
-            visible = isBottomBarShown.value && miniPlayer.isVisible,
-            enter = fadeIn(animationSpec = tween(durationMillis = 250)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 250)),
-            modifier = Modifier.align(Alignment.BottomCenter)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
         ) {
-            SoundscapesMiniPlayer(
-                title = miniPlayer.title,
-                imageUrl = miniPlayer.imageUrl,
-                isPlaying = miniPlayer.isPlaying,
-                timerRemainingSeconds = miniPlayer.timerRemainingSeconds,
-                onClick = onMiniPlayerOpen,
-                onTogglePlayPause = onMiniPlayerTogglePlayPause,
-                onClose = onMiniPlayerClose,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        // Shared NavHost handles the screens now.
-        // We only show the BottomNavigation here.
-        AnimatedVisibility(
-            visible = isBottomBarShown.value,
-            enter = fadeIn(animationSpec = tween(durationMillis = 300)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 300)),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            BottomNavigation(
-                navController = navController,
-                items = navItems,
-                selectedIndex = selectedIndex,
-                analyticSender = analyticSender,
-                onNavItemSelected = onNavItemSelected
-            )
+            AnimatedVisibility(
+                visible = isBottomBarShown.value && miniPlayer.isVisible,
+                enter = fadeIn(animationSpec = tween(durationMillis = 250)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 250)),
+            ) {
+                SoundscapesMiniPlayer(
+                    title = miniPlayer.title,
+                    imageUrl = miniPlayer.imageUrl,
+                    isPlaying = miniPlayer.isPlaying,
+                    timerRemainingSeconds = miniPlayer.timerRemainingSeconds,
+                    onClick = onMiniPlayerOpen,
+                    onTogglePlayPause = onMiniPlayerTogglePlayPause,
+                    onClose = onMiniPlayerClose,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            AnimatedVisibility(
+                visible = isBottomBarShown.value,
+                enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 300)),
+            ) {
+                BottomNavigation(
+                    navController = navController,
+                    items = navItems,
+                    selectedIndex = selectedIndex,
+                    analyticSender = analyticSender,
+                    onNavItemSelected = onNavItemSelected,
+                    miniPlayerVisible = miniPlayer.isVisible,
+                )
+            }
         }
     }
 }
 
 @Composable
-fun BoxScope.BottomNavigation(
+fun BottomNavigation(
     navController: NavHostController,
     items: List<NavBarItem>,
     selectedIndex: Int,
     analyticSender: AnalyticSender,
-    onNavItemSelected: (Int) -> Unit
+    onNavItemSelected: (Int) -> Unit,
+    miniPlayerVisible: Boolean = false,
 ) {
     // Keep selected index in sync with current destination (also on system back)
     LaunchedEffect(navController, items, selectedIndex) {
@@ -140,18 +145,21 @@ fun BoxScope.BottomNavigation(
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-
+    val navBarShape = if (miniPlayerVisible) {
+        RoundedCornerShape(0.dp)
+    } else {
+        RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = NavBarBackground, shape = navBarShape)
+            .navigationBarsPadding()
+    ) {
         Row(
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                .background(
-                    color = NavBarBackground,
-                    shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
-                )
-                .navigationBarsPadding()
-//                .height(50.dp)
-            ,
-//            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(NavBarHeight),
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEachIndexed { index, item ->
@@ -168,23 +176,16 @@ fun BoxScope.BottomNavigation(
                             }
                             onNavItemSelected(index)
                             navController.navigate(item.destination) {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
                                 popUpTo(HomeDestination.Plan::class.qualifiedName!!) {
                                     saveState = true
                                 }
-                                // Avoid multiple copies of the same destination when
-                                // reselecting the same item
                                 launchSingleTop = true
-                                // Restore state when reselecting a previously selected item
                                 restoreState = true
                             }
                         }
                     }
                 )
             }
-
         }
     }
 }
