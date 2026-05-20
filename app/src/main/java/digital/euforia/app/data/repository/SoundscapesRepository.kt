@@ -119,11 +119,17 @@ class SoundscapesRepository @Inject constructor(
                         cat.scenes.map { it.toEntity(resolvedCategoryId = cat.id) }
                     }
                 }
-                val playlistEntities = playlists.map { it.toEntity() }
+                val playlistEntities = playlists.map { it.toEntity() }.map { incoming ->
+                    mergePlaylistWithStored(incoming)
+                }
                 sceneDao.upsertAll(sceneEntities)
                 playlistDao.upsertAll(playlistEntities)
-                if (sceneEntities.isNotEmpty()) {
-                    sceneDao.deleteAllExcept(sceneEntities.map { it.id })
+                val sceneIdsToKeep = buildSet {
+                    addAll(sceneEntities.map { it.id })
+                    playlistEntities.forEach { addAll(it.sceneIds) }
+                }
+                if (sceneIdsToKeep.isNotEmpty()) {
+                    sceneDao.deleteAllExcept(sceneIdsToKeep.toList())
                 }
                 if (playlistEntities.isNotEmpty()) {
                     playlistDao.deleteAllExcept(playlistEntities.map { it.id })
@@ -261,6 +267,14 @@ class SoundscapesRepository @Inject constructor(
                 downloadDao.upsert(item.copy(status = SoundscapeDownloadItem.STATUS_EXPIRED, progress = 0))
             }
         }
+    }
+
+    /** List API may omit `scene_ids`; keep ids loaded earlier via playlist details. */
+    private suspend fun mergePlaylistWithStored(incoming: SoundscapePlaylist): SoundscapePlaylist {
+        if (incoming.sceneIds.isNotEmpty()) return incoming
+        val stored = playlistDao.getById(incoming.id) ?: return incoming
+        if (stored.sceneIds.isEmpty()) return incoming
+        return incoming.copy(sceneIds = stored.sceneIds)
     }
 }
 

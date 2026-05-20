@@ -44,7 +44,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -89,8 +89,6 @@ import digital.euforia.app.ui.util.widget.MaxView
 import digital.euforia.app.ui.util.widget.ProgramOptionMenu
 import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.noRippleClickable
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -159,15 +157,6 @@ private fun ProgramDetailsContent(
     launchSubscriptionActivity: () -> Unit,
 ) {
     val pagerState = rememberPagerState { 3 }
-    subscribeToPagerUpdates(
-        coroutineScope = rememberCoroutineScope(),
-        pagerState = pagerState,
-        page = currentPage
-    )
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }
-            .collect { page -> onPageSelected(page) }
-    }
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val localizedRes = LocalLocalizedRes.current
@@ -224,6 +213,21 @@ private fun ProgramDetailsContent(
                 stickyOffsetPx
             }
         }
+    }
+
+    LaunchedEffect(currentPage) {
+        if (pagerState.currentPage != currentPage) {
+            pagerState.animateScrollToPage(currentPage)
+        }
+    }
+
+    LaunchedEffect(pagerState, currentPage) {
+        snapshotFlow { pagerState.isScrollInProgress to pagerState.currentPage }
+            .collect { (inProgress, page) ->
+                if (!inProgress && page != currentPage) {
+                    onPageSelected(page)
+                }
+            }
     }
 
     val context = LocalContext.current
@@ -335,51 +339,148 @@ private fun LazyListScope.pagerItem(
     pagerState: PagerState,
     onPublicationClick: (PublicationInfo) -> Unit,
 ) = item(key = "pager") {
-    HorizontalPager(
+    ProgramDetailsTabsPager(
+        modifier = modifier,
+        pagerState = pagerState,
+        isPremium = isPremium,
+        color = color,
+        meditations = meditationUi,
+        articles = articlesUi,
+        exercises = exercisesUi,
+        onPublicationClick = onPublicationClick,
+    )
+}
+
+/**
+ * Keeps pager height equal to the tallest tab so [HorizontalPager] animations and swipes
+ * do not resize the parent [LazyColumn] item (which caused visible jumps).
+ */
+@Composable
+private fun ProgramDetailsTabsPager(
+    modifier: Modifier,
+    pagerState: PagerState,
+    isPremium: Boolean,
+    color: Color,
+    meditations: List<PublicationInfo>,
+    articles: List<PublicationInfo>,
+    exercises: List<PublicationInfo>,
+    onPublicationClick: (PublicationInfo) -> Unit,
+) {
+    val density = LocalDensity.current
+    val tabsContentKey = remember(meditations, articles, exercises) {
+        Triple(meditations.size, articles.size, exercises.size)
+    }
+
+    SubcomposeLayout(
         modifier = modifier.fillMaxWidth(),
-        state = pagerState,
-        userScrollEnabled = true
-    ) { position ->
-        when (position) {
-            0 -> GenericPagerPage(
-                color = color,
-                isPremium = isPremium,
-                iconRes = R.drawable.ic_type_audio,
-                isPlayable = true,
-                items = meditationUi,
-                itemImageUrl = { it.imageUrl.orEmpty() },
-                itemTitle = { it.title },
-                itemDuration = { it.durationMinutes ?: 1 },
-                isPremiumContent = { it.isPremium },
-                onClick = { onPublicationClick(it) }
-            )
+    ) { constraints ->
+        val measureConstraints = constraints.copy(minHeight = 0)
 
-            1 -> GenericPagerPage(
-                color = color,
-                isPremium = isPremium,
-                iconRes = R.drawable.ic_type_read,
-                isPlayable = false,
-                items = articlesUi,
-                itemImageUrl = { it.imageUrl.orEmpty() },
-                itemTitle = { it.title },
-                itemDuration = { it.durationMinutes ?: 1 },
-                isPremiumContent = { it.isPremium },
-                onClick = { onPublicationClick(it) }
-            )
+        fun measureTabHeight(page: Int): Int =
+            subcompose("measure_$page") {
+                ProgramDetailsTabPage(
+                    page = page,
+                    isPremium = isPremium,
+                    color = color,
+                    meditations = meditations,
+                    articles = articles,
+                    exercises = exercises,
+                    onPublicationClick = onPublicationClick,
+                )
+            }.maxOfOrNull { it.measure(measureConstraints).height } ?: 0
 
-            else -> GenericPagerPage(
-                color = color,
-                isPremium = isPremium,
-                iconRes = R.drawable.ic_type_exercise,
-                isPlayable = true,
-                items = exercisesUi,
-                itemImageUrl = { it.imageUrl.orEmpty() },
-                itemTitle = { it.title },
-                itemDuration = { it.durationMinutes ?: 1 },
-                isPremiumContent = { it.isPremium },
-                onClick = { onPublicationClick(it) }
-            )
+        val pagerHeightPx = maxOf(
+            measureTabHeight(0),
+            measureTabHeight(1),
+            measureTabHeight(2),
+        )
+
+        val pagerConstraints = constraints.copy(
+            minHeight = pagerHeightPx,
+            maxHeight = pagerHeightPx,
+        )
+
+        val pagerPlaceable = subcompose("pager_$tabsContentKey") {
+            HorizontalPager(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(with(density) { pagerHeightPx.toDp() }),
+                state = pagerState,
+                beyondViewportPageCount = 1,
+                userScrollEnabled = true,
+            ) { position ->
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    ProgramDetailsTabPage(
+                        page = position,
+                        isPremium = isPremium,
+                        color = color,
+                        meditations = meditations,
+                        articles = articles,
+                        exercises = exercises,
+                        onPublicationClick = onPublicationClick,
+                    )
+                }
+            }
+        }.map { it.measure(pagerConstraints) }.first()
+
+        layout(constraints.maxWidth, pagerHeightPx) {
+            pagerPlaceable.place(0, 0)
         }
+    }
+}
+
+@Composable
+private fun ProgramDetailsTabPage(
+    page: Int,
+    isPremium: Boolean,
+    color: Color,
+    meditations: List<PublicationInfo>,
+    articles: List<PublicationInfo>,
+    exercises: List<PublicationInfo>,
+    onPublicationClick: (PublicationInfo) -> Unit,
+) {
+    when (page) {
+        0 -> GenericPagerPage(
+            color = color,
+            isPremium = isPremium,
+            iconRes = R.drawable.ic_type_audio,
+            isPlayable = true,
+            items = meditations,
+            itemImageUrl = { it.imageUrl.orEmpty() },
+            itemTitle = { it.title },
+            itemDuration = { it.durationMinutes ?: 1 },
+            isPremiumContent = { it.isPremium },
+            onClick = onPublicationClick,
+        )
+
+        1 -> GenericPagerPage(
+            color = color,
+            isPremium = isPremium,
+            iconRes = R.drawable.ic_type_read,
+            isPlayable = false,
+            items = articles,
+            itemImageUrl = { it.imageUrl.orEmpty() },
+            itemTitle = { it.title },
+            itemDuration = { it.durationMinutes ?: 1 },
+            isPremiumContent = { it.isPremium },
+            onClick = onPublicationClick,
+        )
+
+        else -> GenericPagerPage(
+            color = color,
+            isPremium = isPremium,
+            iconRes = R.drawable.ic_type_exercise,
+            isPlayable = true,
+            items = exercises,
+            itemImageUrl = { it.imageUrl.orEmpty() },
+            itemTitle = { it.title },
+            itemDuration = { it.durationMinutes ?: 1 },
+            isPremiumContent = { it.isPremium },
+            onClick = onPublicationClick,
+        )
     }
 }
 
@@ -717,16 +818,6 @@ fun AppBar(
 
         actionButton()
 
-    }
-}
-
-private fun subscribeToPagerUpdates(
-    coroutineScope: CoroutineScope,
-    pagerState: PagerState,
-    page: Int
-) {
-    coroutineScope.launch {
-        pagerState.animateScrollToPage(page)
     }
 }
 

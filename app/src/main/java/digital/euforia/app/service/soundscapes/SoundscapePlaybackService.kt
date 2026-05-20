@@ -214,7 +214,7 @@ class SoundscapePlaybackService : MediaSessionService() {
                     lastRepeatRemainingSecondByLayer.clear()
                     runParallelFadeOut(
                         playback = playback,
-                        durationMs = SoundscapeSoundsManager.STOP_FADE_DURATION_MS,
+                        durationMs = SoundscapeSoundsManager.SLEEP_TIMER_FADE_DURATION_MS,
                         stopMusic = false,
                     )
                     playbackController.acknowledgeSleepTimerFadeOut()
@@ -225,7 +225,7 @@ class SoundscapePlaybackService : MediaSessionService() {
                     lastRepeatRemainingSecondByLayer.clear()
                     runParallelFadeOut(
                         playback = playback,
-                        durationMs = SoundscapeSoundsManager.PAUSE_FADE_DURATION_MS,
+                        durationMs = SoundscapeSoundsManager.STOP_FADE_DURATION_MS,
                         stopMusic = true,
                     )
                     playbackController.stop()
@@ -530,14 +530,23 @@ class SoundscapePlaybackService : MediaSessionService() {
         val artworkUri = playback.sceneImageUrl?.takeIf { it.isNotBlank() }?.let(Uri::parse)
         val sessionStreamUrl = playback.layers
             .firstNotNullOfOrNull { it.audioUrl?.takeIf(String::isNotBlank) }
+            ?: playback.sceneMusicUrl?.takeIf(String::isNotBlank)
         val metadata = MediaMetadata.Builder()
             .setTitle(playback.sceneTitle.ifBlank { localizedString(R.string.scenes_title) })
             .setArtist(localizedString(R.string.scenes_title))
             .setArtworkUri(artworkUri)
             .build()
         if (sessionStreamUrl.isNullOrBlank()) {
-            exo.stop()
-            exo.clearMediaItems()
+            val hadSessionUrl = lastSessionStreamUrl != null || exo.mediaItemCount > 0
+            if (hadSessionUrl) {
+                syncingFromPlaybackState = true
+                try {
+                    exo.stop()
+                    exo.clearMediaItems()
+                } finally {
+                    syncingFromPlaybackState = false
+                }
+            }
             lastMediaId = mediaId
             lastSessionStreamUrl = null
             return

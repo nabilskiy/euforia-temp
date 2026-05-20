@@ -30,8 +30,9 @@ class SoundscapeSoundsManager @Inject constructor(
 ) {
     companion object {
         private const val MAX_SOUND_LAYERS = 12
-        const val PAUSE_FADE_DURATION_MS = 2_500L
-        const val STOP_FADE_DURATION_MS = 10_000L
+        const val PAUSE_FADE_DURATION_MS = 1_000L
+        const val STOP_FADE_DURATION_MS = 2_000L
+        const val SLEEP_TIMER_FADE_DURATION_MS = 5_000L
     }
     private val mainHandler = Handler(Looper.getMainLooper())
     private val players = LinkedHashMap<String, ExoPlayer>()
@@ -174,7 +175,7 @@ class SoundscapeSoundsManager @Inject constructor(
         releaseAll()
     }
 
-    suspend fun fadeOutAndPauseAll(durationMs: Long = STOP_FADE_DURATION_MS) {
+    suspend fun fadeOutAndPauseAll(durationMs: Long = SLEEP_TIMER_FADE_DURATION_MS) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             return
         }

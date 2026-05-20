@@ -328,7 +328,8 @@ private fun PublicationContent(
                     playItem(
                         modifier = Modifier.fillMaxWidth().height(headerHeightDp),
                         imageUrl = publicationInfo?.imageUrl ?: "",
-                        onClick = onPlayClick
+                        onClick = onPlayClick,
+                        showPlayButton = publicationInfo?.publicationType != PublicationType.ARTICLE,
                     )
 
                     publicationInfo?.let {
@@ -371,10 +372,12 @@ private fun PublicationContent(
     }
 }
 
-fun LazyListScope.playItem(modifier: Modifier = Modifier, imageUrl: String, onClick: () -> Unit) =
-    item {
-        val localizedRes = LocalLocalizedRes.current
-
+fun LazyListScope.playItem(
+    modifier: Modifier = Modifier,
+    imageUrl: String,
+    onClick: () -> Unit,
+    showPlayButton: Boolean = true,
+) = item {
         Box(modifier = modifier) {
             AsyncImage(
                 modifier = Modifier
@@ -383,16 +386,18 @@ fun LazyListScope.playItem(modifier: Modifier = Modifier, imageUrl: String, onCl
                 contentScale = ContentScale.Crop,
                 contentDescription = null
             )
-            Icon(
-                modifier = Modifier.align(Alignment.Center)
-                    .noRippleClickable(onClick)
-                    .background(color = White.copy(alpha = 0.95f), shape = CircleShape)
-                    .padding(20.dp)
-                    .size(20.dp),
-                painter = painterResource(R.drawable.ic_play),
-                tint = Black,
-                contentDescription = null
-            )
+            if (showPlayButton) {
+                Icon(
+                    modifier = Modifier.align(Alignment.Center)
+                        .noRippleClickable(onClick)
+                        .background(color = White.copy(alpha = 0.95f), shape = CircleShape)
+                        .padding(20.dp)
+                        .size(20.dp),
+                    painter = painterResource(R.drawable.ic_play),
+                    tint = Black,
+                    contentDescription = null
+                )
+            }
         }
     }
 

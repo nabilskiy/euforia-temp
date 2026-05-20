@@ -74,6 +74,8 @@ class SoundscapePlaylistViewModel @Inject constructor(
         }
     }
 
+    private var playlistDetailsRecoveryAttempted = false
+
     private fun observePlaylist() {
         viewModelScope.launch {
             combine(
@@ -87,6 +89,14 @@ class SoundscapePlaylistViewModel @Inject constructor(
                 val scenesById = scenes.associateBy { it.id }
                 val orderedScenes = playlist.sceneIds.mapNotNull { id ->
                     scenesById[id]?.mergeSoundscapeSceneLocalBackground(localBySceneId[id])
+                }
+                if (
+                    orderedScenes.isEmpty() &&
+                    playlist.sceneIds.isNotEmpty() &&
+                    !playlistDetailsRecoveryAttempted
+                ) {
+                    playlistDetailsRecoveryAttempted = true
+                    repository.getPlaylistDetails(playlistId)
                 }
                 reduceState {
                     copy(

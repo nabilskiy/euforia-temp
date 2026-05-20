@@ -221,8 +221,20 @@ fun AppNavigation(
                 }
                 composable<HomeDestination.SoundscapesPlaylist>(
                     enterTransition = NavAnimations.enter,
-                    exitTransition = NavAnimations.exit,
-                    popEnterTransition = NavAnimations.popEnter,
+                    exitTransition = {
+                        if (targetState.destination.hasSoundscapesSceneRoute()) {
+                            fadeOut(animationSpec = tween(NavAnimations.SOUNDSCAPE_SCENE_TRANSITION_MS))
+                        } else {
+                            NavAnimations.exit(this)
+                        }
+                    },
+                    popEnterTransition = {
+                        if (initialState.destination.hasSoundscapesSceneRoute()) {
+                            fadeIn(animationSpec = tween(NavAnimations.SOUNDSCAPE_SCENE_TRANSITION_MS))
+                        } else {
+                            NavAnimations.popEnter(this)
+                        }
+                    },
                     popExitTransition = NavAnimations.popExit
                 ) {
                     isBottomBarShown.value = false

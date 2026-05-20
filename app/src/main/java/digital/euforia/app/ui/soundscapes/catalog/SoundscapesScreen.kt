@@ -43,6 +43,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -135,10 +137,19 @@ fun SharedTransitionScope.SoundscapesScreen(
             firstIndex > 0 || firstOffset > thresholdPx
         }
     }
-    val playlistsBackdropHeight by animateDpAsState(
-        targetValue = if (showPlaylists) 445.dp else 0.dp,
-        animationSpec = tween(durationMillis = 320),
-        label = "playlists_backdrop_height"
+    val playlistsPanelTopPadding by animateDpAsState(
+        targetValue = if (showPlaylists) AppBarHeightMedium else AppBarHeightMedium + 16.dp,
+        animationSpec = tween(320),
+        label = "playlists_panel_top_padding",
+    )
+    val playlistsAppBarBackdropColor by animateColorAsState(
+        targetValue = if (showPlaylists && !shouldBlur) {
+            SoundscapesActionButtonBackground
+        } else {
+            Color.Transparent
+        },
+        animationSpec = tween(320),
+        label = "playlists_appbar_backdrop",
     )
     val activeScene = remember(state.activeSceneId, state.scenes, state.myScenes) {
         val activeId = state.activeSceneId ?: return@remember null
@@ -181,15 +192,14 @@ fun SharedTransitionScope.SoundscapesScreen(
                 )
             }
 
-            if (playlistsBackdropHeight > 0.dp) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(playlistsBackdropHeight)
-                        .clip(RoundedCornerShape(bottomStart = 34.dp, bottomEnd = 34.dp))
-                        .background(SoundscapesActionButtonBackground)
-                )
-            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .height(AppBarHeightMedium)
+                    .background(playlistsAppBarBackdropColor)
+            )
 
             BlurredAppBar(
                 shouldBlur = shouldBlur,
@@ -207,58 +217,73 @@ fun SharedTransitionScope.SoundscapesScreen(
                         .fillMaxWidth()
                         .hazeSource(hazeState),
                     state = listState,
-                    contentPadding = PaddingValues(top = AppBarHeightMedium + 16.dp, bottom = 56.dp),
+                    contentPadding = PaddingValues(top = playlistsPanelTopPadding, bottom = 56.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     val sectionsToRender = state.displaySections
                         .filterNot { it.categoryId == SOUNDSCAPE_SECTION_DEFAULT_PLAYLIST }
-                    item(key = "title_shared_soundscapes") {
-                        Text(
+                    item(key = "soundscapes_header_playlists") {
+                        val playlistsBackdropShape = RoundedCornerShape(
+                            bottomStart = PlaylistsPanelCornerRadius,
+                            bottomEnd = PlaylistsPanelCornerRadius,
+                        )
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
-                                .sharedElement(
-                                    rememberSharedContentState(key = SoundscapesSharedTitleKey),
-                                    animatedVisibilityScope
-                                ),
-                            text = localizedRes.string(R.string.scenes_title),
-                            style = MaterialTheme.typography.displaySmall,
-                            color = White
-                        )
-                    }
-                    item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(0.dp)
-                        ) {
-                            SearchPlaylistsRow(
-                                searchLabel = localizedRes.string(R.string.scenes_search),
-                                playlistsLabel = localizedRes.string(R.string.scenes_playlists),
-                                playlistsActive = showPlaylists,
-                                onSearchClick = {
-                                    viewModel.onSearchOpened()
-                                    showPlaylists = false
-                                    showSearchDialog = true
-                                },
-                                onPlaylistsClick = { showPlaylists = !showPlaylists },
-                            )
-                            AnimatedVisibility(
-                                visible = showPlaylists,
-                                enter = fadeIn(animationSpec = tween(260)) +
-                                    expandVertically(animationSpec = tween(260)),
-                                exit = fadeOut(animationSpec = tween(220)) +
-                                    shrinkVertically(animationSpec = tween(220))
-                            ) {
-                                PlaylistsInlineBlock(
-                                    playlists = state.playlists,
-                                    onPlaylistClick = viewModel::onPlaylistClick,
-                                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                                .padding(bottom = if (showPlaylists) 16.dp else 0.dp)
+                                .then(
+                                    if (showPlaylists) {
+                                        Modifier
+                                            .clip(playlistsBackdropShape)
+                                            .background(SoundscapesActionButtonBackground)
+                                            .animateContentSize(animationSpec = tween(320))
+                                    } else {
+                                        Modifier
+                                    }
                                 )
+                        ) {
+                            Text(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                                    .sharedElement(
+                                        rememberSharedContentState(key = SoundscapesSharedTitleKey),
+                                        animatedVisibilityScope
+                                    ),
+                                text = localizedRes.string(R.string.scenes_title),
+                                style = MaterialTheme.typography.displaySmall,
+                                color = White
+                            )
+                            Column(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                SearchPlaylistsRow(
+                                    searchLabel = localizedRes.string(R.string.scenes_search),
+                                    playlistsLabel = localizedRes.string(R.string.scenes_playlists),
+                                    playlistsActive = showPlaylists,
+                                    onSearchClick = {
+                                        viewModel.onSearchOpened()
+                                        showPlaylists = false
+                                        showSearchDialog = true
+                                    },
+                                    onPlaylistsClick = { showPlaylists = !showPlaylists },
+                                )
+                                AnimatedVisibility(
+                                    visible = showPlaylists,
+                                    enter = fadeIn(animationSpec = tween(260)) +
+                                        expandVertically(animationSpec = tween(260)),
+                                    exit = fadeOut(animationSpec = tween(220)) +
+                                        shrinkVertically(animationSpec = tween(220))
+                                ) {
+                                    PlaylistsInlineBlock(
+                                        playlists = state.playlists,
+                                        onPlaylistClick = viewModel::onPlaylistClick,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                                    )
+                                }
                             }
                         }
-                    }
-                    if (showPlaylists) {
-                        item { Spacer(modifier = Modifier.height(12.dp)) }
                     }
                     items(
                         items = sectionsToRender,
@@ -715,6 +740,7 @@ private fun PlaylistsInlineBlock(
     onPlaylistClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val playlistCardShape = RoundedCornerShape(PlaylistsPanelCornerRadius)
     val localizedRes = LocalLocalizedRes.current
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -738,10 +764,10 @@ private fun PlaylistsInlineBlock(
                         modifier = Modifier
                             .weight(1f)
                             .height(100.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(playlistCardShape)
                             .clickable { onPlaylistClick(pl.id) },
                         color = SoundscapesCardSurface,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = playlistCardShape,
                         border = BorderStroke(1.dp, SoundscapesTileBorder)
                     ) {
                         Column(
@@ -787,6 +813,7 @@ private fun PlaylistsInlineBlock(
 }
 
 val SoundscapeMiniPlayerContentHeight = 78.dp
+private val PlaylistsPanelCornerRadius = 20.dp
 
 @Composable
 fun SoundscapesMiniPlayer(
