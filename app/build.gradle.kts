@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import com.android.build.gradle.internal.api.ApkVariantOutputImpl
 
+//Ваш додаток не підтримує сторінки пам’яті розміром 16 КБ.
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -30,8 +31,8 @@ android {
         applicationId = "digital.euforia.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.0"
+        versionCode = 12
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_API_URL", "\"https://euforia.digital/api/\"")
@@ -262,9 +263,9 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation("com.google.android.material:material:1.12.0")
     // Fresco for image pipeline used in BaseActivity and UserActivity
-    implementation("com.facebook.fresco:fresco:3.3.0")
+        //  implementation("com.facebook.fresco:fresco:3.3.0")
     // ExpandableTextView for album/playlist descriptions (JitPack)
-    implementation("com.github.giangpham96:expandable-text:2.0.1")
+   // implementation("com.github.giangpham96:expandable-text:2.0.1")
     implementation("com.github.anhaki:PickTime-Compose:1.1.5")
 //    implementation("com.arnyminerz.markdowntext:markdowntext:1.3.1")
     implementation("com.colintheshots:twain:0.3.2")

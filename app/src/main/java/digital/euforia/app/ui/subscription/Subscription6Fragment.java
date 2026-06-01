@@ -14,8 +14,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.media3.common.util.UnstableApi;
-
-import com.facebook.drawee.view.SimpleDraweeView;
 import com.google.gson.Gson;
 import digital.euforia.app.R;
 import digital.euforia.app.billing.localdb.AugmentedSkuDetails;
@@ -189,10 +187,10 @@ public class Subscription6Fragment extends SubscriptionFragment {
                 items.removeAllViews();
                 LayoutInflater inflater = LayoutInflater.from(activity);
                 for (int i = 0; i < config.items.size(); i++) {
-                    View item = inflater.inflate(R.layout.view_item_subscription_6, items, false);
-                    ((SimpleDraweeView) item.findViewById(R.id.icon)).setImageURI(config.items.get(i).getIcon());
-                    ((TextView) item.findViewById(R.id.itemTitle)).setText(config.items.get(i).getText().trim());
-                    items.addView(item);
+//                    View item = inflater.inflate(R.layout.view_item_subscription_6, items, false);
+//                    ((SimpleDraweeView) item.findViewById(R.id.icon)).setImageURI(config.items.get(i).getIcon());
+//                    ((TextView) item.findViewById(R.id.itemTitle)).setText(config.items.get(i).getText().trim());
+//                    items.addView(item);
                 }
                 items.setVisibility(View.VISIBLE);
             }

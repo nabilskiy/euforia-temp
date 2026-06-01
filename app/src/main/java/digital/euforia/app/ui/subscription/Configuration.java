@@ -2,7 +2,6 @@ package digital.euforia.app.ui.subscription;
 
 import android.os.Environment;
 
-import com.facebook.common.util.ByteConstants;
 
 import java.io.File;
 
@@ -31,9 +30,9 @@ public class Configuration {
     // Fresco & Images
     public static final int CACHE_IMG_VERSION = 1;
     public static final String CACHE_IMG_DIR = "cache-v1";
-    public static final int MAX_CACHE_SIZE = 512 * ByteConstants.MB;
-    public static final int MAX_CACHE_SIZE_LOW_DISK = 25 * ByteConstants.MB;
-    public static final int MAX_CACHE_SIZE_VERY_LOW_DISK = 5 * ByteConstants.MB;
+//    public static final int MAX_CACHE_SIZE = 512 * ByteConstants.MB;
+//    public static final int MAX_CACHE_SIZE_LOW_DISK = 25 * ByteConstants.MB;
+//    public static final int MAX_CACHE_SIZE_VERY_LOW_DISK = 5 * ByteConstants.MB;
 
     // Notification
     public static final int NOTIFICATIONS_ACTIVE_DELAY = 1000 * 60 * 3; // 3 minutes

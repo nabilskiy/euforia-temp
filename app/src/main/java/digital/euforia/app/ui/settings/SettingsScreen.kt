@@ -392,9 +392,11 @@ fun LazyListScope.developerItem(
                     .fillMaxWidth()
                     .padding(bottom = 24.dp)
                     .noRippleClickable {
-                        navController.navigate(HomeDestination.DevOptions)
+                        if (BuildConfig.DEBUG) {
+                            navController.navigate(HomeDestination.DevOptions)
+                        }
                     },
-                text = "© 2025, EUFORIA MENTAL HEALTH APPS LTD\nBuild ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                text = "© 2026, EUFORIA MENTAL HEALTH APPS LTD\nBuild ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = Light),
                 color = White.copy(alpha = 0.3f),
                 textAlign = TextAlign.Center

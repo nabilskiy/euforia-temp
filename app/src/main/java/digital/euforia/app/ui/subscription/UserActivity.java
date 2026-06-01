@@ -23,9 +23,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
-import com.facebook.drawee.backends.pipeline.Fresco;
 import androidx.media3.common.util.UnstableApi;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 //import com.google.firebase.inappmessaging.FirebaseInAppMessaging;
