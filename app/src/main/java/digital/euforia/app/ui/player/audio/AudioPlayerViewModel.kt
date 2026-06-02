@@ -233,6 +233,8 @@ class AudioPlayerViewModel @Inject constructor(
 
             val soundEffects =
                 getResourcesUseCase(CLASS_ALIAS_VOICE_MUSIC).map { it.toSoundEffectUi() }
+            val savedSoundId = appPreferences.getSelectedVoiceMusicId()
+            val selectedSoundEffectIndex = resolveSelectedSoundEffectIndex(soundEffects, savedSoundId)
             val avatars = getResourcesUseCase(CLASS_ALIAS_VOICE_AVATAR).map { it.toAvatarUi() }
                 .toMutableList()
             val customAvatars = appPreferences.getCustomAvatarUris().map { entry ->
@@ -242,18 +244,21 @@ class AudioPlayerViewModel @Inject constructor(
                         id = parts[0].hashCode(),
                         title = "Custom",
                         imageUrl = parts[1],
-                        isCustom = true
+                        isCustom = true,
+                        storageId = parts[0],
                     )
                 } else {
                     AvatarUi(
                         id = entry.hashCode(),
                         title = "Custom",
                         imageUrl = entry,
-                        isCustom = true
+                        isCustom = true,
                     )
                 }
             }
             avatars.addAll(0, customAvatars)
+            val savedAvatarKey = appPreferences.getSelectedVoiceAvatarStorageKey()
+            val selectedAvatar = resolveSelectedVoiceAvatar(avatars, savedAvatarKey)
             val avatarPreviewIds = configFetcher.getVoiceAvatarPreviewsIds()
             val dayUnlockConfig = configFetcher.getDemoUnlockDayConfig()
             val shareMessage = configFetcher.getShareMessage()
@@ -269,8 +274,10 @@ class AudioPlayerViewModel @Inject constructor(
                     imageUrl = imageUrl,
                     audioUrl = audioUrl,
                     avatarsList = avatars,
+                    selectedAvatar = selectedAvatar,
                     avatarPreviewIds = avatarPreviewIds,
                     soundEffectsList = soundEffects,
+                    selectedSoundEffectIndex = selectedSoundEffectIndex,
                     gender = gender,
                     unlockDayConfig = dayUnlockConfig,
                     isDemo = isDemo,
@@ -309,12 +316,14 @@ class AudioPlayerViewModel @Inject constructor(
             if (state.selectedSoundEffectIndex == index) return@intent
             val soundEffect = state.soundEffectsList.getOrNull(index) ?: return@intent
             analyticSender.voiceMusicsSelect(soundEffect.id)
+            appPreferences.setSelectedVoiceMusicId(soundEffect.id)
             reduce { state.copy(selectedSoundEffectIndex = index) }
         }
     }
 
     fun onMuteClicked() {
         intent {
+            appPreferences.setSelectedVoiceMusicId(AppPreferences.SELECTED_VOICE_MUSIC_NONE)
             reduce { state.copy(selectedSoundEffectIndex = -1) }
         }
     }
@@ -332,9 +341,16 @@ class AudioPlayerViewModel @Inject constructor(
                     reduce { state.copy(selectedAvatarsIds = selectedIds) }
                 }
             } else {
+                persistSelectedAvatar(avatar)
                 reduceState { copy(selectedAvatar = avatar, showAvatarChangedToast = true) }
             }
         }
+    }
+
+    private suspend fun persistSelectedAvatar(avatar: AvatarUi?) {
+        val key = avatar?.toSelectedVoiceAvatarStorageKey()
+            ?: AppPreferences.SELECTED_VOICE_AVATAR_NONE
+        appPreferences.setSelectedVoiceAvatarStorageKey(key)
     }
 
     fun onDismissAvatarChangedToast() {
@@ -541,7 +557,8 @@ class AudioPlayerViewModel @Inject constructor(
                     comment = message
                 )
             }
-            postSideEffect(AudioPlayerSideEffect.NavigateBack)
+            // After submitting rating, stay inside player screen and return to playback page.
+            reduceState { copy(currentPageIndex = 0) }
         }
     }
 
@@ -580,13 +597,27 @@ class AudioPlayerViewModel @Inject constructor(
         intent {
             val selectedIds = state.selectedAvatarsIds
             if (selectedIds.isNotEmpty()) {
-                appPreferences.addDeletedAvatarIds(selectedIds)
-                val updatedAvatars = state.avatarsList.filterNot { selectedIds.contains(it.id) }
+                val selectedCustomIds = state.avatarsList
+                    .filter { it.isCustom && selectedIds.contains(it.id) }
+                    .map { it.id }
+                    .toSet()
+                appPreferences.removeCustomAvatarUrisByIds(selectedCustomIds)
+                val updatedAvatars = state.avatarsList.filterNot {
+                    it.isCustom && selectedCustomIds.contains(it.id)
+                }
+                val updatedSelectedAvatar = if (selectedCustomIds.contains(state.selectedAvatar?.id)) {
+                    null
+                } else {
+                    state.selectedAvatar
+                }
+                if (selectedCustomIds.contains(state.selectedAvatar?.id)) {
+                    persistSelectedAvatar(null)
+                }
                 reduce {
                     state.copy(
                         avatarsList = updatedAvatars,
                         selectedAvatarsIds = emptyList(),
-                        selectedAvatar = if (selectedIds.contains(state.selectedAvatar?.id)) null else state.selectedAvatar
+                        selectedAvatar = updatedSelectedAvatar,
                     )
                 }
             }
@@ -595,13 +626,19 @@ class AudioPlayerViewModel @Inject constructor(
 
     fun onDeleteClicked(id: Int) {
         intent {
-            appPreferences.addDeletedAvatarIds(listOf(id))
-            val updatedAvatars = state.avatarsList.filterNot { it.id == id }
+            val avatar = state.avatarsList.firstOrNull { it.id == id } ?: return@intent
+            if (!avatar.isCustom) return@intent
+            appPreferences.removeCustomAvatarUrisByIds(setOf(id))
+            val updatedAvatars = state.avatarsList.filterNot { it.isCustom && it.id == id }
+            val updatedSelectedAvatar = if (state.selectedAvatar?.id == id) null else state.selectedAvatar
+            if (state.selectedAvatar?.id == id) {
+                persistSelectedAvatar(null)
+            }
             reduce {
                 state.copy(
                     avatarsList = updatedAvatars,
                     selectedAvatarsIds = state.selectedAvatarsIds.filterNot { it == id },
-                    selectedAvatar = if (state.selectedAvatar?.id == id) null else state.selectedAvatar
+                    selectedAvatar = updatedSelectedAvatar,
                 )
             }
         }
@@ -634,7 +671,8 @@ class AudioPlayerViewModel @Inject constructor(
                 id = uniqueId.hashCode(),
                 title = "Custom",
                 imageUrl = uriString,
-                isCustom = true
+                isCustom = true,
+                storageId = uniqueId,
             )
             val newList = state.avatarsList.toMutableList()
             newList.add(0, customAvatar)
@@ -697,7 +735,8 @@ data class AvatarUi(
     val id: Int,
     val title: String,
     val imageUrl: String,
-    val isCustom: Boolean = false
+    val isCustom: Boolean = false,
+    val storageId: String? = null,
 )
 
 @Keep

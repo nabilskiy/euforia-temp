@@ -1,5 +1,9 @@
+@file:OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
+
 package digital.euforia.app.ui.programs
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -89,14 +93,15 @@ import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.SearchTextField
 import digital.euforia.app.ui.util.widget.genericRowItem
 import digital.euforia.app.ui.util.widget.noRippleClickable
-import digital.euforia.app.ui.util.widget.titleItem
+import digital.euforia.app.ui.util.widget.sharedTitleItem
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
-fun ProgramsScreen(
+fun SharedTransitionScope.ProgramsScreen(
     navController: NavHostController,
-    viewModel: ProgramsViewModel
+    viewModel: ProgramsViewModel,
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
@@ -106,6 +111,7 @@ fun ProgramsScreen(
     SubscriptionActivityLauncher { launchSubscriptionActivity ->
         ProgramsContent(
             navController = navController,
+            animatedVisibilityScope = animatedVisibilityScope,
             isPremium = state.isPremium,
             isLoading = state.isLoading,
             isSearchLoading = state.isSearchLoading,
@@ -138,8 +144,9 @@ fun ProgramsScreen(
 }
 
 @Composable
-private fun ProgramsContent(
+private fun SharedTransitionScope.ProgramsContent(
     navController: NavHostController,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     isPremium: Boolean,
     isLoading: Boolean,
     isSearchLoading: Boolean,
@@ -285,9 +292,11 @@ private fun ProgramsContent(
                     bottom = 56.dp
                 ),
             ) {
-                titleItem(
+                sharedTitleItem(
+                    sharedTransitionScope = this@ProgramsContent,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    titleRes = R.string.library_title,
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    titleRes = R.string.library_title
                 )
                 searchItem(
                     text = searchQuery,
@@ -583,12 +592,14 @@ private fun RowScope.ProgramItemView(
     onProgramLongPressEnd: () -> Unit,
     onProgramClick: () -> Unit
 ) {
-    val localizedRes = LocalLocalizedRes.current
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(targetValue = if (isPressed) 1.05f else 1f, label = "scale")
+    val isOverlayActive = activeOverlayProgramId == programUi.id
+    val scale by animateFloatAsState(
+        targetValue = if (isOverlayActive) 1.05f else 1f,
+        label = "scale",
+    )
     val elevation by animateDpAsState(
-        targetValue = if (isPressed) 8.dp else 0.dp,
-        label = "elevation"
+        targetValue = if (isOverlayActive) 8.dp else 0.dp,
+        label = "elevation",
     )
     var lastBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
 
@@ -600,8 +611,7 @@ private fun RowScope.ProgramItemView(
                 lastBounds = coords.boundsInRoot()
             }
             .graphicsLayer {
-                // Hide the original when overlay is active for this item
-                alpha = if (activeOverlayProgramId == programUi.id) 0f else 1f
+                alpha = if (isOverlayActive) 0f else 1f
                 scaleX = scale
                 scaleY = scale
             }
@@ -610,25 +620,23 @@ private fun RowScope.ProgramItemView(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onLongPress = {
-                        isPressed = true
                         val rect = lastBounds
                         onProgramLongPressStart(
                             programUi,
                             rect.left.toInt(),
                             rect.top.toInt(),
                             rect.width.toInt(),
-                            rect.height.toInt()
+                            rect.height.toInt(),
                         )
                     },
                     onPress = {
                         try {
                             awaitRelease()
                         } finally {
-                            isPressed = false
                             onProgramLongPressEnd()
                         }
                     },
-                    onTap = { onProgramClick() }
+                    onTap = { onProgramClick() },
                 )
             }
     ) {
@@ -776,7 +784,11 @@ private fun handleSideEffect(sideEffect: ProgramsSideEffect, navController: NavH
     when (sideEffect) {
         is ProgramsSideEffect.NavigateToProgramDetail -> navController.navigate(
             HomeDestination.ProgramDetails(
-                sideEffect.programId
+                programId = sideEffect.program.id,
+                previewName = sideEffect.program.name,
+                previewImageUrl = sideEffect.program.imageUrl,
+                previewResourceCount = sideEffect.program.resourceCount,
+                previewIsPremium = sideEffect.program.isPremium,
             )
         )
 

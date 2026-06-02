@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -97,6 +98,20 @@ fun SharedTransitionScope.AudioPlayerScreen(
             }
         }
 
+        LaunchedEffect(
+            controller,
+            state.selectedSoundEffectIndex,
+            state.soundEffectsList,
+        ) {
+            val mediaController = controller ?: return@LaunchedEffect
+            if (state.selectedSoundEffectIndex < 0) {
+                stopSfx(mediaController)
+                return@LaunchedEffect
+            }
+            val sfx = state.soundEffectsList.getOrNull(state.selectedSoundEffectIndex) ?: return@LaunchedEffect
+            if (sfx.audioUrl.isBlank()) return@LaunchedEffect
+            playSfx(mediaController, sfx.audioUrl, volume)
+        }
 
         // Release player when leaving the screen
         DisposableEffect(Unit) {
@@ -223,20 +238,20 @@ fun SharedTransitionScope.AudioPlayerScreen(
 
 // Send via the same MediaController you already hold
 fun playSfx(controller: MediaController, url: String, vol: Float) {
-    val cmd = SessionCommand("play_sfx", Bundle.EMPTY)
+    if (url.isBlank()) return
     val args = Bundle().apply {
         putString("url", url)
         putFloat("volume", vol)
     }
-    controller.sendCustomCommand(cmd, args)
+    controller.sendCustomCommand(AudioPlaybackService.Commands.PLAY_SFX, args)
 }
 
 fun stopSfx(controller: MediaController) {
-    controller.sendCustomCommand(SessionCommand("stop_sfx", Bundle.EMPTY), Bundle.EMPTY)
+    controller.sendCustomCommand(AudioPlaybackService.Commands.STOP_SFX, Bundle.EMPTY)
 }
 
 fun setSfxVolume(controller: MediaController, vol: Float) {
-    val cmd = SessionCommand("volume_sfx", Bundle.EMPTY)
+    val cmd = AudioPlaybackService.Commands.VOLUME_SFX
     val args = Bundle().apply {
         putFloat("volume", vol)
     }

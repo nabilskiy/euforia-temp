@@ -271,6 +271,26 @@ fun SharedTransitionScope.PlanScreen(
                     )
                 }
             }
+
+            AnimatedVisibility(
+                visible = isFinishWeekDialogVisible,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(10f),
+                enter = slideInHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth },
+                exit = slideOutHorizontally(animationSpec = tween(250)) { fullWidth -> fullWidth },
+            ) {
+                FinishWeekScreen(
+                    navController = navController,
+                    navBarVisibilityState = navBarVisibilityState,
+                    onPremiumClick = {
+                        launchSubscriptionActivity()
+                    },
+                    onBackClick = {
+                        isFinishWeekDialogVisible = false
+                    },
+                )
+            }
         }
 
         if (isSkipWeekDialogVisible) {
@@ -283,26 +303,6 @@ fun SharedTransitionScope.PlanScreen(
                     viewModel.onSkipDemo()
                 },
             )
-        }
-
-        AnimatedVisibility(
-            visible = isFinishWeekDialogVisible,
-            enter = slideInHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth },
-            exit = slideOutHorizontally(animationSpec = tween(250)) { fullWidth -> fullWidth }
-        ) {
-            Box(Modifier.fillMaxSize().zIndex(1f)) {
-                FinishWeekScreen(
-                    navController = navController,
-                    navBarVisibilityState = navBarVisibilityState,
-                    hazeState = hazeState,
-                    onPremiumClick = {
-                        launchSubscriptionActivity()
-                    },
-                    onBackClick = {
-                        isFinishWeekDialogVisible = false
-                    }
-                )
-            }
         }
     }
     BackHandler {

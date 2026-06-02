@@ -182,7 +182,7 @@ class ProgramsViewModel @Inject constructor(
 
     fun onProgramClicked(programUi: ProgramUi) {
         viewModelScope.launch { analyticSender.libraryItemClick("program") }
-        postEffect(ProgramsSideEffect.NavigateToProgramDetail(programUi.id))
+        postEffect(ProgramsSideEffect.NavigateToProgramDetail(programUi))
     }
 
     fun onMoreSearchedMeditationsClicked() {
@@ -340,7 +340,7 @@ data class ProgramsState(
 )
 
 sealed class ProgramsSideEffect {
-    data class NavigateToProgramDetail(val programId: Int) : ProgramsSideEffect()
+    data class NavigateToProgramDetail(val program: ProgramUi) : ProgramsSideEffect()
     data object NavigateToDownloads : ProgramsSideEffect()
     data class NavigateToPublication(
         val id: Int,

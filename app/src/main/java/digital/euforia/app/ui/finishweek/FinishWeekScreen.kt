@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,13 +48,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.materials.HazeMaterials
 import digital.euforia.app.R
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
-import digital.euforia.app.ui.theme.AppBarBackground
+import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.Black
 import digital.euforia.app.ui.theme.Brown
 import digital.euforia.app.ui.theme.CalendarColors
@@ -86,9 +84,8 @@ fun FinishWeekScreen(
     navController: NavHostController,
     navBarVisibilityState: MutableState<Boolean>,
     viewModel: FinishWeekViewModel = hiltViewModel(),
-    hazeState: HazeState,
     onBackClick: () -> Unit,
-    onPremiumClick: () -> Unit
+    onPremiumClick: () -> Unit,
 ) {
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
@@ -97,52 +94,77 @@ fun FinishWeekScreen(
 
     NavBarlessScreen(navBarVisibilityState) {
         FinishWeekContent(
-            hazeState = hazeState,
             onBackClick = onBackClick,
-            onPremiumClick = onPremiumClick
+            onPremiumClick = onPremiumClick,
         )
     }
 }
 
 @Composable
 private fun FinishWeekContent(
-    hazeState: HazeState,
     onBackClick: () -> Unit,
-    onPremiumClick: () -> Unit
+    onPremiumClick: () -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     Box(
-        modifier = Modifier.hazeEffect(
-            hazeState,
-            style = HazeMaterials.regular(AppBarBackground)
-        ).padding(horizontal = 16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .background(NavBarBackground),
     ) {
-        LazyColumn() {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 88.dp),
+        ) {
+            item(key = "header") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .noRippleClickable(onBackClick)
+                            .padding(top = 16.dp)
+                            .size(24.dp),
+                        painter = painterResource(R.drawable.ic_arrow_back),
+                        contentDescription = null,
+                        tint = Color.White,
+                    )
+                    Text(
+                        modifier = Modifier.padding(top = 16.dp),
+                        text = localizedRes.string(R.string.vibes_upgrade_without_subscription),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        color = White,
+                    )
+                }
+            }
             progressItem()
             calendarItem()
             item {
-                Spacer(modifier = Modifier.height(24.dp).fillMaxWidth().navigationBarsPadding())
+                Spacer(
+                    modifier = Modifier
+                        .height(24.dp)
+                        .fillMaxWidth()
+                        .navigationBarsPadding(),
+                )
             }
         }
 
-        Icon(
-            modifier = Modifier.noRippleClickable(onBackClick).statusBarsPadding()
-                .padding(top = 16.dp),
-            painter = painterResource(R.drawable.ic_arrow_back),
-            contentDescription = null,
-            tint = Color.White,
-        )
-
         PremiumButton(
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             text = localizedRes.string(R.string.vibes_skip_demo_period_button),
             gradient = CalendarGradient,
             onClick = {
                 onBackClick()
                 onPremiumClick()
-            }
+            },
         )
     }
 }
@@ -151,21 +173,16 @@ fun LazyListScope.progressItem() = item(key = "progress") {
     val localizedRes = LocalLocalizedRes.current
 
     Column(
-        modifier = Modifier.statusBarsPadding().padding(top = 16.dp, bottom = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(top = 16.dp, bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = spacedBy(16.dp)
+        verticalArrangement = spacedBy(16.dp),
     ) {
-        Text(
-            text = localizedRes.string(R.string.vibes_upgrade_without_subscription),
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = White
-        )
-
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             val days = listOf(1, 2, 3, 4, 5, 6, 7)
             days.forEach { day ->

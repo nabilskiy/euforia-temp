@@ -152,6 +152,10 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     @Keep
     data class ProgramDetails(
         val programId: Int,
+        val previewName: String = "",
+        val previewImageUrl: String? = null,
+        val previewResourceCount: Int = 0,
+        val previewIsPremium: Boolean = false,
     ) : HomeDestination()
 
     @Serializable

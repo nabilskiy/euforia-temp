@@ -64,6 +64,11 @@ private fun NavDestination.hasSoundscapesSceneRoute(): Boolean {
     return r.contains("SoundscapesScene") && !r.contains("SoundscapesPlaylist")
 }
 
+private fun NavDestination.hasProgramDetailsRoute(): Boolean {
+    val r = route ?: return false
+    return r.contains("ProgramDetails")
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavigation(
@@ -169,14 +174,27 @@ fun AppNavigation(
                 }
                 composable<HomeDestination.Programs>(
                     enterTransition = NavAnimations.enter,
-                    exitTransition = NavAnimations.exit,
-                    popEnterTransition = NavAnimations.popEnter,
+                    exitTransition = {
+                        if (targetState.destination.hasProgramDetailsRoute()) {
+                            NavAnimations.programsDetailExit(this)
+                        } else {
+                            NavAnimations.exit(this)
+                        }
+                    },
+                    popEnterTransition = {
+                        if (initialState.destination.hasProgramDetailsRoute()) {
+                            NavAnimations.programsDetailPopEnter(this)
+                        } else {
+                            NavAnimations.popEnter(this)
+                        }
+                    },
                     popExitTransition = NavAnimations.popExit
                 ) {
                     isBottomBarShown.value = true
                     ProgramsScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
+                        animatedVisibilityScope = this,
                     )
                 }
 
@@ -407,15 +425,16 @@ fun AppNavigation(
                     )
                 }
                 composable<HomeDestination.ProgramDetails>(
-                    enterTransition = NavAnimations.enter,
-                    exitTransition = NavAnimations.exit,
-                    popEnterTransition = NavAnimations.popEnter,
-                    popExitTransition = NavAnimations.popExit
+                    enterTransition = NavAnimations.programsDetailEnter,
+                    exitTransition = NavAnimations.programsDetailExit,
+                    popEnterTransition = NavAnimations.programsDetailPopEnter,
+                    popExitTransition = NavAnimations.programsDetailPopExit,
                 ) {
                     ProgramDetailsScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
                         navBarVisibilityState = isBottomBarShown,
+                        animatedVisibilityScope = this,
                     )
                 }
                 composable<HomeDestination.PublicationDetails>(
@@ -501,9 +520,13 @@ fun AppNavigation(
 @Composable
 fun NavBarlessScreen(
     navBarVisibilityState: MutableState<Boolean>,
+    hideNavBarDelayMs: Long = 0L,
     content: @Composable () -> Unit
 ) {
-    LaunchedEffect(navBarVisibilityState.value) {
+    LaunchedEffect(Unit) {
+        if (hideNavBarDelayMs > 0L) {
+            kotlinx.coroutines.delay(hideNavBarDelayMs)
+        }
         navBarVisibilityState.value = false
     }
 

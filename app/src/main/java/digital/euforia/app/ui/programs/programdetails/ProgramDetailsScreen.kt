@@ -1,5 +1,9 @@
+@file:OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
+
 package digital.euforia.app.ui.programs.programdetails
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -72,7 +76,9 @@ import digital.euforia.app.domain.model.PublicationInfo
 import digital.euforia.app.domain.model.config.ProgramsConfig
 import digital.euforia.app.ui.home.NavBarHeight
 import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.navigation.NavAnimations
 import digital.euforia.app.ui.navigation.NavBarlessScreen
+import digital.euforia.app.ui.util.widget.LIBRARY_TITLE_SHARED_KEY
 import digital.euforia.app.ui.player.audio.AppBarHeightMedium
 import digital.euforia.app.ui.programs.ProgramUi
 import digital.euforia.app.ui.theme.DarkGray
@@ -93,20 +99,25 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
-fun ProgramDetailsScreen(
+fun SharedTransitionScope.ProgramDetailsScreen(
     navController: NavHostController,
     viewModel: ProgramDetailsViewModel,
     navBarVisibilityState: MutableState<Boolean>,
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { sideEffect ->
         handleSideEffect(sideEffect, navController)
     }
 
-    NavBarlessScreen(navBarVisibilityState) {
+    NavBarlessScreen(
+        navBarVisibilityState = navBarVisibilityState,
+        hideNavBarDelayMs = NavAnimations.PROGRAMS_DETAIL_TRANSITION_MS.toLong(),
+    ) {
         SubscriptionActivityLauncher { launchSubscriptionActivity ->
             ProgramDetailsContent(
                 navController = navController,
+                animatedVisibilityScope = animatedVisibilityScope,
                 isPremium = state.isPremium,
                 isLoading = state.isLoading,
                 errorState = state.errorState,
@@ -133,8 +144,9 @@ fun ProgramDetailsScreen(
 }
 
 @Composable
-private fun ProgramDetailsContent(
+private fun SharedTransitionScope.ProgramDetailsContent(
     navController: NavHostController,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     isPremium: Boolean,
     isLoading: Boolean,
     errorState: ErrorViewState?,
@@ -238,6 +250,7 @@ private fun ProgramDetailsContent(
             titleText = programUi?.name.orEmpty(),
             showTitle = shouldBlur,
             onBackClick = onBackClick,
+            animatedVisibilityScope = animatedVisibilityScope,
             actionButton = {
                 Row(
                     horizontalArrangement = spacedBy(12.dp),
@@ -265,16 +278,16 @@ private fun ProgramDetailsContent(
             }
         )
 
-        if (isLoading) {
+        if (isLoading && programUi == null) {
             ProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        } else if (errorState != null) {
+        } else if (errorState != null && programUi == null) {
             ErrorView(
                 modifier = Modifier.align(Alignment.Center),
                 state = errorState,
                 onRetryClick = onRetryClick,
                 onDownloadsClick = onDownloadsClick
             )
-        } else {
+        } else if (programUi != null) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().hazeSource(hazeState),
                 state = listState,
@@ -764,11 +777,12 @@ private fun LazyListScope.titleItem(
 
 
 @Composable
-fun AppBar(
+fun SharedTransitionScope.AppBar(
     titleText: String,
     showTitle: Boolean,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onBackClick: () -> Unit = {},
-    actionButton: @Composable () -> Unit? = {}
+    actionButton: @Composable () -> Unit? = {},
 ) {
     val localizedRes = LocalLocalizedRes.current
     val appBarModifier = if (showTitle) {
@@ -798,9 +812,14 @@ fun AppBar(
                 tint = White
             )
             Text(
+                modifier = Modifier.sharedElement(
+                    rememberSharedContentState(key = LIBRARY_TITLE_SHARED_KEY),
+                    animatedVisibilityScope,
+                    boundsTransform = { _, _ -> tween(durationMillis = 300) },
+                ),
                 text = localizedRes.string(R.string.library_title),
                 color = White,
-                style = appbarMedium.copy(fontWeight = FontWeight.Medium)
+                style = appbarMedium.copy(fontWeight = FontWeight.Medium),
             )
         }
         Text(

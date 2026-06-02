@@ -352,7 +352,10 @@ private fun DefaultPlayerOverlay(
         RateView(
             rating = rating,
             onRatingUpdated = onRatingUpdated,
-            onSubmitClick = onSubmitClick,
+            onSubmitClick = { value, comment ->
+                onSubmitClick(value, comment)
+                isRateShown.value = false
+            },
             onShareClick = { shareApp(context, shareText) },
             onBackClick = {
                 if (durationMs > 0 && currentTimeMs >= durationMs * 0.95f) {

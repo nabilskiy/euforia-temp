@@ -22,6 +22,10 @@ import java.util.UUID
 class AppPreferences(
     private val store: DataStore<Preferences>
 ) {
+    companion object {
+        const val SELECTED_VOICE_AVATAR_NONE = "none"
+        const val SELECTED_VOICE_MUSIC_NONE = -1
+    }
     private val keyDeviceToken = stringPreferencesKey("deviceToken")
 
     private val keyLanguage = stringPreferencesKey("language")
@@ -50,6 +54,8 @@ class AppPreferences(
     private val keyLastPlaybackResetDate = stringPreferencesKey("last_playback_reset_date")
     private val keyDeletedAvatarIds = stringSetPreferencesKey("deleted_avatar_ids")
     private val keyCustomAvatarUris = stringSetPreferencesKey("custom_avatar_uris")
+    private val keySelectedVoiceAvatar = stringPreferencesKey("selected_voice_avatar")
+    private val keySelectedVoiceMusicId = intPreferencesKey("selected_voice_music_id")
     private val keySoundscapesEnabled = booleanPreferencesKey("soundscapes_enabled")
     private val keySoundscapesLevel = intPreferencesKey("soundscapes_level")
     private val keySoundscapesLastPreset = intPreferencesKey("soundscapes_last_preset")
@@ -508,6 +514,41 @@ class AppPreferences(
         store.edit { preferences ->
             val current = preferences[keyCustomAvatarUris] ?: emptySet()
             preferences[keyCustomAvatarUris] = current + "$id|$uri"
+        }
+    }
+
+    suspend fun removeCustomAvatarUrisByIds(ids: Set<Int>) {
+        if (ids.isEmpty()) return
+        store.edit { preferences ->
+            val current = preferences[keyCustomAvatarUris] ?: emptySet()
+            preferences[keyCustomAvatarUris] = current.filterNot { entry ->
+                val avatarId = if (entry.contains("|")) {
+                    entry.substringBefore("|").hashCode()
+                } else {
+                    entry.hashCode()
+                }
+                ids.contains(avatarId)
+            }.toSet()
+        }
+    }
+
+    suspend fun getSelectedVoiceAvatarStorageKey(): String? {
+        return store.data.firstOrNull()?.get(keySelectedVoiceAvatar)
+    }
+
+    suspend fun setSelectedVoiceAvatarStorageKey(key: String) {
+        store.edit { preferences ->
+            preferences[keySelectedVoiceAvatar] = key
+        }
+    }
+
+    suspend fun getSelectedVoiceMusicId(): Int? {
+        return store.data.firstOrNull()?.get(keySelectedVoiceMusicId)
+    }
+
+    suspend fun setSelectedVoiceMusicId(soundId: Int) {
+        store.edit { preferences ->
+            preferences[keySelectedVoiceMusicId] = soundId
         }
     }
 

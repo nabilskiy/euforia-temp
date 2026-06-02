@@ -134,7 +134,7 @@ class AudioPlaybackService : MediaSessionService() {
                             p.volume = volume
                             p.setMediaItem(MediaItem.fromUri(url))
                             p.prepare()
-                            if (exo.isPlaying) p.playWhenReady = true
+                            p.playWhenReady = true
                             // optional: release after completion
                             p.addListener(object : Player.Listener {
                                 override fun onPlaybackStateChanged(state: Int) {

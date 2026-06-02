@@ -40,8 +40,35 @@ class ProgramDetailsViewModel @Inject constructor(
     private val analyticSender: AnalyticSender
 ) : ViewModel(), ContainerHost<ProgramDetailsState, ProgramDetailsSideEffect> {
     private val programId: Int = requireNotNull(savedStateHandle.get<Int>("programId"))
+
+    private fun previewProgramFromArgs(): ProgramUi? {
+        val name = savedStateHandle.get<String>("previewName").orEmpty()
+        if (name.isEmpty()) return null
+        return ProgramUi(
+            id = programId,
+            isPremium = savedStateHandle.get<Boolean>("previewIsPremium") ?: false,
+            authorId = null,
+            name = name,
+            subtitle = null,
+            description = null,
+            keywords = null,
+            imageUrl = savedStateHandle.get<String>("previewImageUrl"),
+            imagePreviewUrl = null,
+            imageCoverUrl = null,
+            color1 = null,
+            color2 = null,
+            color3 = null,
+            resourceCount = savedStateHandle.get<Int>("previewResourceCount") ?: 0,
+        )
+    }
+
+    private val previewProgram: ProgramUi? = previewProgramFromArgs()
+
     override val container = container<ProgramDetailsState, ProgramDetailsSideEffect>(
-        initialState = ProgramDetailsState(),
+        initialState = ProgramDetailsState(
+            program = previewProgram,
+            isLoading = previewProgram == null,
+        ),
         onCreate = {
             logShow()
             observePremium()
@@ -67,7 +94,10 @@ class ProgramDetailsViewModel @Inject constructor(
 
     private fun loadData() {
         viewModelScope.launch {
-            reduceState { copy(isLoading = true, errorState = null) }
+            val hasPreview = container.stateFlow.value.program != null
+            if (!hasPreview) {
+                reduceState { copy(isLoading = true, errorState = null) }
+            }
             getProgramDetailsUseCase.invoke(programId).onSuccess { programDetails ->
                 reduceState {
                     copy(
