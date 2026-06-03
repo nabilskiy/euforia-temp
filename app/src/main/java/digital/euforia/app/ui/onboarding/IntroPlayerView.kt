@@ -57,15 +57,19 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 fun BoxScope.IntroPlayerView(
     modifier: Modifier = Modifier,
     onSkipClick: () -> Unit,
-    onPlaybackComplete: (Boolean) -> Unit
+    onFadeOutStart: () -> Unit,
+    onPlaybackComplete: (Boolean) -> Unit,
+    nearEndLeadMs: Long = 1_000L,
 ) {
     val context = LocalContext.current
     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val exoPlayer = rememberExoPlayer(
         videoRes = R.raw.vid_intro,
+        nearEndLeadMs = nearEndLeadMs,
+        onNearEnd = onFadeOutStart,
         onPlaybackComplete = {
             onPlaybackComplete(true)
-        }
+        },
     )
     var volume by remember { mutableFloatStateOf(exoPlayer.volume) }
     var systemVolume by remember {

@@ -99,7 +99,8 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
-fun SharedTransitionScope.ProgramDetailsScreen(
+fun ProgramDetailsScreen(
+    sharedTransitionScope: SharedTransitionScope,
     navController: NavHostController,
     viewModel: ProgramDetailsViewModel,
     navBarVisibilityState: MutableState<Boolean>,
@@ -116,6 +117,7 @@ fun SharedTransitionScope.ProgramDetailsScreen(
     ) {
         SubscriptionActivityLauncher { launchSubscriptionActivity ->
             ProgramDetailsContent(
+                sharedTransitionScope = sharedTransitionScope,
                 navController = navController,
                 animatedVisibilityScope = animatedVisibilityScope,
                 isPremium = state.isPremium,
@@ -144,7 +146,8 @@ fun SharedTransitionScope.ProgramDetailsScreen(
 }
 
 @Composable
-private fun SharedTransitionScope.ProgramDetailsContent(
+private fun ProgramDetailsContent(
+    sharedTransitionScope: SharedTransitionScope,
     navController: NavHostController,
     animatedVisibilityScope: AnimatedVisibilityScope,
     isPremium: Boolean,
@@ -247,6 +250,7 @@ private fun SharedTransitionScope.ProgramDetailsContent(
 
     Box(modifier = Modifier.fillMaxSize().background(NavBarBackground)) {
         AppBar(
+            sharedTransitionScope = sharedTransitionScope,
             titleText = programUi?.name.orEmpty(),
             showTitle = shouldBlur,
             onBackClick = onBackClick,
@@ -777,12 +781,13 @@ private fun LazyListScope.titleItem(
 
 
 @Composable
-fun SharedTransitionScope.AppBar(
+private fun AppBar(
+    sharedTransitionScope: SharedTransitionScope,
     titleText: String,
     showTitle: Boolean,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onBackClick: () -> Unit = {},
-    actionButton: @Composable () -> Unit? = {},
+    onBackClick: () -> Unit,
+    actionButton: @Composable () -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     val appBarModifier = if (showTitle) {
@@ -811,16 +816,18 @@ fun SharedTransitionScope.AppBar(
                 contentDescription = null,
                 tint = White
             )
-            Text(
-                modifier = Modifier.sharedElement(
-                    rememberSharedContentState(key = LIBRARY_TITLE_SHARED_KEY),
-                    animatedVisibilityScope,
-                    boundsTransform = { _, _ -> tween(durationMillis = 300) },
-                ),
-                text = localizedRes.string(R.string.library_title),
-                color = White,
-                style = appbarMedium.copy(fontWeight = FontWeight.Medium),
-            )
+            with(sharedTransitionScope) {
+                Text(
+                    modifier = Modifier.sharedElement(
+                        rememberSharedContentState(key = LIBRARY_TITLE_SHARED_KEY),
+                        animatedVisibilityScope,
+                        boundsTransform = { _, _ -> tween(durationMillis = 300) },
+                    ),
+                    text = localizedRes.string(R.string.library_title),
+                    color = White,
+                    style = appbarMedium.copy(fontWeight = FontWeight.Medium),
+                )
+            }
         }
         Text(
             modifier = Modifier

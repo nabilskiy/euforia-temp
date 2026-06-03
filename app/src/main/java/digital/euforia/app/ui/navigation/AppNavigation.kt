@@ -9,8 +9,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -69,6 +69,43 @@ private fun NavDestination.hasProgramDetailsRoute(): Boolean {
     return r.contains("ProgramDetails")
 }
 
+private fun NavDestination.isBottomBarVisible(): Boolean {
+    val r = route ?: return false
+    val hiddenMarkers = listOf(
+        "ProgramDetails",
+        "PublicationDetails",
+        "PublicationPlayer",
+        "Publications",
+        "Downloads",
+        "Favourites",
+        "AudioPlayer",
+        "SoundscapesScene",
+        "SoundscapesPlaylist",
+        "Splash",
+        "Video",
+        "Onboarding",
+        "Paywall",
+        "Vibes",
+        "FinishWeek",
+        "FAQ",
+        "Name",
+        "Email",
+        "Voice",
+        "Language",
+        "Subscription",
+        "DeviceInfo",
+        "Notifications",
+        "FirstWeek",
+        "HowItWorks",
+        "PersonalData",
+        "AppData",
+        "AboutPremium",
+        "EmergencyContacts",
+        "Emergency",
+    )
+    return hiddenMarkers.none { r.contains(it) }
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavigation(
@@ -86,14 +123,17 @@ fun AppNavigation(
         }
     }
 
-    LaunchedEffect(Unit) {
-        navController.addOnDestinationChangedListener { _, destination, arguments ->
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collect { entry ->
+            val visible = entry.destination.isBottomBarVisible()
+            isBottomBarShown.value = visible
             Timber.tag("NAVIGATION")
-                .d("Destination changed: ${destination.route}, args: $arguments")
+                .d("Bottom bar visible=$visible, route=${entry.destination.route}")
         }
     }
 
     SharedTransitionLayout {
+        val sharedTransitionScope = this
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 modifier = Modifier.fillMaxSize(),
@@ -192,6 +232,7 @@ fun AppNavigation(
                 ) {
                     isBottomBarShown.value = true
                     ProgramsScreen(
+                        sharedTransitionScope = sharedTransitionScope,
                         navController = navController,
                         viewModel = hiltViewModel(),
                         animatedVisibilityScope = this,
@@ -431,6 +472,7 @@ fun AppNavigation(
                     popExitTransition = NavAnimations.programsDetailPopExit,
                 ) {
                     ProgramDetailsScreen(
+                        sharedTransitionScope = sharedTransitionScope,
                         navController = navController,
                         viewModel = hiltViewModel(),
                         navBarVisibilityState = isBottomBarShown,
@@ -443,6 +485,7 @@ fun AppNavigation(
                     popEnterTransition = NavAnimations.popEnter,
                     popExitTransition = NavAnimations.popExit
                 ) {
+                    isBottomBarShown.value = false
                     PublicationScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
@@ -468,6 +511,7 @@ fun AppNavigation(
                     popEnterTransition = NavAnimations.popEnter,
                     popExitTransition = NavAnimations.popExit
                 ) {
+                    isBottomBarShown.value = false
                     PublicationPlayerScreen(
                         navController = navController,
                         viewModel = hiltViewModel(),
@@ -523,16 +567,14 @@ fun NavBarlessScreen(
     hideNavBarDelayMs: Long = 0L,
     content: @Composable () -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        if (hideNavBarDelayMs > 0L) {
+    if (hideNavBarDelayMs > 0L) {
+        LaunchedEffect(Unit) {
             kotlinx.coroutines.delay(hideNavBarDelayMs)
+            navBarVisibilityState.value = false
         }
-        navBarVisibilityState.value = false
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            navBarVisibilityState.value = true
+    } else {
+        SideEffect {
+            navBarVisibilityState.value = false
         }
     }
     content()

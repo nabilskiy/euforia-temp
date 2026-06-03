@@ -442,7 +442,9 @@ fun LazyListScope.infoItem(
         HorizontalDivider(
             color = White.copy(alpha = 0.1f),
             thickness = 1.dp,
-            modifier = Modifier.width(64.dp)
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .width(64.dp),
         )
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -39,10 +39,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.colintheshots.twain.MarkdownText
 import digital.euforia.app.R
 import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.theme.BottomSheetBackground
@@ -146,13 +146,13 @@ private fun LazyListScope.articleItem(
     articleBody: String,
     textColor: Color
 ) = item(key = "article") {
-    MarkdownText(
-        markdown = articleBody.trimIndent(),
+    ArticleMarkdownText(
+        markdown = articleBody,
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxSize(),
         color = textColor,
-        fontResource = R.font.inter_regular
+        fontResource = R.font.inter_regular,
     )
 }
 
@@ -185,9 +185,11 @@ private fun LazyListScope.footerItem(
 
 
         Text(
+            modifier = Modifier.fillMaxWidth(),
             text = title,
+            textAlign = TextAlign.Center,
             color = White,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
         )
 
         Text(
@@ -228,3 +230,4 @@ private fun ArticleButton(textRes: Int, onClick: () -> Unit) {
         )
     }
 }
+

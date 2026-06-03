@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -64,7 +65,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
         })
         player = exo
         setMediaNotificationProvider(createNotificationProvider())
-        mediaSession = createMediaSession(exo)
+        mediaSession = createMediaSession(createSessionPlayer(exo))
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
@@ -109,7 +110,36 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
             .setChannelName(R.string.app_name)
             .build()
 
-    private fun createMediaSession(exo: ExoPlayer): MediaSession {
+    private fun createSessionPlayer(exo: ExoPlayer): Player =
+        object : ForwardingPlayer(exo) {
+            override fun getAvailableCommands(): Player.Commands =
+                super.getAvailableCommands()
+                    .buildUpon()
+                    .remove(COMMAND_SEEK_TO_PREVIOUS)
+                    .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                    .remove(COMMAND_SEEK_TO_NEXT)
+                    .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                    .build()
+
+            override fun isCommandAvailable(command: Int): Boolean =
+                when (command) {
+                    COMMAND_SEEK_TO_PREVIOUS,
+                    COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+                    COMMAND_SEEK_TO_NEXT,
+                    COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> false
+                    else -> super.isCommandAvailable(command)
+                }
+
+//            override fun canSeekToPrevious(): Boolean = false
+//
+//            override fun canSeekToNext(): Boolean = false
+//
+//            override fun canSeekToPreviousMediaItem(): Boolean = false
+//
+//            override fun canSeekToNextMediaItem(): Boolean = false
+        }
+
+    private fun createMediaSession(sessionPlayer: Player): MediaSession {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -119,7 +149,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        return MediaSession.Builder(this, exo)
+        return MediaSession.Builder(this, sessionPlayer)
             .setId("exercise_video_session")
             .setSessionActivity(pendingIntent)
             .setCallback(object : MediaSession.Callback {
@@ -137,9 +167,15 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                         .add(Commands.RESUME_SFX)
                         .add(Commands.VOLUME_SFX)
                         .build()
+                    val playerCommands = base.availablePlayerCommands.buildUpon()
+                        .remove(Player.COMMAND_SEEK_TO_PREVIOUS)
+                        .remove(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                        .remove(Player.COMMAND_SEEK_TO_NEXT)
+                        .remove(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                        .build()
                     return MediaSession.ConnectionResult.accept(
                         available,
-                        base.availablePlayerCommands
+                        playerCommands
                     )
                 }
 
@@ -185,7 +221,7 @@ class ExerciseVideoPlaybackService : MediaSessionService() {
                             sp.volume = volume
                             sp.setMediaItem(MediaItem.fromUri(url))
                             sp.prepare()
-                            sp.playWhenReady = exo.playWhenReady
+                            sp.playWhenReady = player?.playWhenReady == true
                             sp.addListener(object : Player.Listener {
                                 override fun onPlaybackStateChanged(state: Int) {
                                     if (state == Player.STATE_ENDED) {

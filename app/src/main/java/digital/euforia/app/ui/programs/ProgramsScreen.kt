@@ -93,12 +93,14 @@ import digital.euforia.app.ui.util.widget.ProgressIndicator
 import digital.euforia.app.ui.util.widget.SearchTextField
 import digital.euforia.app.ui.util.widget.genericRowItem
 import digital.euforia.app.ui.util.widget.noRippleClickable
+import digital.euforia.app.ui.util.widget.LIBRARY_TITLE_SHARED_KEY
 import digital.euforia.app.ui.util.widget.sharedTitleItem
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
-fun SharedTransitionScope.ProgramsScreen(
+fun ProgramsScreen(
+    sharedTransitionScope: SharedTransitionScope,
     navController: NavHostController,
     viewModel: ProgramsViewModel,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -110,6 +112,7 @@ fun SharedTransitionScope.ProgramsScreen(
 
     SubscriptionActivityLauncher { launchSubscriptionActivity ->
         ProgramsContent(
+            sharedTransitionScope = sharedTransitionScope,
             navController = navController,
             animatedVisibilityScope = animatedVisibilityScope,
             isPremium = state.isPremium,
@@ -144,7 +147,8 @@ fun SharedTransitionScope.ProgramsScreen(
 }
 
 @Composable
-private fun SharedTransitionScope.ProgramsContent(
+private fun ProgramsContent(
+    sharedTransitionScope: SharedTransitionScope,
     navController: NavHostController,
     animatedVisibilityScope: AnimatedVisibilityScope,
     isPremium: Boolean,
@@ -204,14 +208,18 @@ private fun SharedTransitionScope.ProgramsContent(
     var programOverlay by remember { mutableStateOf<ProgramOverlay?>(null) }
 
     Box(modifier = Modifier.fillMaxSize().background(PrimaryBackground)) {
-        BlurredAppBar(
-            titleRes = R.string.library_title,
-            isBackAllowed = false,
-            shouldBlur = shouldBlur, hazeState = hazeState, onBackClick = onBackClick,
-            navController = navController,
-            premiumButtonState = if (isPremium) PremiumButtonState.NONE else PremiumButtonState.UPGRADE,
-            onUpgradeClick = launchSubscriptionActivity
-        )
+        with(sharedTransitionScope) {
+            BlurredAppBar(
+                titleRes = R.string.library_title,
+                isBackAllowed = false,
+                shouldBlur = shouldBlur,
+                hazeState = hazeState,
+                onBackClick = onBackClick,
+                navController = navController,
+                premiumButtonState = if (isPremium) PremiumButtonState.NONE else PremiumButtonState.UPGRADE,
+                onUpgradeClick = launchSubscriptionActivity,
+            )
+        }
 
         // Fullscreen blur overlay and floating pressed item replica (drawn above content when active)
         val overlay = programOverlay
@@ -293,9 +301,10 @@ private fun SharedTransitionScope.ProgramsContent(
                 ),
             ) {
                 sharedTitleItem(
-                    sharedTransitionScope = this@ProgramsContent,
+                    sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
                     titleRes = R.string.library_title,
+                    sharedElementKey = LIBRARY_TITLE_SHARED_KEY,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 searchItem(

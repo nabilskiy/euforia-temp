@@ -835,7 +835,6 @@ private fun BoxScope.ControlsTopBar(
                         id = publicationInfo.id
                     )
                 },
-                onReportErrorClick = {}
             )
         }
     }

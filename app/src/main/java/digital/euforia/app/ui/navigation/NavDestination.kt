@@ -156,7 +156,7 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val previewImageUrl: String? = null,
         val previewResourceCount: Int = 0,
         val previewIsPremium: Boolean = false,
-    ) : HomeDestination()
+    ) : HomeDestination(showNavBar = false)
 
     @Serializable
     @Keep
@@ -165,21 +165,21 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val publicationType: PublicationType,
         val packageTitle: String,
         val categoryId: Int? = null,
-    ) : HomeDestination()
+    ) : HomeDestination(showNavBar = false)
 
     @Serializable
     @Keep
     data class Publications(
         val type: PublicationType,
         val ids: String,
-    ) : HomeDestination()
+    ) : HomeDestination(showNavBar = false)
 
     @Serializable
     @Keep
     data class PublicationPlayer(
         val id: Int,
         val publicationType: PublicationType,
-    ): HomeDestination()
+    ) : HomeDestination(showNavBar = false)
 
     @Serializable
     @Keep
