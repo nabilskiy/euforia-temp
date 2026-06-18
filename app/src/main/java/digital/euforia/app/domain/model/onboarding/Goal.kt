@@ -25,5 +25,10 @@ import digital.euforia.app.R
 data class Goal(
     val identifier: String,
     val code: String,
-    val text: String
+    val text: String,
+    val summarySubtitle: String? = null,
+    val summaryInfo: String? = null,
+    val summaryLevelDirectionUp: Boolean? = null,
+    val feedback: String? = null,
+    val shortFeedback: String? = null,
 )

@@ -20,6 +20,10 @@ data object Onboarding
 
 @Serializable
 @Keep
+data object OnboardingV3
+
+@Serializable
+@Keep
 data object Paywall
 
 @Serializable

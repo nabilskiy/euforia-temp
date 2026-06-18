@@ -1,0 +1,22 @@
+[
+    {
+        "identifier": "2_mmin",
+        "code": "GC1",
+        "text": "2 minutes"
+    },
+    {
+        "identifier": "5_mmin",
+        "code": "GC2",
+        "text": "5 minutes"
+    },
+    {
+        "identifier": "10_mmin",
+        "code": "GC3",
+        "text": "10 minutes"
+    },
+    {
+        "identifier": "flexible",
+        "code": "GC4",
+        "text": "Flexible"
+    }
+]

@@ -31,8 +31,8 @@ android {
         applicationId = "digital.euforia.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 12
-        versionName = "1.0.2"
+        versionCode = 13
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_API_URL", "\"https://euforia.digital/api/\"")

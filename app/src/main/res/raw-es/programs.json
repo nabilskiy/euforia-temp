@@ -1,0 +1,86 @@
+[
+    {
+        "identifier": "1",
+        "code": "P1",
+        "text": "Reducción del estrés",
+        "subtitle": "¿Cómo **reducir el nivel de estrés** y ayudar al cuerpo a afrontarlo en el futuro? Prueba el programa \"Reducción del estrés\".",
+        "entityId": 41
+    },
+    {
+        "identifier": "2",
+        "code": "P2",
+        "text": "Encontrar respuestas en situaciones difíciles",
+        "subtitle": "Cada uno de nosotros, de vez en cuando, se encuentra en una **situación de vida difícil**, buscando una respuesta o enfrentando la necesidad de tomar una **decisión difícil**.",
+        "entityId": 69
+    },
+    {
+        "identifier": "3",
+        "code": "P3",
+        "text": "Reducción de la ansiedad",
+        "subtitle": "¿Cómo surge la ansiedad, cómo aumenta, se puede influir en ella y cómo? ¿Qué alimenta la **ansiedad constante**? Aquí encontrarás **respuestas a estas y otras preguntas**.",
+        "entityId": 10
+    },
+    {
+        "identifier": "4",
+        "code": "P4",
+        "text": "Concentración de la atención",
+        "subtitle": "¿Cómo conectar con **lo que está ocurriendo en nuestras vidas**? En este programa encontrarás **prácticas para entrenar la concentración** y reducir el automatismo en nuestra vida.",
+        "entityId": 103
+    },
+    {
+        "identifier": "5",
+        "code": "P5",
+        "text": "Confianza en uno mismo",
+        "subtitle": "A menudo sentimos que nos falta algo constantemente: no suficiente conocimiento, no ser lo suficientemente atractivos. Demos pasos hacia la **confianza en uno mismo** y reconozcamos la voz del \"crítico interior\".",
+        "entityId": 35
+    },
+    {
+        "identifier": "19",
+        "code": "P19",
+        "text": "Gestión de emociones",
+        "subtitle": "En situaciones de cambio repentino, la **respuesta de lucha-huida-parálisis** de nuestro cuerpo puede ser útil, pero a menudo se convierte en **ansiedad persistente**. La meditación ayuda a **calmar las emociones** y a **romper el ciclo de pensamientos negativos**.",
+        "entityId": 94
+    },
+    {
+        "identifier": "7",
+        "code": "P7",
+        "text": "Dormirse puede ser fácil",
+        "subtitle": "¿Alguna vez sientes que no puedes detener los **pensamientos persistentes**, incluso cuando estás agotado? Nuestra mente sigue trabajando sin parar, creando un **flujo interminable de pensamientos**. Este programa ofrece prácticas para ayudarte a **conciliar el sueño más fácilmente**.",
+        "entityId": 37
+    },
+    {
+        "identifier": "9",
+        "code": "P9",
+        "text": "Superar los sentimientos de soledad",
+        "subtitle": "A través de este ciclo, aprenderás a **afrontar la soledad en lugar de evitarla**. Te sentirás más **pleno y conectado contigo mismo**. Reconocer tu propio valor convierte la soledad en un **recurso, no en una pesadilla**.",
+        "entityId": 23
+    },
+    {
+        "identifier": "18",
+        "code": "P18",
+        "text": "Restaurar el equilibrio interior",
+        "subtitle": "Cuando la vida se siente abrumadora y las emociones se acumulan, necesitamos **equilibrio interior y resiliencia**. La meditación ayuda a **recuperar fuerzas**, **calmar las emociones** y devolver una **sensación de apoyo y estabilidad**.",
+        "entityId": 86
+    },
+    {
+        "identifier": "16",
+        "code": "P16",
+        "text": "Trabajar con los miedos",
+        "subtitle": "A veces, el sistema de procesamiento del estrés falla y el miedo se vuelve abrumador. Las experiencias quedan **atascadas en las redes neuronales**. La **técnica EMDR** ayuda a **procesar suavemente estas experiencias** e integrarlas en la vida.",
+        "entityId": 50
+    },
+    {
+        "identifier": "12",
+        "code": "P12",
+        "text": "Aumento de la productividad",
+        "subtitle": "Aprendemos a controlar el tiempo, pero a menudo tratamos la **energía como ilimitada**. Nos esforzamos 24/7 por exprimir la máxima eficiencia de nosotros mismos. Aquí encontrarás formas de **restaurar la energía** y **mantener un alto nivel de vitalidad**.",
+        "entityId": 79
+    },
+    {
+        "identifier": "21",
+        "code": "P21",
+        "text": "Relaciones tóxicas",
+        "subtitle": "¿Cómo **reconocer y superar relaciones tóxicas**? ¿Cómo **restaurar la salud emocional, aumentar la autoestima y ganar confianza**? Prueba el programa de **Relaciones tóxicas**.",
+        "entityId": 115
+    }
+]

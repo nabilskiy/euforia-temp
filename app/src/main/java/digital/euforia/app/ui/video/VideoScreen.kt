@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import digital.euforia.app.ui.navigation.Onboarding
+import digital.euforia.app.ui.navigation.OnboardingV3
 import digital.euforia.app.ui.navigation.Video
 import digital.euforia.app.ui.onboarding.IntroPlayerView
 import org.orbitmvi.orbit.compose.collectAsState
@@ -36,7 +37,7 @@ fun VideoScreen(
     fun navigateOnce() {
         if (hasNavigated) return
         hasNavigated = true
-        navigateToOnboarding(navController)
+        navigateAfterVideo(navController, state.useOnboardingV3)
     }
 
     AnimatedVisibility(
@@ -76,8 +77,9 @@ private fun VideoContent(
     }
 }
 
-private fun navigateToOnboarding(navController: NavHostController) {
-    navController.navigate(Onboarding) {
+private fun navigateAfterVideo(navController: NavHostController, useOnboardingV3: Boolean) {
+    val destination = if (useOnboardingV3) OnboardingV3 else Onboarding
+    navController.navigate(destination) {
         popUpTo(Video) { inclusive = true }
     }
 }

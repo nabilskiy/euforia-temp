@@ -23,6 +23,7 @@ import digital.euforia.app.ui.downloads.DownloadsScreen
 import digital.euforia.app.ui.home.HomeScreen
 import digital.euforia.app.ui.howitworks.HowItWorksScreen
 import digital.euforia.app.ui.onboarding.OnboardingScreen
+import digital.euforia.app.ui.onboardingV3.OnboardingV3Screen
 import digital.euforia.app.ui.plan.PlanScreen
 import digital.euforia.app.ui.plan.firstweek.FirstWeekScreen
 import digital.euforia.app.ui.player.VibesPlayerScreen
@@ -84,6 +85,7 @@ private fun NavDestination.isBottomBarVisible(): Boolean {
         "Splash",
         "Video",
         "Onboarding",
+        "OnboardingV3",
         "Paywall",
         "Vibes",
         "FinishWeek",
@@ -175,6 +177,16 @@ fun AppNavigation(
                     isBottomBarShown.value = false
                     spheresState.value = true
                     OnboardingScreen(navController = navController, viewModel = hiltViewModel())
+                }
+                composable<OnboardingV3>(
+                    enterTransition = NavAnimations.enter,
+                    exitTransition = NavAnimations.exit,
+                    popEnterTransition = NavAnimations.popEnter,
+                    popExitTransition = NavAnimations.popExit
+                ) {
+                    isBottomBarShown.value = false
+                    spheresState.value = true
+                    OnboardingV3Screen(navController = navController, viewModel = hiltViewModel())
                 }
 
                 composable<Vibes> {

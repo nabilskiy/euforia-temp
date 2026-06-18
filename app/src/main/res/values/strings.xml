@@ -176,6 +176,32 @@
     <string name="intro_final_title">Preparing your Euforia…</string>
     <string name="intro_final_subtitle">This could take a few seconds</string>
 
+    <!-- Intro V3 -->
+    <string name="intro_v3_start_item_1">Welcome to Euforia</string>
+    <string name="intro_v3_start_item_2">A new kind of mental therapy</string>
+    <string name="intro_v3_start_item_3">Designed to support your well-being every day</string>
+    <string name="intro_v3_start_item_last">Are you ready to begin?</string>
+    <string name="intro_v3_start_button">Start</string>
+    <string name="intro_v3_about_1_title">Audio Sessions</string>
+    <string name="intro_v3_about_1_body">Listen to the voice therapy designed to meet you where you are. These sessions offer comfort, perspective, and a sense of being understood – whenever you need it.</string>
+    <string name="intro_v3_about_1_bold">meet you where you are</string>
+    <string name="intro_v3_about_2_title">Guided Meditations</string>
+    <string name="intro_v3_about_2_body">Take a quiet pause and step into a space where your thoughts slow down and your attention returns to the present moment. Each meditation helps you feel more grounded, aware, and emotionally balanced.</string>
+    <string name="intro_v3_about_2_bold">your thoughts slow down</string>
+    <string name="intro_v3_about_3_title">Soundscapes</string>
+    <string name="intro_v3_about_3_body">Immerse yourself in calming sounds that create the right atmosphere for focus, relaxation, or rest. Let gentle audio environments help you reset your mood and find your natural rhythm.</string>
+    <string name="intro_v3_about_3_bold">create the right atmosphere</string>
+    <string name="intro_v3_programs_title">Set your program</string>
+    <string name="intro_v3_daily_commitment_title">How much time can you give yourself daily?</string>
+    <string name="intro_v3_time_title">When do you need Euforia most?</string>
+    <string name="intro_v3_age_title">How old are you?</string>
+    <string name="intro_v3_notifications_setup_title">When do you want to carve a few minutes for daily self-care?</string>
+    <string name="intro_v3_goals_feedback_title">You\'re not alone</string>
+    <string name="intro_v3_feedback_loop_1_title">What Euforia Really Does</string>
+    <string name="intro_v3_feedback_loop_1_text">Even a few minutes with Euforia can support **emotional regulation** by engaging your brain\'s natural calming mechanisms.</string>
+    <string name="intro_v3_feedback_loop_2_title">Emotional Reset in Minutes</string>
+    <string name="intro_v3_feedback_loop_2_text">Through immersive soundscapes and guided meditations, Euforia gently supports your **nervous system**, easing tension and strengthening emotional resilience over time.</string>
+
     <!-- Purchases -->
     <string name="restore_purchases">Restore Purchases</string>
     <string name="purchases_restore_failed">Failed to Restore Purchases</string>

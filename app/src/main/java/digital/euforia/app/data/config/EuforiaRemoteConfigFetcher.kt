@@ -22,6 +22,7 @@ import digital.euforia.app.domain.model.config.EmailAlertConfig
 import digital.euforia.app.domain.model.config.ScenePlayerConfig
 import digital.euforia.app.domain.model.plan.TodayPresentType
 import digital.euforia.app.domain.model.plan.toTodayPresentType
+import digital.euforia.app.BuildConfig
 import timber.log.Timber
 
 class EuforiaRemoteConfigFetcher(
@@ -75,6 +76,22 @@ class EuforiaRemoteConfigFetcher(
 
     fun getIntroVideoSkipAllow(): Boolean {
         return getBooleanConfig(KEY_INTRO_VIDEO_SKIP_ALLOW).dataOrNull ?: true
+    }
+
+    /**
+     * 0 = legacy Android onboarding, 3 = Onboarding V3 (iOS Intro variant 3).
+     * Defaults to 3 in debug builds for local testing when RC is unset.
+     */
+    fun getIntroVariant(): Int {
+        if (FORCE_INTRO_V3_FOR_TESTING) return 3
+        val fromRemote = runCatching { remoteConfig.getLong(KEY_INTRO_VARIANT).toInt() }
+            .getOrDefault(0)
+        if (fromRemote != 0) return fromRemote
+        return if (BuildConfig.DEBUG) 3 else 0
+    }
+
+    fun getIntroStepShow(stepId: String, default: Boolean = true): Boolean {
+        return getBooleanConfig("intro_${stepId}_step_show").dataOrNull ?: default
     }
 
     fun getTimeOfDayConfig(): TimeOfDayConfig? {
@@ -328,6 +345,10 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_INTRO_PREMIUM_SCREEN_VARIANT = "intro_premium_screen_variant"
         private const val KEY_INTRO_REASONS_STEP_SHOW = "intro_reasons_step_show"
         private const val KEY_INTRO_VIDEO_SKIP_ALLOW = "intro_video_skip_allow"
+        private const val KEY_INTRO_VARIANT = "intro_variant"
+
+        /** TODO: set to false before release — always route Video → OnboardingV3. */
+        private const val FORCE_INTRO_V3_FOR_TESTING = true
         private const val KEY_TIME_OF_DAY_CONFIG = "time_of_day_config"
         private const val KEY_TODAY_PRESENT_TYPE = "today_present_type"
         private const val KEY_TODAY_BANNER_1 = "today_banner_1"

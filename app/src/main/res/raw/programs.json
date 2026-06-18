@@ -1,0 +1,86 @@
+[
+    {
+        "identifier": "1",
+        "code": "P1",
+        "text": "Reducing stress",
+        "subtitle" : "How to **reduce the stress level** and help the body cope with it in the future? Try the program \"Reducing stress\".",
+        "entityId": 41
+    },
+    {
+        "identifier": "2",
+        "code": "P2",
+        "text": "Finding answers in difficult situations",
+        "subtitle" : "Each of us, from time to time, is in a **difficult life situation**, searching for an answer or before the need to make a **difficult decision**.",
+        "entityId": 69
+    },
+    {
+        "identifier": "3",
+        "code": "P3",
+        "text": "Reducing anxiety",
+        "subtitle" : "How does anxiety arise, how does it increase, can it be influenced, and how? What feeds **constant anxiety**? Here you will find **answers to these and other questions**.",
+        "entityId": 10
+    },
+    {
+        "identifier": "4",
+        "code": "P4",
+        "text": "Concentration of attention",
+        "subtitle" : "How to get in touch with **what is happening in our lives**? In this program, you will find **practices to train concentration** and reduce automaticity in our lives.",
+        "entityId": 103
+    },
+    {
+        "identifier": "5",
+        "code": "P5",
+        "text": "Self confidence",
+        "subtitle" : "Often we feel like we are constantly missing something: not enough knowledge, not good enough looking. Let's take steps toward **self-confidence**, and recognize the voice of the \"inner critic\".",
+        "entityId": 35
+    },
+    {
+        "identifier": "19",
+        "code": "P19",
+        "text": "Emotion management",
+        "subtitle" : "In situations of sudden change, our body's **fight-flight-freeze response** can be helpful, but often it turns into **persistent anxiety**. Meditation helps in **calming emotions**, and **breaking the cycle of negative thoughts**.",
+        "entityId": 94
+    },
+    {
+        "identifier": "7",
+        "code": "P7",
+        "text": "Falling asleep can be a breeze",
+        "subtitle" : "Do you ever feel unable to stop **persistent thoughts**, even when you're exhausted? Our minds keep working non-stop, creating an **endless stream of thoughts**. This program offers practices to help you **fall asleep more easily**.",
+        "entityId": 37
+    },
+    {
+        "identifier": "9",
+        "code": "P9",
+        "text": "Overcome feelings of loneliness",
+        "subtitle" : "Through this cycle, you will learn to **deal with loneliness instead of escaping it**. You will feel more **fulfilled and connected with yourself**. Realizing your own value turns loneliness into a **resource, not a nightmare**.",
+        "entityId": 23
+    },
+    {
+        "identifier": "18",
+        "code": "P18",
+        "text": "Restoring inner balance",
+        "subtitle" : "When life feels overwhelming and emotions accumulate, we need **inner balance and resilience**. Meditation helps to **restore strength**, **calm emotions**, and bring back a **sense of support and stability**.",
+        "entityId": 86
+    },
+    {
+        "identifier": "16",
+        "code": "P16",
+        "text": "Working with fears",
+        "subtitle" : "Sometimes the system of processing stress fails, and fear becomes overwhelming. Experiences get **stuck in neural networks**. The **EMDR technique** helps to **gently process these experiences** and integrate them into life.",
+        "entityId": 50
+    },
+    {
+        "identifier": "12",
+        "code": "P12",
+        "text": "Increased productivity",
+        "subtitle" : "We learn to control time, but we often treat **energy as unlimited**. We strive 24\/7 to squeeze the maximum efficiency out of ourselves. Here you will find ways to **restore energy** and **maintain a high level of vitality**.",
+        "entityId": 79
+    },
+    {
+        "identifier": "21",
+        "code": "P21",
+        "text": "Toxic Relationship",
+        "subtitle" : "How to **recognize and overcome toxic relationships**? How to **restore emotional health, increase self-esteem and gain confidence**? Try the **Toxic Relationships program**.",
+        "entityId": 115
+    }
+]

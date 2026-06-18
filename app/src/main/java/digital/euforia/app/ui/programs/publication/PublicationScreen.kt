@@ -333,7 +333,6 @@ private fun PublicationContent(
                     )
 
                     publicationInfo?.let {
-
                         infoItem(
                             publicationInfo = it,
                             programTitle = programTitle,
@@ -453,28 +452,28 @@ fun LazyListScope.infoItem(
             InfoView(
                 text = "${publicationInfo.durationMinutes} minutes",
                 iconRes = R.drawable.ic_timer,
-                color = color.copy(alpha = 0.7f)
+                color = color.copy(alpha = 0.9f)
             )
             InfoView(
                 text = localizedRes.string(publicationInfo.publicationType.getTitleRes()),
                 iconRes = publicationInfo.publicationType.getIconRes(),
-                color = color.copy(alpha = 0.7f)
+                color = color.copy(alpha = 0.9f)
             )
 
             publicationInfo.publishedAt?.toDateString()?.let {
                 InfoView(
                     text = it,
                     iconRes = R.drawable.ic_calendar,
-                    color = color.copy(alpha = 0.7f)
+                    color = color.copy(alpha = 0.9f)
                 )
             }
         }
 
         Text(
-            modifier = Modifier,
+            modifier = Modifier.padding(top = 8.dp),
             text = publicationInfo.subtitle.orEmpty(),
             style = MaterialTheme.typography.bodyMedium,
-            color = White.copy(alpha = 0.7f)
+            color = White.copy(alpha = 0.9f)
         )
         HorizontalDivider(
             color = White.copy(alpha = 0.1f),
@@ -511,10 +510,10 @@ fun LazyListScope.infoItem(
             color = White
         )
         Text(
-            modifier = Modifier,
+            modifier = Modifier.padding(top = 8.dp),
             text = localizedRes.string(descriptionRes),
             style = MaterialTheme.typography.bodyMedium,
-            color = White.copy(alpha = 0.7f)
+            color = White.copy(alpha = 0.9f)
         )
     }
 }

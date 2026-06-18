@@ -58,6 +58,20 @@ class AnalyticSender @Inject constructor(
         logEvent(eventName = "intro_show")
     }
 
+    fun introStepShow(stepId: String) {
+        logEvent(
+            eventName = "intro_step_show",
+            params = Bundle().apply { putString("step_id", stepId) },
+        )
+    }
+
+    fun introStepSkip(stepId: String) {
+        logEvent(
+            eventName = "intro_step_skip",
+            params = Bundle().apply { putString("step_id", stepId) },
+        )
+    }
+
     fun introGenderShow() {
         logEvent(eventName = "intro_gender_show")
     }

@@ -1,0 +1,27 @@
+[
+    {
+        "identifier": "morning",
+        "code": "T1",
+        "text": "In the morning"
+    },
+    {
+        "identifier": "day",
+        "code": "T2",
+        "text": "During the day"
+    },
+    {
+        "identifier": "evening",
+        "code": "T3",
+        "text": "In the evening"
+    },
+    {
+        "identifier": "sleep",
+        "code": "T4",
+        "text": "Before sleep"
+    },
+    {
+        "identifier": "other",
+        "code": "T5",
+        "text": "In difficult emotional moments"
+    }
+]

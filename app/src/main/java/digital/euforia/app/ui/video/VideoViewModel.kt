@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import digital.euforia.app.R
+import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
 import digital.euforia.app.ui.util.BackgroundPlayerHelper
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -12,8 +13,8 @@ import javax.inject.Inject
 @HiltViewModel
 class VideoViewModel @Inject constructor(
     @ApplicationContext val context: android.content.Context,
-
-    ) : ViewModel(),
+    private val remoteConfigFetcher: EuforiaRemoteConfigFetcher,
+) : ViewModel(),
     ContainerHost<VideoState, VideoSideEffect> {
     override val container = container<VideoState, VideoSideEffect>(
         initialState = VideoState(),
@@ -22,12 +23,16 @@ class VideoViewModel @Inject constructor(
                 context = context,
                 soundRes = R.raw.bgm_intro
             )
+            intent {
+                reduce { state.copy(useOnboardingV3 = remoteConfigFetcher.getIntroVariant() == 3) }
+            }
         }
     )
 }
 
 data class VideoState(
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val useOnboardingV3: Boolean = false,
 )
 
 sealed class VideoSideEffect {

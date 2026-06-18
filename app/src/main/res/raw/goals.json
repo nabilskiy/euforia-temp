@@ -2,51 +2,101 @@
     {
         "identifier": "relax",
         "code": "G1",
-        "text": "Relieve Anxiety or Stress"
+        "text": "Relieve Anxiety or Stress",
+        "summarySubtitle": "Your Anxiety Level",
+        "summaryInfo": "More than **75%** of Euforia users report a reduction in anxiety after just **one week**.",
+        "summaryLevelDirectionUp": false,
+        "feedback": "Many people go through periods of stress and emotional tension. With Euforia, you can find **a sense of calm** that gently brings more ease into your day.",
+        "shortFeedback": "With Euforia, feel a gentle sense of calm and ease."
     },
     {
         "identifier": "sleep",
         "code": "G2",
-        "text": "Sleep Better"
+        "text": "Sleep Better",
+        "summarySubtitle": "Your Sleep Quality Level",
+        "summaryInfo": "More than **75%** of Euforia users report improved sleep after just **one week**.",
+        "summaryLevelDirectionUp": true,
+        "feedback": "Many people find it hard to truly unwind and fall asleep peacefully. With Euforia, you can create **a comforting path to rest** and drift into better sleep.",
+        "shortFeedback": "With Euforia, drift into a more comforting, restful sleep."
     },
     {
         "identifier": "toxic",
         "code": "G3",
-        "text": "Recover from Toxic Relationships"
+        "text": "Recover from Toxic Relationships",
+        "summarySubtitle": "Your Relationship Stress Level",
+        "summaryInfo": "More than **75%** of Euforia users report a reduction in relationship-related strain after just **one week**.",
+        "summaryLevelDirectionUp": false,
+        "feedback": "Relationship pain can feel deeply personal, yet many people experience it. With Euforia, you can find **gentle emotional recovery** and begin to feel more grounded again.",
+        "shortFeedback": "With Euforia, begin gentle emotional recovery and feel grounded again."
     },
     {
         "identifier": "emotional",
         "code": "G4",
-        "text": "Emotional Support"
+        "text": "Emotional Support",
+        "summarySubtitle": "Your Emotional Support Level",
+        "summaryInfo": "More than **75%** of Euforia users report feeling more emotionally supported after just **one week**.",
+        "summaryLevelDirectionUp": true,
+        "feedback": "Everyone needs support sometimes. With Euforia, you can experience **a feeling of being supported**, understood, and gently held.",
+        "shortFeedback": "With Euforia, feel supported, understood, and gently held."
     },
     {
         "identifier": "confidence",
         "code": "G5",
-        "text": "Boost Self-Confidence"
+        "text": "Boost Self-Confidence",
+        "summarySubtitle": "Your Self-Confidence Level",
+        "summaryInfo": "More than **75%** of Euforia users report increased self-confidence after just **one week**.",
+        "summaryLevelDirectionUp": true,
+        "feedback": "Moments of doubt can disconnect you from your inner strength. With Euforia, you can reconnect with **your inner confidence** and feel more steady within yourself.",
+        "shortFeedback": "With Euforia, reconnect with your inner confidence."
     },
     {
         "identifier": "warmth",
         "code": "G6",
-        "text": "Feel Tenderness and Warmth"
+        "text": "Feel Tenderness and Warmth",
+        "summarySubtitle": "Your Tenderness and Warmth Level",
+        "summaryInfo": "More than **75%** of Euforia users report feeling more warmth and tenderness after just **one week**.",
+        "summaryLevelDirectionUp": true,
+        "feedback": "It’s natural to long for more softness and closeness. With Euforia, you can open space for **gentle emotional warmth** to return naturally.",
+        "shortFeedback": "With Euforia, feel gentle emotional warmth and softness."
     },
     {
         "identifier": "loneliness",
         "code": "G7",
-        "text": "Share My Loneliness"
+        "text": "Share My Loneliness",
+        "summarySubtitle": "Your Loneliness Level",
+        "summaryInfo": "More than **75%** of Euforia users report feeling less lonely after just **one week**.",
+        "summaryLevelDirectionUp": false,
+        "feedback": "Loneliness is something many people quietly carry. With Euforia, you can experience **a sense of connection** that feels gentle, supportive, and close.",
+        "shortFeedback": "With Euforia, feel a gentle sense of connection."
     },
     {
         "identifier": "esteem",
         "code": "G8",
-        "text": "Improve Self-Esteem"
+        "text": "Improve Self-Esteem",
+        "summarySubtitle": "Your Self-Esteem Level",
+        "summaryInfo": "More than **75%** of Euforia users report improved self-esteem after just **one week**.",
+        "summaryLevelDirectionUp": true,
+        "feedback": "It’s common to struggle with self-perception at times. With Euforia, you can build **a kinder self-view** and create space where self-worth can grow.",
+        "shortFeedback": "With Euforia, build a kinder and more supportive self-view."
     },
     {
         "identifier": "inspired",
         "code": "G9",
-        "text": "Get Inspired and Energized"
+        "text": "Get Inspired and Energized",
+        "summarySubtitle": "Your Inspiration and Energy Level",
+        "summaryInfo": "More than **75%** of Euforia users report improved inspiration and energy after just **one week**.",
+        "summaryLevelDirectionUp": true,
+        "feedback": "There are moments when energy and inspiration feel distant. With Euforia, you can reconnect with **a sense of renewal** and gentle inner movement.",
+        "shortFeedback": "With Euforia, reconnect with inspiration and a sense of renewal."
     },
     {
         "identifier": "other",
         "code": "FF",
-        "text": "All of the Above"
+        "text": "All of the Above",
+        "summarySubtitle": "Your Overall Distress Level",
+        "summaryInfo": "More than **75%** of Euforia users report lower overall distress after just **one week**.",
+        "summaryLevelDirectionUp": false,
+        "feedback": "When many feelings build up at once, it can feel overwhelming. With Euforia, you can find **gentle overall support** that meets you exactly where you are.",
+        "shortFeedback": "With Euforia, feel gentle support exactly where you are."
     }
 ]
