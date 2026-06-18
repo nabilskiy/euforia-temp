@@ -1,6 +1,10 @@
 package digital.euforia.app.ui.onboardingV3
 
+import android.Manifest
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -114,6 +118,12 @@ private fun OnboardingV3Content(
     state: OnboardingV3State,
 ) {
     val localizedRes = LocalLocalizedRes.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        if (isGranted) viewModel.onNotificationPermissionGranted()
+        viewModel.onNextPage()
+    }
 
     LaunchedEffect(state.currentPage.position) {
         viewModel.onPageUpdated(state.currentPage.position)
@@ -152,6 +162,8 @@ private fun OnboardingV3Content(
                 pages = state.pages,
                 position = state.currentPage.position,
                 title = state.currentPage.pageType.topBarTitleRes?.let { localizedRes.string(it) },
+                subtitle = state.currentPage.pageType.topBarSubtitleRes?.let { localizedRes.string(it) },
+                selectedScenesCount = state.selectedScenes.size,
                 onBackClick = viewModel::onPreviousPage,
                 onSkipClick = viewModel::onSkipPage,
             )
@@ -161,7 +173,20 @@ private fun OnboardingV3Content(
             V3Footer(
                 isTermsShown = false,
                 isButtonEnabled = state.isNextEnabled,
-                onNextClick = viewModel::onNextPage,
+                bottomExtraPadding = if (state.currentPage.pageType == OnboardingV3Page.AgePage) 250.dp else 0.dp,
+                onNextClick = {
+                    if (state.currentPage.pageType == OnboardingV3Page.NotificationsSetupPage) {
+                        viewModel.saveNotificationSettings()
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            viewModel.onNotificationPermissionGranted()
+                            viewModel.onNextPage()
+                        }
+                    } else {
+                        viewModel.onNextPage()
+                    }
+                },
                 onPrivacyClick = viewModel::onPrivacyClicked,
                 onTermsClick = viewModel::onTermsClicked,
             )
@@ -198,12 +223,20 @@ private val OnboardingV3Page.topBarTitleRes: Int?
         else -> titleRes
     }
 
+private val OnboardingV3Page.topBarSubtitleRes: Int?
+    get() = when (this) {
+        OnboardingV3Page.AgePage -> R.string.intro_age_info
+        else -> null
+    }
+
 @Composable
 private fun V3AppBar(
     page: OnboardingV3Page,
     pages: List<OnboardingV3Page>,
     position: Int,
     title: String?,
+    subtitle: String?,
+    selectedScenesCount: Int,
     onBackClick: () -> Unit,
     onSkipClick: () -> Unit,
 ) {
@@ -291,6 +324,28 @@ private fun V3AppBar(
                     .padding(top = 6.dp),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
+            subtitle?.let { subtitleText ->
+                Text(
+                    text = subtitleText,
+                    color = White.copy(alpha = 0.62f),
+                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+            if (page == OnboardingV3Page.ScenesPage) {
+                Text(
+                    text = "$selectedScenesCount of 3",
+                    color = White.copy(alpha = 0.45f),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
             HorizontalDivider(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -344,6 +399,7 @@ private fun V3QuestionProgress(
 private fun BoxScope.V3Footer(
     isTermsShown: Boolean,
     isButtonEnabled: Boolean,
+    bottomExtraPadding: androidx.compose.ui.unit.Dp,
     onNextClick: () -> Unit,
     onPrivacyClick: () -> Unit,
     onTermsClick: () -> Unit,
@@ -352,7 +408,8 @@ private fun BoxScope.V3Footer(
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 30.dp)
+            .padding(horizontal = 16.dp)
+            .padding(top = 30.dp, bottom = 30.dp + bottomExtraPadding)
             .fillMaxWidth()
             .imePadding(),
     ) {

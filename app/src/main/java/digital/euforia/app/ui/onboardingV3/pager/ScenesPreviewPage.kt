@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,14 +76,28 @@ fun ScenesPreviewPage(
 
     var sceneIndex by remember { mutableIntStateOf(0) }
     var sceneAudioPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    val currentSceneAudioPlayer = rememberUpdatedState(sceneAudioPlayer)
     val appearance = remember { Animatable(0f) }
     val context = LocalContext.current
+    val scenePlayers = remember(context) {
+        introScenes.map { scene ->
+            ExoPlayer.Builder(context).build().apply {
+                repeatMode = ExoPlayer.REPEAT_MODE_ONE
+                volume = 0f
+                setMediaItem(MediaItem.fromUri(scene.videoUrl))
+                prepare()
+                // Match iOS prefetch behavior: start buffering before the scene is shown.
+                playWhenReady = true
+            }
+        }
+    }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(scenePlayers) {
         BackgroundPlayerHelper.pauseWithFade()
         onDispose {
-            sceneAudioPlayer?.release()
+            currentSceneAudioPlayer.value?.release()
             sceneAudioPlayer = null
+            scenePlayers.forEach { it.release() }
             BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
         }
     }
@@ -134,7 +149,7 @@ fun ScenesPreviewPage(
             },
             label = "scenesPreviewVideo",
         ) { index ->
-            SceneVideoBackground(scene = introScenes[index])
+            SceneVideoBackground(player = scenePlayers[index])
         }
 
         Box(
@@ -219,22 +234,7 @@ fun ScenesPreviewPage(
 }
 
 @Composable
-private fun SceneVideoBackground(scene: IntroScenePreview) {
-    val context = LocalContext.current
-    val player = remember(scene.videoUrl) {
-        ExoPlayer.Builder(context).build().apply {
-            repeatMode = ExoPlayer.REPEAT_MODE_ONE
-            volume = 0f
-            setMediaItem(MediaItem.fromUri(scene.videoUrl))
-            prepare()
-            playWhenReady = true
-        }
-    }
-
-    DisposableEffect(player) {
-        onDispose { player.release() }
-    }
-
+private fun SceneVideoBackground(player: ExoPlayer) {
     AndroidView(
         factory = { ctx ->
             LayoutInflater.from(ctx).inflate(R.layout.player_view_texture, null, false).also { root ->

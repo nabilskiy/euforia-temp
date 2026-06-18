@@ -1,0 +1,102 @@
+[
+    {
+        "identifier": "70",
+        "playlistId": 8,
+        "code": "S1",
+        "imageUrl": "img_tropical_beach.jpg",
+        "sceneCategoryId": 4,
+        "text": "Tropical Beach",
+        "subtitle": "Relax, Light breeze, Ocean waves",
+        "entityId": 70
+    },
+    {
+        "identifier": "412",
+        "playlistId": 8,
+        "code": "S2",
+        "imageUrl": "img_dawn_tulips.jpg",
+        "sceneCategoryId": 4,
+        "text": "Dawn Tulips",
+        "subtitle": "Calm, Warm wind, Rustling flowers",
+        "entityId": 412
+    },
+    {
+        "identifier": "335",
+        "playlistId": 10,
+        "code": "S3",
+        "imageUrl": "img_rest_for_the_soul.jpg",
+        "sceneCategoryId": 4,
+        "text": "Rest for the Soul",
+        "subtitle": "Meditation, Deep silence, Water splash",
+        "entityId": 335
+    },
+    {
+        "identifier": "408",
+        "playlistId": 4,
+        "code": "S4",
+        "imageUrl": "img_greenhouse_morning.jpg",
+        "sceneCategoryId": 10,
+        "text": "Greenhouse Morning",
+        "subtitle": "Cozy place, Light rain, Cat purring",
+        "entityId": 408
+    },
+    {
+        "identifier": "409",
+        "playlistId": 9,
+        "code": "S5",
+        "imageUrl": "img_fern_thicket.jpg",
+        "sceneCategoryId": 4,
+        "text": "Fern Thicket",
+        "subtitle": "Focus, Forest silence, Whispering leaves",
+        "entityId": 409
+    },
+    {
+        "identifier": "296",
+        "playlistId": 7,
+        "code": "S6",
+        "imageUrl": "img_lavender_hills.jpg",
+        "sceneCategoryId": 3,
+        "text": "Lavender Hills",
+        "subtitle": "Fantasy, Evening chill, Dreaminess",
+        "entityId": 296
+    },
+    {
+        "identifier": "351",
+        "playlistId": 8,
+        "code": "S7",
+        "imageUrl": "img_kefalonia_myrtos.jpg",
+        "sceneCategoryId": 5,
+        "text": "Kefalonia. Myrtos",
+        "subtitle": "Journey, Lapping waves, Serenity",
+        "entityId": 351
+    },
+    {
+        "identifier": "272",
+        "playlistId": 7,
+        "code": "S8",
+        "imageUrl": "img_starry_sky.jpg",
+        "sceneCategoryId": 8,
+        "text": "Starry Sky",
+        "subtitle": "Sleep, Soft drones, Vibrating silence",
+        "entityId": 272
+    },
+    {
+        "identifier": "410",
+        "playlistId": 8,
+        "code": "S9",
+        "imageUrl": "img_cozy_fireplace.jpg",
+        "sceneCategoryId": 10,
+        "text": "Cozy Fireplace",
+        "subtitle": "Home comfort, Crackling wood, Warmth",
+        "entityId": 410
+    },
+    {
+        "identifier": "411",
+        "playlistId": 9,
+        "code": "S10",
+        "imageUrl": "img_snowy_forest.jpg",
+        "sceneCategoryId": 4,
+        "text": "Snowy Forest",
+        "subtitle": "Concentration, Snow crunching, Cold freshness",
+        "entityId": 411
+    }
+]

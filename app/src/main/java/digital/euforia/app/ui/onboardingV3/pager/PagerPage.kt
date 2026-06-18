@@ -93,11 +93,35 @@ fun PagerPage(
             onBackClick = viewModel::onPreviousPage,
             onNextClick = viewModel::onNextPage,
         )
+        OnboardingV3Page.ScenesPage -> ScenesGridPage(
+            scenes = state.scenes,
+            selectedScenes = state.selectedScenes,
+            onSceneSelected = viewModel::onSceneSelected,
+            isPageActive = isActive(),
+        )
         OnboardingV3Page.FeedbackLoop2Page -> FeedbackLoopPage(
             title = localizedRes.string(R.string.intro_v3_feedback_loop_2_title),
             text = localizedRes.string(R.string.intro_v3_feedback_loop_2_text),
             glowColor = Color(0xFF1A3D6B),
             isPageActive = isActive(),
+        )
+        OnboardingV3Page.DisclaimerPage -> DisclaimerPage(isPageActive = isActive())
+        OnboardingV3Page.AgePage -> AgePage(isPageActive = isActive())
+        OnboardingV3Page.SummaryPage -> SummaryPage(
+            selectedGoal = state.goals.find { it.identifier == state.selectedGoalId },
+            isPageActive = isActive(),
+            onNextClick = viewModel::onNextPage,
+        )
+        OnboardingV3Page.SocialProofPage -> SocialProofPage(isPageActive = isActive())
+        OnboardingV3Page.NamePage -> NameV3Page(
+            name = state.name,
+            isPageActive = isActive(),
+            onNameUpdated = viewModel::onNameUpdated,
+        )
+        OnboardingV3Page.NotificationsSetupPage -> NotificationsSetupV3Page(
+            settings = state.notificationSettings,
+            isPageActive = isActive(),
+            onToggle = viewModel::onNotificationToggled,
         )
         else -> PlaceholderPage(page = pageType, isPageActive = isActive())
     }

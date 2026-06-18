@@ -50,6 +50,8 @@ class OnboardingV3ViewModel @Inject constructor(
             val programs = getIntroAnswersUseCase(R.raw.programs, languageTag)
             val dailyCommitments = getIntroAnswersUseCase(R.raw.intro_daily_commitment, languageTag)
             val timeOptions = getIntroAnswersUseCase(R.raw.intro_time, languageTag)
+            val scenes = getIntroAnswersUseCase(R.raw.intro_scenes, languageTag)
+            val notificationSettings = loadNotificationSettings()
             intent {
                 val pages = getOnboardingV3PagesUseCase()
                 reduce {
@@ -60,6 +62,8 @@ class OnboardingV3ViewModel @Inject constructor(
                             programs = programs,
                             dailyCommitments = dailyCommitments,
                             timeOptions = timeOptions,
+                            scenes = scenes,
+                            notificationSettings = notificationSettings,
                             currentPage = state.currentPage.copy(
                                 pageType = pages.firstOrNull() ?: OnboardingV3Page.StartPage,
                             ),
@@ -68,6 +72,32 @@ class OnboardingV3ViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private suspend fun loadNotificationSettings(): List<OnboardingV3NotificationSetting> {
+        val morningTime = appPreferences.getMorningNotificationTime()
+        val daytimeTime = appPreferences.getDayNotificationTime()
+        val eveningTime = appPreferences.getEveningNotificationTime()
+        return listOf(
+            OnboardingV3NotificationSetting(
+                slot = OnboardingV3NotificationSlot.Morning,
+                enabled = appPreferences.isMorningNotificationEnabled(),
+                hour = morningTime.first.takeIf { it != 7 } ?: 8,
+                minute = morningTime.second,
+            ),
+            OnboardingV3NotificationSetting(
+                slot = OnboardingV3NotificationSlot.Daytime,
+                enabled = appPreferences.isDayNotificationEnabled(),
+                hour = daytimeTime.first.takeIf { it != 12 } ?: 13,
+                minute = daytimeTime.second,
+            ),
+            OnboardingV3NotificationSetting(
+                slot = OnboardingV3NotificationSlot.Evening,
+                enabled = appPreferences.isEveningNotificationEnabled(),
+                hour = eveningTime.first,
+                minute = eveningTime.second,
+            ),
+        )
     }
 
     fun onGoalSelected(goalId: String) {
@@ -85,6 +115,74 @@ class OnboardingV3ViewModel @Inject constructor(
                     state.copy(introAnswers = state.introAnswers + (key to answer)),
                 )
             }
+        }
+    }
+
+    fun onSceneSelected(scene: IntroAnswerItem) {
+        intent {
+            val selected = state.selectedScenes
+            val nextSelected = if (selected.any { it.identifier == scene.identifier }) {
+                selected.filterNot { it.identifier == scene.identifier }
+            } else if (selected.size < 3) {
+                selected + scene
+            } else {
+                selected
+            }
+            reduce { applyChromeForPage(state.copy(selectedScenes = nextSelected)) }
+        }
+    }
+
+    fun onNameUpdated(name: String) {
+        intent {
+            val trimmed = name.take(30)
+            reduce { applyChromeForPage(state.copy(name = trimmed)) }
+            viewModelScope.launch {
+                profilePreferences.setName(trimmed)
+                if (trimmed.isNotBlank()) analyticSender.setName(trimmed)
+            }
+        }
+    }
+
+    fun onNotificationToggled(slot: OnboardingV3NotificationSlot, enabled: Boolean) {
+        intent {
+            val updated = state.notificationSettings.map {
+                if (it.slot == slot) it.copy(enabled = enabled) else it
+            }
+            reduce { applyChromeForPage(state.copy(notificationSettings = updated)) }
+            saveNotificationSettings(updated)
+        }
+    }
+
+    fun saveNotificationSettings() {
+        intent {
+            saveNotificationSettings(state.notificationSettings)
+        }
+    }
+
+    private fun saveNotificationSettings(settings: List<OnboardingV3NotificationSetting>) {
+        viewModelScope.launch {
+            settings.forEach { setting ->
+                when (setting.slot) {
+                    OnboardingV3NotificationSlot.Morning -> {
+                        appPreferences.setMorningNotificationEnabled(setting.enabled)
+                        appPreferences.setMorningNotificationTime(setting.hour, setting.minute)
+                    }
+                    OnboardingV3NotificationSlot.Daytime -> {
+                        appPreferences.setDayNotificationEnabled(setting.enabled)
+                        appPreferences.setDayNotificationTime(setting.hour, setting.minute)
+                    }
+                    OnboardingV3NotificationSlot.Evening -> {
+                        appPreferences.setEveningNotificationEnabled(setting.enabled)
+                        appPreferences.setEveningNotificationTime(setting.hour, setting.minute)
+                    }
+                }
+            }
+        }
+    }
+
+    fun onNotificationPermissionGranted() {
+        viewModelScope.launch {
+            appPreferences.setNotificationPermissionGranted(true)
         }
     }
 
@@ -158,6 +256,7 @@ class OnboardingV3ViewModel @Inject constructor(
             OnboardingV3Page.ProgramsPage -> state.introAnswers.containsKey(IntroAnswerKeys.PROGRAMS)
             OnboardingV3Page.DailyCommitmentPage -> state.introAnswers.containsKey(IntroAnswerKeys.DAILY_COMMITMENT)
             OnboardingV3Page.TimePage -> state.introAnswers.containsKey(IntroAnswerKeys.TIME)
+            OnboardingV3Page.ScenesPage -> state.selectedScenes.isNotEmpty()
             else -> true
         }
         return state.copy(
@@ -182,6 +281,9 @@ data class OnboardingV3State(
     val programs: List<IntroAnswerItem> = emptyList(),
     val dailyCommitments: List<IntroAnswerItem> = emptyList(),
     val timeOptions: List<IntroAnswerItem> = emptyList(),
+    val scenes: List<IntroAnswerItem> = emptyList(),
+    val selectedScenes: List<IntroAnswerItem> = emptyList(),
+    val notificationSettings: List<OnboardingV3NotificationSetting> = defaultOnboardingV3NotificationSettings,
     val introAnswers: Map<String, IntroAnswerItem> = emptyMap(),
     val currentPage: OnboardingV3CurrentPage = OnboardingV3CurrentPage(),
     val isNextEnabled: Boolean = true,
@@ -190,6 +292,25 @@ data class OnboardingV3State(
     val selectedGoalId: String? = null,
     val name: String? = null,
     val email: String? = null,
+)
+
+enum class OnboardingV3NotificationSlot {
+    Morning,
+    Daytime,
+    Evening,
+}
+
+data class OnboardingV3NotificationSetting(
+    val slot: OnboardingV3NotificationSlot,
+    val enabled: Boolean,
+    val hour: Int,
+    val minute: Int,
+)
+
+val defaultOnboardingV3NotificationSettings = listOf(
+    OnboardingV3NotificationSetting(OnboardingV3NotificationSlot.Morning, enabled = true, hour = 8, minute = 0),
+    OnboardingV3NotificationSetting(OnboardingV3NotificationSlot.Daytime, enabled = true, hour = 13, minute = 0),
+    OnboardingV3NotificationSetting(OnboardingV3NotificationSlot.Evening, enabled = true, hour = 20, minute = 0),
 )
 
 data class OnboardingV3CurrentPage(

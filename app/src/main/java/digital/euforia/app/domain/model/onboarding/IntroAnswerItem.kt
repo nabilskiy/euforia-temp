@@ -8,6 +8,7 @@ data class IntroAnswerItem(
     val code: String,
     val text: String,
     val icon: String? = null,
+    val imageUrl: String? = null,
     val subtitle: String? = null,
     val entityId: Int? = null,
 )

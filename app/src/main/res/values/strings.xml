@@ -195,12 +195,33 @@
     <string name="intro_v3_daily_commitment_title">How much time can you give yourself daily?</string>
     <string name="intro_v3_time_title">When do you need Euforia most?</string>
     <string name="intro_v3_age_title">How old are you?</string>
+    <string name="intro_age_info">We use this to make sure Euforia is right for you. This is never shown publicly.</string>
     <string name="intro_v3_notifications_setup_title">When do you want to carve a few minutes for daily self-care?</string>
     <string name="intro_v3_goals_feedback_title">You\'re not alone</string>
     <string name="intro_v3_feedback_loop_1_title">What Euforia Really Does</string>
     <string name="intro_v3_feedback_loop_1_text">Even a few minutes with Euforia can support **emotional regulation** by engaging your brain\'s natural calming mechanisms.</string>
     <string name="intro_v3_feedback_loop_2_title">Emotional Reset in Minutes</string>
     <string name="intro_v3_feedback_loop_2_text">Through immersive soundscapes and guided meditations, Euforia gently supports your **nervous system**, easing tension and strengthening emotional resilience over time.</string>
+    <string name="intro_summary_title_high">**High** as of Today</string>
+    <string name="intro_summary_title_low">**Low** as of Today</string>
+    <string name="intro_summary_subtitle">Your Overall Emotional State Level</string>
+    <string name="intro_summary_header">Explore Euforia’s features to gently relax, feel more balanced, and take care of yourself.</string>
+    <string name="intro_summary_header_2">Full results build gradually and vary for each person, often developing over 3–12 months of consistent listening.</string>
+    <string name="intro_summary_items">Your personal profile:</string>
+    <string name="intro_summary_button">Get my plan</string>
+    <string name="intro_summary_dot_1">High</string>
+    <string name="intro_summary_dot_1_text">Today</string>
+    <string name="intro_summary_dot_2">Medium</string>
+    <string name="intro_summary_dot_2_text">1st week</string>
+    <string name="intro_summary_dot_3">Low</string>
+    <string name="intro_summary_dot_3_text">3-12 months</string>
+    <string name="intro_notifications_morning_title">Morning</string>
+    <string name="intro_notifications_daytime_title">During the Day</string>
+    <string name="intro_notifications_evening_title">Evening</string>
+    <string name="intro_social_proof_step_title">Big changes start inside</string>
+    <string name="intro_social_proof_step_text">87% of people using Euforia app say they feel calmer, and more connected to themselves.</string>
+    <string name="intro_social_proof_step_user_name">Sophie L.</string>
+    <string name="intro_social_proof_step_comment">“**Euforia feels like coming back to who I really am. Everything here is tailored to my emotions, my pace, my needs**. Instead of losing myself in endless scrolling, I finally spend time reconnecting with what truly matters. It’s personal, simple, and exactly what I needed.”</string>
 
     <!-- Purchases -->
     <string name="restore_purchases">Restore Purchases</string>
@@ -690,6 +711,8 @@
 
     <string name="intro_scenes_step_title">Supporting your emotional well-being</string>
     <string name="intro_scenes_step_text">During your Therapy, you can use soundscapes and guided meditations to support you every step of the way.</string>
+    <string name="intro_disclaimer_title">Developed by therapists</string>
+    <string name="intro_disclaimer_text">Every session and piece of content in this app is thoughtfully **crafted by therapists** and industry professionals. We have dedicated years to building a genuinely healing and calming experience created entirely by human hands, without the use of AI.</string>
     <string name="vibes_unavailable_text">Complete day %s to unlock</string>
     <string name="vibes_unavailable_text_2">Complete previous day to unlock</string>
     <string name="vibes_unavailable_get_max_text">Unlock with MAX subscription</string>
