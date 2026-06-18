@@ -165,7 +165,7 @@ fun AppNavigation(
                         fadeOut(animationSpec = tween(1500)) // 500 мс fade out
                     }) {
                     isBottomBarShown.value = false
-                    spheresState.value = true
+                    spheresState.value = false
                     VideoScreen(navController = navController, viewModel = hiltViewModel())
                 }
                 composable<Onboarding>(
@@ -179,13 +179,21 @@ fun AppNavigation(
                     OnboardingScreen(navController = navController, viewModel = hiltViewModel())
                 }
                 composable<OnboardingV3>(
-                    enterTransition = NavAnimations.enter,
-                    exitTransition = NavAnimations.exit,
-                    popEnterTransition = NavAnimations.popEnter,
-                    popExitTransition = NavAnimations.popExit
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(1500))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    },
+                    popEnterTransition = {
+                        fadeIn(animationSpec = tween(300))
+                    },
+                    popExitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    }
                 ) {
                     isBottomBarShown.value = false
-                    spheresState.value = true
+                    spheresState.value = false
                     OnboardingV3Screen(navController = navController, viewModel = hiltViewModel())
                 }
 

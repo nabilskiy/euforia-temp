@@ -9,10 +9,6 @@ import digital.euforia.app.ui.onboardingV3.OnboardingV3State
 import digital.euforia.app.ui.onboardingV3.OnboardingV3ViewModel
 import digital.euforia.app.ui.util.LocalLocalizedRes
 
-private fun OnboardingV3Page.isActive(state: OnboardingV3State, position: Int): Boolean {
-    return state.currentPage.pageType == this && state.currentPage.position == position
-}
-
 @Composable
 fun PagerPage(
     viewModel: OnboardingV3ViewModel,
@@ -20,7 +16,7 @@ fun PagerPage(
     position: Int,
 ) {
     val pageType = state.pages.getOrNull(position) ?: return
-    val isActive = { pageType.isActive(state, position) }
+    val isActive = { true }
     val localizedRes = LocalLocalizedRes.current
 
     when (pageType) {
@@ -32,7 +28,7 @@ fun PagerPage(
                 boldPartRes = R.string.intro_v3_about_1_bold,
                 centerColor = Color(0xFFD69618),
                 edgeColor = Color(0xFF3D2A0A),
-                iconEmoji = "🎧",
+                iconType = AboutIconType.Headphones,
             ),
             isPageActive = isActive(),
         )
@@ -43,7 +39,7 @@ fun PagerPage(
                 boldPartRes = R.string.intro_v3_about_2_bold,
                 centerColor = Color(0xFF395BD3),
                 edgeColor = Color(0xFF0D1533),
-                iconEmoji = "🧘",
+                iconType = AboutIconType.Meditation,
             ),
             isPageActive = isActive(),
         )
@@ -54,7 +50,7 @@ fun PagerPage(
                 boldPartRes = R.string.intro_v3_about_3_bold,
                 centerColor = Color(0xFFB1385F),
                 edgeColor = Color(0xFF2A0A14),
-                iconEmoji = "🌿",
+                iconType = AboutIconType.Soundscapes,
             ),
             isPageActive = isActive(),
         )
@@ -91,6 +87,11 @@ fun PagerPage(
             selectedId = state.introAnswers[IntroAnswerKeys.TIME]?.identifier,
             onAnswerSelected = { viewModel.onAnswerSelected(IntroAnswerKeys.TIME, it) },
             isPageActive = isActive(),
+        )
+        OnboardingV3Page.ScenesPreviewPage -> ScenesPreviewPage(
+            isPageActive = isActive(),
+            onBackClick = viewModel::onPreviousPage,
+            onNextClick = viewModel::onNextPage,
         )
         OnboardingV3Page.FeedbackLoop2Page -> FeedbackLoopPage(
             title = localizedRes.string(R.string.intro_v3_feedback_loop_2_title),

@@ -19,7 +19,7 @@ sealed class OnboardingV3Page(
     data object About1Page : OnboardingV3Page(
         stepId = "about_1",
         titleRes = R.string.intro_v3_about_1_title,
-        isBackAllowed = true,
+        isBackAllowed = false,
         hidesShellChrome = false,
     )
 

@@ -1,12 +1,20 @@
 package digital.euforia.app.ui.onboardingV3
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,8 +23,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,13 +37,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
@@ -42,14 +56,18 @@ import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.OnboardingV3
 import digital.euforia.app.ui.onboardingV3.pager.PagerPage
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
+import digital.euforia.app.ui.theme.ButtonDisabled
+import digital.euforia.app.ui.theme.PrimaryButtonText
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
-import digital.euforia.app.ui.util.widget.AnimatedSizeButton
 import digital.euforia.app.ui.util.widget.AnimatedVerticalShrink
 import digital.euforia.app.ui.util.widget.TermsAndPrivacyText
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+
+private const val INTRO_V3_START_EXIT_MS = 1_500
+private const val INTRO_V3_CONTENT_FADE_MS = 300
 
 @Composable
 fun OnboardingV3Screen(
@@ -95,17 +113,10 @@ private fun OnboardingV3Content(
     viewModel: OnboardingV3ViewModel,
     state: OnboardingV3State,
 ) {
-    val pagerState = rememberPagerState { state.pages.size.coerceAtLeast(1) }
     val localizedRes = LocalLocalizedRes.current
 
     LaunchedEffect(state.currentPage.position) {
-        pagerState.animateScrollToPage(state.currentPage.position)
-    }
-
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
-            viewModel.onPageUpdated(page)
-        }
+        viewModel.onPageUpdated(state.currentPage.position)
     }
 
     BackHandler {
@@ -117,12 +128,20 @@ private fun OnboardingV3Content(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(state.currentPage.pageType.transitionBackgroundColor())
             .noRippleClickable { },
     ) {
-        HorizontalPager(
+        AnimatedContent(
+            targetState = state.currentPage.position,
             modifier = Modifier.fillMaxSize(),
-            state = pagerState,
-            userScrollEnabled = false,
+            transitionSpec = {
+                val isLeavingStart = initialState == 0 && targetState == 1
+                val enterDelay = if (isLeavingStart) INTRO_V3_START_EXIT_MS else INTRO_V3_CONTENT_FADE_MS
+                fadeIn(animationSpec = tween(INTRO_V3_CONTENT_FADE_MS, delayMillis = enterDelay)) togetherWith
+                        fadeOut(animationSpec = tween(if (isLeavingStart) INTRO_V3_START_EXIT_MS else INTRO_V3_CONTENT_FADE_MS)) using
+                        SizeTransform(clip = false)
+            },
+            label = "onboardingV3Content",
         ) { position ->
             PagerPage(viewModel, state, position)
         }
@@ -130,6 +149,8 @@ private fun OnboardingV3Content(
         if (state.isShellChromeVisible) {
             V3AppBar(
                 page = state.currentPage.pageType,
+                pages = state.pages,
+                position = state.currentPage.position,
                 title = state.currentPage.pageType.topBarTitleRes?.let { localizedRes.string(it) },
                 onBackClick = viewModel::onPreviousPage,
                 onSkipClick = viewModel::onSkipPage,
@@ -138,9 +159,7 @@ private fun OnboardingV3Content(
 
         if (state.isNextButtonVisible) {
             V3Footer(
-                isTermsShown = state.pages.indexOfFirst { it.isQuestion }.let { firstQuestionIndex ->
-                    firstQuestionIndex >= 0 && state.currentPage.position == firstQuestionIndex
-                },
+                isTermsShown = false,
                 isButtonEnabled = state.isNextEnabled,
                 onNextClick = viewModel::onNextPage,
                 onPrivacyClick = viewModel::onPrivacyClicked,
@@ -148,6 +167,26 @@ private fun OnboardingV3Content(
             )
         }
     }
+}
+
+private fun OnboardingV3Page.transitionBackgroundColor(): Color {
+    return when (this) {
+        OnboardingV3Page.About1Page -> Color(0xFFD69618).mix(Color.Black, 0.92f)
+        OnboardingV3Page.About2Page -> Color(0xFF395BD3).mix(Color.Black, 0.92f)
+        OnboardingV3Page.About3Page -> Color(0xFFB1385F).mix(Color.Black, 0.92f)
+        else -> Color(0xFF17191F)
+    }
+}
+
+private fun Color.mix(other: Color, amount: Float): Color {
+    val clamped = amount.coerceIn(0f, 1f)
+    val inverse = 1f - clamped
+    return Color(
+        red = red * inverse + other.red * clamped,
+        green = green * inverse + other.green * clamped,
+        blue = blue * inverse + other.blue * clamped,
+        alpha = alpha * inverse + other.alpha * clamped,
+    )
 }
 
 private val OnboardingV3Page.topBarTitleRes: Int?
@@ -162,14 +201,20 @@ private val OnboardingV3Page.topBarTitleRes: Int?
 @Composable
 private fun V3AppBar(
     page: OnboardingV3Page,
+    pages: List<OnboardingV3Page>,
+    position: Int,
     title: String?,
     onBackClick: () -> Unit,
     onSkipClick: () -> Unit,
 ) {
+    val questionPages = pages.filter { it.isQuestion }
+    val questionPage = pages.getOrNull(position)
+    val questionIndex = questionPages.indexOf(questionPage)
     Column(
         modifier = Modifier
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp)
+            .padding(top = 14.dp),
     ) {
         Box(
             modifier = Modifier
@@ -200,6 +245,13 @@ private fun V3AppBar(
                     painter = painterResource(R.drawable.ic_arrow_back),
                     contentDescription = null,
                     tint = color,
+                )
+            }
+            if (questionIndex >= 0) {
+                V3QuestionProgress(
+                    modifier = Modifier.align(Alignment.Center),
+                    currentIndex = questionIndex,
+                    total = questionPages.size,
                 )
             }
             if (page.isSkippable) {
@@ -236,9 +288,54 @@ private fun V3AppBar(
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = 6.dp),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
+            HorizontalDivider(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 26.dp)
+                    .size(width = 64.dp, height = 1.dp),
+                color = White.copy(alpha = 0.18f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun V3QuestionProgress(
+    currentIndex: Int,
+    total: Int,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        repeat(total) { index ->
+            if (index == currentIndex) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 44.dp, height = 7.dp)
+                        .background(White, RoundedCornerShape(999.dp)),
+                )
+            } else if (index == total - 1) {
+                Text(
+                    text = "✸",
+                    color = White.copy(alpha = 0.24f),
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .background(
+                            color = White.copy(alpha = 0.24f),
+                            shape = CircleShape,
+                        ),
+                )
+            }
         }
     }
 }
@@ -259,10 +356,9 @@ private fun BoxScope.V3Footer(
             .fillMaxWidth()
             .imePadding(),
     ) {
-        AnimatedSizeButton(
+        V3NextButton(
             text = LocalLocalizedRes.current.string(R.string.intro_next),
             isEnabled = isButtonEnabled,
-            isVisible = true,
             onClick = onNextClick,
         )
         AnimatedVerticalShrink(isTermsShown) {
@@ -271,6 +367,66 @@ private fun BoxScope.V3Footer(
                 onTermsClick = onTermsClick,
                 onPrivacyClick = onPrivacyClick,
             )
+        }
+    }
+}
+
+@Composable
+private fun V3NextButton(
+    text: String,
+    isEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 40.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .widthIn(max = 320.dp)
+                .fillMaxWidth()
+                .height(60.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isEnabled) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .blur(5.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFFE29B31),
+                                    Color(0xFFFF5589),
+                                    Color(0xFF204FC0),
+                                ),
+                            ),
+                            shape = CircleShape,
+                        ),
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        color = if (isEnabled) White else White.copy(alpha = 0.14f),
+                        shape = CircleShape,
+                    )
+                    .then(if (isEnabled) Modifier.noRippleClickable(onClick) else Modifier),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = text,
+                    color = if (isEnabled) PrimaryButtonText else White.copy(alpha = 0.28f),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
         }
     }
 }
