@@ -1,8 +1,6 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
 import android.content.Context
-import android.graphics.Color.TRANSPARENT
-import android.view.LayoutInflater
 import androidx.annotation.RawRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -52,16 +50,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import digital.euforia.app.R
 import digital.euforia.app.ui.onboardingV3.OnboardingV3ViewModel
 import digital.euforia.app.ui.theme.Inter
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.MediaPlayerHelper
-import digital.euforia.app.ui.util.rememberExoPlayer
 import digital.euforia.app.ui.util.widget.AnimatedSizeButton
 import digital.euforia.app.ui.util.widget.TermsAndPrivacyText
 import kotlinx.coroutines.coroutineScope
@@ -419,20 +413,12 @@ private fun StartIosLikeBackground() {
     }
 }
 
-@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 private fun StartBloomVideo(progress: Float) {
     val breath = rememberBreathPhase()
     val bloomScale = (0.14f + progress * 0.86f) * (0.948f + breath * 0.102f)
     val bloomAlpha = ((progress - 0.08f) / 0.92f).coerceIn(0f, 1f)
     val bloomBlur = (1f - progress) * 6f
-    val exoPlayer = rememberExoPlayer(videoRes = R.raw.vid_bloom).apply {
-        volume = 0f
-    }
-
-    DisposableEffect(exoPlayer) {
-        onDispose { exoPlayer.release() }
-    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -446,25 +432,12 @@ private fun StartBloomVideo(progress: Float) {
     ) {
         AndroidView(
             factory = { ctx ->
-                LayoutInflater.from(ctx).inflate(R.layout.player_view_texture, null, false).also { root ->
-                    root.findViewById<PlayerView>(R.id.player_view).apply {
-                        player = exoPlayer
-                        useController = false
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        setShutterBackgroundColor(TRANSPARENT)
-                        setBackgroundColor(TRANSPARENT)
-                    }
-                    root.setBackgroundColor(TRANSPARENT)
+                BloomVideoView(ctx).apply {
+                    setVideoResource(R.raw.vid_bloom)
                 }
             },
-            update = { root ->
-                root.findViewById<PlayerView>(R.id.player_view).apply {
-                    player = exoPlayer
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                    setShutterBackgroundColor(TRANSPARENT)
-                    setBackgroundColor(TRANSPARENT)
-                }
+            update = { view ->
+                view.setVideoResource(R.raw.vid_bloom)
             },
             modifier = Modifier
                 .fillMaxWidth()
