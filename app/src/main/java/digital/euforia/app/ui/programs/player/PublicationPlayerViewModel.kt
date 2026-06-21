@@ -69,6 +69,8 @@ class PublicationPlayerViewModel @Inject constructor(
         requireNotNull(savedStateHandle.get<Int>("id"))
     private val publicationType: PublicationType =
         requireNotNull(savedStateHandle.get<PublicationType>("publicationType"))
+    val isOnboardingPreview: Boolean = savedStateHandle["isOnboardingPreview"] ?: false
+    private var didCompleteOnboardingPreview = false
     override val container = container<PublicationPlayerState, PublicationPlayerSideEffect>(
         initialState = PublicationPlayerState(),
         onCreate = {
@@ -117,6 +119,16 @@ class PublicationPlayerViewModel @Inject constructor(
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             Timber.tag("PUBLICATION_PLAYBACK").d("onPlaybackStateChanged: $playbackState")
+            if (
+                isOnboardingPreview &&
+                playbackState == Player.STATE_ENDED &&
+                !didCompleteOnboardingPreview
+            ) {
+                didCompleteOnboardingPreview = true
+                intent {
+                    postSideEffect(PublicationPlayerSideEffect.OnboardingPreviewDone)
+                }
+            }
         }
 
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
@@ -504,4 +516,5 @@ data class PublicationsPlaylist(
 
 sealed class PublicationPlayerSideEffect {
     data object ShowSubscription : PublicationPlayerSideEffect()
+    data object OnboardingPreviewDone : PublicationPlayerSideEffect()
 }

@@ -1,5 +1,6 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
+import androidx.annotation.RawRes
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,6 +30,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -39,11 +42,13 @@ import androidx.compose.ui.unit.sp
 import digital.euforia.app.R
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.MediaPlayerHelper
 
 data class AboutPageConfig(
     val titleRes: Int,
     val bodyRes: Int,
     val boldPartRes: Int,
+    @param:RawRes val voiceRes: Int,
     val centerColor: Color,
     val edgeColor: Color,
     val iconType: AboutIconType,
@@ -70,6 +75,7 @@ fun AboutPage(
     if (!isPageActive) return
 
     val localizedRes = LocalLocalizedRes.current
+    val context = LocalContext.current
     val title = localizedRes.string(config.titleRes)
     val body = localizedRes.string(config.bodyRes)
     val boldPart = localizedRes.string(config.boldPartRes)
@@ -81,6 +87,14 @@ fun AboutPage(
             targetValue = 1f,
             animationSpec = tween(durationMillis = 1_200, easing = FastOutSlowInEasing),
         )
+    }
+
+    LaunchedEffect(config.voiceRes) {
+        MediaPlayerHelper.play(context, config.voiceRes)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { MediaPlayerHelper.release() }
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "aboutHero")

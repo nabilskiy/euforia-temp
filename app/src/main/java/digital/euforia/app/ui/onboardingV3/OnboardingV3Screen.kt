@@ -1,10 +1,12 @@
 package digital.euforia.app.ui.onboardingV3
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -38,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,6 +50,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,10 +60,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import digital.euforia.app.R
+import digital.euforia.app.ui.navigation.Home
 import digital.euforia.app.ui.navigation.HomeDestination
+import digital.euforia.app.ui.navigation.ONBOARDING_PREVIEW_DONE_RESULT_KEY
 import digital.euforia.app.ui.navigation.OnboardingV3
 import digital.euforia.app.ui.onboardingV3.pager.PagerPage
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
+import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.theme.ButtonDisabled
 import digital.euforia.app.ui.theme.PrimaryButtonText
 import digital.euforia.app.ui.theme.White
@@ -69,6 +76,7 @@ import digital.euforia.app.ui.util.widget.TermsAndPrivacyText
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import kotlinx.coroutines.delay
 
 private const val INTRO_V3_START_EXIT_MS = 1_500
 private const val INTRO_V3_CONTENT_FADE_MS = 300
@@ -80,6 +88,16 @@ fun OnboardingV3Screen(
 ) {
     val state by viewModel.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(navController) {
+        val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle ?: return@LaunchedEffect
+        savedStateHandle.getStateFlow(ONBOARDING_PREVIEW_DONE_RESULT_KEY, false).collect { isDone ->
+            if (isDone) {
+                savedStateHandle[ONBOARDING_PREVIEW_DONE_RESULT_KEY] = false
+                viewModel.onPreviewCompleted()
+            }
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -95,6 +113,11 @@ fun OnboardingV3Screen(
 
     viewModel.collectSideEffect { effect ->
         when (effect) {
+            OnboardingV3SideEffect.NavigateHome -> {
+                navController.navigate(Home()) {
+                    popUpTo(OnboardingV3) { inclusive = true }
+                }
+            }
             is OnboardingV3SideEffect.NavigateAudioPlayer -> {
                 navController.navigate(
                     HomeDestination.AudioPlayer(
@@ -105,6 +128,34 @@ fun OnboardingV3Screen(
                 ) {
                     popUpTo(OnboardingV3) { inclusive = true }
                 }
+            }
+            is OnboardingV3SideEffect.NavigatePreviewAudio -> {
+                navController.navigate(
+                    HomeDestination.AudioPlayer(
+                        accompanimentId = effect.accompanimentId,
+                        timeOfDay = effect.timeOfDay,
+                        entryPoint = AudioPlayerEntryPoint.ONBOARDING,
+                        isOnboardingPreview = true,
+                    ),
+                )
+            }
+            is OnboardingV3SideEffect.NavigatePreviewMeditation -> {
+                navController.navigate(
+                    HomeDestination.PublicationPlayer(
+                        id = effect.meditationId,
+                        publicationType = PublicationType.MEDITATION,
+                        isOnboardingPreview = true,
+                    ),
+                )
+            }
+            is OnboardingV3SideEffect.NavigatePreviewSoundscape -> {
+                navController.navigate(
+                    HomeDestination.SoundscapesScene(
+                        sceneId = effect.sceneId,
+                        isOnboardingPreview = true,
+                        introSceneTimerSeconds = effect.introSceneTimerSeconds,
+                    ),
+                )
             }
         }
     }
@@ -118,15 +169,24 @@ private fun OnboardingV3Content(
     state: OnboardingV3State,
 ) {
     val localizedRes = LocalLocalizedRes.current
+    val context = LocalContext.current
+    var chromePosition by remember { mutableIntStateOf(state.currentPage.position) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
-        if (isGranted) viewModel.onNotificationPermissionGranted()
-        viewModel.onNextPage()
+        viewModel.onNotificationsSetupConfirmed(hasNotificationPermission = isGranted)
     }
 
     LaunchedEffect(state.currentPage.position) {
         viewModel.onPageUpdated(state.currentPage.position)
+    }
+
+    LaunchedEffect(state.currentPage.position) {
+        val isStartToFirstStep = chromePosition == 0 && state.currentPage.position == 1
+        if (isStartToFirstStep) {
+            delay(INTRO_V3_START_EXIT_MS + INTRO_V3_CONTENT_FADE_MS.toLong())
+        }
+        chromePosition = state.currentPage.position
     }
 
     BackHandler {
@@ -156,32 +216,39 @@ private fun OnboardingV3Content(
             PagerPage(viewModel, state, position)
         }
 
-        if (state.isShellChromeVisible) {
+        val chromePage = state.pages.getOrNull(chromePosition) ?: state.currentPage.pageType
+        if (!chromePage.hidesShellChrome) {
             V3AppBar(
-                page = state.currentPage.pageType,
+                page = chromePage,
                 pages = state.pages,
-                position = state.currentPage.position,
-                title = state.currentPage.pageType.topBarTitleRes?.let { localizedRes.string(it) },
-                subtitle = state.currentPage.pageType.topBarSubtitleRes?.let { localizedRes.string(it) },
+                position = chromePosition,
+                title = chromePage.topBarTitleRes?.let { localizedRes.string(it) },
+                subtitle = chromePage.topBarSubtitleRes?.let { localizedRes.string(it) },
                 selectedScenesCount = state.selectedScenes.size,
                 onBackClick = viewModel::onPreviousPage,
                 onSkipClick = viewModel::onSkipPage,
             )
         }
 
-        if (state.isNextButtonVisible) {
+        if (!chromePage.hidesShellChrome && chromePage != OnboardingV3Page.StartPage) {
             V3Footer(
                 isTermsShown = false,
                 isButtonEnabled = state.isNextEnabled,
-                bottomExtraPadding = if (state.currentPage.pageType == OnboardingV3Page.AgePage) 250.dp else 0.dp,
+                bottomExtraPadding = if (chromePage == OnboardingV3Page.AgePage) 250.dp else 0.dp,
                 onNextClick = {
                     if (state.currentPage.pageType == OnboardingV3Page.NotificationsSetupPage) {
-                        viewModel.saveNotificationSettings()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            val isGranted = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS,
+                            ) == PackageManager.PERMISSION_GRANTED
+                            if (isGranted) {
+                                viewModel.onNotificationsSetupConfirmed(hasNotificationPermission = true)
+                            } else {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
                         } else {
-                            viewModel.onNotificationPermissionGranted()
-                            viewModel.onNextPage()
+                            viewModel.onNotificationsSetupConfirmed(hasNotificationPermission = true)
                         }
                     } else {
                         viewModel.onNextPage()

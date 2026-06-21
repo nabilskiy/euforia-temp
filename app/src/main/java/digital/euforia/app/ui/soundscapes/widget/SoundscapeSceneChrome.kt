@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -64,6 +65,7 @@ fun SoundscapeSceneTopBar(
     onPreferencesClick: () -> Unit,
     onShare: () -> Unit,
     canShare: Boolean,
+    isOnboardingPreview: Boolean = false,
     onModalVisibilityChanged: (Boolean) -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
@@ -83,11 +85,19 @@ fun SoundscapeSceneTopBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = onCollapse) {
-            Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = localizedRes.string(R.string.soundscape_collapse),
-                tint = White
-            )
+            if (isOnboardingPreview) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = localizedRes.string(R.string.close),
+                    tint = White,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = localizedRes.string(R.string.soundscape_collapse),
+                    tint = White
+                )
+            }
         }
         Column(
             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
@@ -127,17 +137,26 @@ fun SoundscapeSceneTopBar(
             }
         }
         Row {
-            IconButton(onClick = { showMenu = true }) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_menu),
-                    contentDescription = localizedRes.string(R.string.soundscape_more_actions),
-                    tint = White
-                )
-            }
-            OptionsMenu(
-                expanded = showMenu,
-                onExpandedChange = { showMenu = it },
-                menuItems = if (isDownloaded) {
+            if (isOnboardingPreview) {
+                IconButton(onClick = onShare) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_share),
+                        contentDescription = localizedRes.string(R.string.share),
+                        tint = White,
+                    )
+                }
+            } else {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_menu),
+                        contentDescription = localizedRes.string(R.string.soundscape_more_actions),
+                        tint = White
+                    )
+                }
+                OptionsMenu(
+                    expanded = showMenu,
+                    onExpandedChange = { showMenu = it },
+                    menuItems = if (isDownloaded) {
                     val timerSubmenu = listOf(
                         MenuItem(
                             titleRes = R.string.audio_scene_menu_timer_1m,
@@ -281,8 +300,9 @@ fun SoundscapeSceneTopBar(
                             )
                         )
                     }
-                }
-            )
+                    }
+                )
+            }
         }
     }
     if (showRename) {

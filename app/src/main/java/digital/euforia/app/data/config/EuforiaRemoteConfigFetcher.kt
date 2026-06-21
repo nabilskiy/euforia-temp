@@ -94,6 +94,24 @@ class EuforiaRemoteConfigFetcher(
         return getBooleanConfig("intro_${stepId}_step_show").dataOrNull ?: default
     }
 
+    fun getIntroSceneTimerSeconds(): Int {
+        return runCatching { remoteConfig.getLong(KEY_INTRO_SCENE_TIMER).toInt() }
+            .getOrDefault(DEFAULT_INTRO_SCENE_TIMER_SECONDS)
+            .coerceAtLeast(DEFAULT_INTRO_SCENE_TIMER_SECONDS)
+    }
+
+    fun getIntroDefaultMeditationId(): Int? {
+        return runCatching { remoteConfig.getLong(KEY_INTRO_DEFAULT_MEDITATION_ID).toInt() }
+            .getOrNull()
+            ?.takeIf { it > 0 }
+    }
+
+    fun getIntroDefaultSceneId(): Int? {
+        return runCatching { remoteConfig.getLong(KEY_INTRO_DEFAULT_SCENE_ID).toInt() }
+            .getOrNull()
+            ?.takeIf { it > 0 }
+    }
+
     fun getTimeOfDayConfig(): TimeOfDayConfig? {
         return getConfig(
             key = KEY_TIME_OF_DAY_CONFIG,
@@ -346,6 +364,10 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_INTRO_REASONS_STEP_SHOW = "intro_reasons_step_show"
         private const val KEY_INTRO_VIDEO_SKIP_ALLOW = "intro_video_skip_allow"
         private const val KEY_INTRO_VARIANT = "intro_variant"
+        private const val KEY_INTRO_SCENE_TIMER = "intro_scene_timer"
+        private const val KEY_INTRO_DEFAULT_MEDITATION_ID = "intro_default_meditation_id"
+        private const val KEY_INTRO_DEFAULT_SCENE_ID = "intro_default_scene_id"
+        private const val DEFAULT_INTRO_SCENE_TIMER_SECONDS = 600
 
         /** TODO: set to false before release — always route Video → OnboardingV3. */
         private const val FORCE_INTRO_V3_FOR_TESTING = true

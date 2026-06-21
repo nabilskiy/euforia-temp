@@ -68,6 +68,7 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.PublicationInfo
+import digital.euforia.app.ui.navigation.ONBOARDING_PREVIEW_DONE_RESULT_KEY
 import digital.euforia.app.ui.navigation.NavBarlessScreen
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
 import digital.euforia.app.ui.player.audio.playSfx
@@ -106,11 +107,20 @@ fun PublicationPlayerScreen(
 ) {
     val state by viewModel.collectAsState()
     var launchSubscriptionActivity by remember { mutableStateOf<(() -> Unit)?>(null) }
+    fun completeOnboardingPreview() {
+        navController.previousBackStackEntry
+            ?.savedStateHandle
+            ?.set(ONBOARDING_PREVIEW_DONE_RESULT_KEY, true)
+        navController.popBackStack()
+    }
 
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
             PublicationPlayerSideEffect.ShowSubscription -> {
                 launchSubscriptionActivity?.invoke()
+            }
+            PublicationPlayerSideEffect.OnboardingPreviewDone -> {
+                completeOnboardingPreview()
             }
         }
     }
@@ -144,6 +154,8 @@ fun PublicationPlayerScreen(
                 onFavouriteClick = viewModel::onFavouriteClicked,
                 onSeek = viewModel::onSeek,
                 onCloseClick = viewModel::onCloseClicked,
+                isOnboardingPreview = viewModel.isOnboardingPreview,
+                onOnboardingPreviewClose = ::completeOnboardingPreview,
                 onPlaylistClick = viewModel::onPlaylistClicked,
                 onPlaylistCloseClick = viewModel::onPlaylistCloseClicked,
                 onPlaylistShown = viewModel::onPlaylistShown
@@ -174,6 +186,8 @@ private fun PublicationPlayerContent(
     onFavouriteClick: (PublicationInfo) -> Unit,
     onSeek: () -> Unit,
     onCloseClick: () -> Unit,
+    isOnboardingPreview: Boolean,
+    onOnboardingPreviewClose: () -> Unit,
     onPlaylistClick: () -> Unit,
     onPlaylistCloseClick: () -> Unit,
     onPlaylistShown: () -> Unit,
@@ -233,7 +247,11 @@ private fun PublicationPlayerContent(
                 onPrepareAndPlay = onPrepareAndPlay,
                 onClose = {
                     onCloseClick()
-                    navController.popBackStack()
+                    if (isOnboardingPreview) {
+                        onOnboardingPreviewClose()
+                    } else {
+                        navController.popBackStack()
+                    }
                 },
                 onSoundEffectClick = { index ->
                     if (index != selectedSoundIndex) {

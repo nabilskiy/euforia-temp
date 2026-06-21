@@ -1,6 +1,7 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,7 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,41 +33,59 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.euforia.app.R
+import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.ui.onboardingV3.OnboardingV3NotificationSetting
 import digital.euforia.app.ui.onboardingV3.OnboardingV3NotificationSlot
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.TimePickerView
 
 @Composable
 fun NotificationsSetupV3Page(
     settings: List<OnboardingV3NotificationSetting>,
+    timeOfDayConfig: TimeOfDayConfig,
     isPageActive: Boolean,
     onToggle: (OnboardingV3NotificationSlot, Boolean) -> Unit,
+    onTimeChanged: (OnboardingV3NotificationSlot, Pair<Int, Int>) -> Unit,
 ) {
     if (!isPageActive) return
 
     val appear = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        appear.animateTo(1f, tween(650))
+    var expandedSlot by remember { mutableStateOf<OnboardingV3NotificationSlot?>(null) }
+    LaunchedEffect(isPageActive) {
+        if (isPageActive) {
+            appear.snapTo(0f)
+            appear.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(
+                    durationMillis = 900,
+                    easing = FastOutSlowInEasing,
+                ),
+            )
+        }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 32.dp)
-            .padding(top = 280.dp, bottom = 130.dp),
-        verticalArrangement = Arrangement.spacedBy(34.dp),
+            .padding(top = 250.dp, bottom = 126.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         settings.forEachIndexed { index, item ->
             NotificationTimeCard(
                 setting = item,
+                timeOfDayConfig = timeOfDayConfig,
+                isExpanded = expandedSlot == item.slot,
                 onToggle = { onToggle(item.slot, it) },
+                onExpandChange = { expandedSlot = if (it) item.slot else null },
+                onTimeChanged = { onTimeChanged(item.slot, it) },
                 modifier = Modifier.graphicsLayer {
-                    val value = ((appear.value - index * 0.08f) / 0.84f).coerceIn(0f, 1f)
+                    val value = ((appear.value - index * 0.14f) / 0.72f).coerceIn(0f, 1f)
                     alpha = value
-                    translationY = (1f - value) * 30f
-                    scaleX = 0.98f + value * 0.02f
-                    scaleY = 0.98f + value * 0.02f
+                    translationY = (1f - value) * 56f
+                    scaleX = 0.94f + value * 0.06f
+                    scaleY = 0.94f + value * 0.06f
                 },
             )
         }
@@ -73,8 +95,12 @@ fun NotificationsSetupV3Page(
 @Composable
 private fun NotificationTimeCard(
     setting: OnboardingV3NotificationSetting,
+    timeOfDayConfig: TimeOfDayConfig,
+    isExpanded: Boolean,
     modifier: Modifier = Modifier,
     onToggle: (Boolean) -> Unit,
+    onExpandChange: (Boolean) -> Unit,
+    onTimeChanged: (Pair<Int, Int>) -> Unit,
 ) {
     val localizedRes = LocalLocalizedRes.current
     val titleRes = when (setting.slot) {
@@ -83,12 +109,15 @@ private fun NotificationTimeCard(
         OnboardingV3NotificationSlot.Evening -> R.string.intro_notifications_evening_title
     }
 
+    val hourBounds = timeOfDayConfig.notificationHourBounds(setting.slot)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp)
-            .background(Color(0xFF1F2228), RoundedCornerShape(25.dp))
-            .padding(horizontal = 24.dp, vertical = 22.dp),
+            .height(112.dp)
+            .background(Color(0xFF1F2228), RoundedCornerShape(28.dp))
+            .clickable(enabled = setting.enabled) { onExpandChange(!isExpanded) }
+            .padding(horizontal = 24.dp, vertical = 17.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
@@ -99,8 +128,8 @@ private fun NotificationTimeCard(
                 text = localizedRes.string(titleRes),
                 color = White.copy(alpha = if (setting.enabled) 0.8f else 0.4f),
                 style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = 17.sp,
-                    lineHeight = 23.sp,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp,
                     fontWeight = FontWeight.Bold,
                 ),
             )
@@ -112,20 +141,32 @@ private fun NotificationTimeCard(
                     text = "%d:%02d".format(setting.hour, setting.minute),
                     color = White.copy(alpha = if (setting.enabled) 1f else 0.4f),
                     style = MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = 42.sp,
-                        lineHeight = 48.sp,
+                        fontSize = 34.sp,
+                        lineHeight = 40.sp,
                         fontWeight = FontWeight.Bold,
                     ),
                 )
                 Text(
                     text = "›",
                     color = White.copy(alpha = if (setting.enabled) 0.6f else 0.25f),
-                    modifier = Modifier.padding(start = 12.dp),
+                    modifier = Modifier
+                        .padding(start = 12.dp)
+                        .graphicsLayer {
+                            rotationZ = if (isExpanded) 90f else 0f
+                        },
                     style = MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = 38.sp,
-                        lineHeight = 42.sp,
+                        fontSize = 32.sp,
+                        lineHeight = 36.sp,
                         fontWeight = FontWeight.Light,
                     ),
+                )
+                TimePickerView(
+                    expanded = isExpanded && setting.enabled,
+                    initialTime = setting.hour to setting.minute,
+                    fromHour = hourBounds.first,
+                    toHour = hourBounds.second,
+                    onTimeChanged = onTimeChanged,
+                    onExpandedChange = onExpandChange,
                 )
             }
         }
@@ -136,6 +177,14 @@ private fun NotificationTimeCard(
     }
 }
 
+private fun TimeOfDayConfig.notificationHourBounds(
+    slot: OnboardingV3NotificationSlot,
+): Pair<Int, Int> = when (slot) {
+    OnboardingV3NotificationSlot.Morning -> morningBegin to (daytimeBegin - 1).coerceAtLeast(morningBegin)
+    OnboardingV3NotificationSlot.Daytime -> daytimeBegin to (eveningBegin - 1).coerceAtLeast(daytimeBegin)
+    OnboardingV3NotificationSlot.Evening -> eveningBegin to morningBegin
+}
+
 @Composable
 private fun V3Switch(
     checked: Boolean,
@@ -143,7 +192,7 @@ private fun V3Switch(
 ) {
     Box(
         modifier = Modifier
-            .size(width = 78.dp, height = 46.dp)
+            .size(width = 62.dp, height = 36.dp)
             .background(
                 color = if (checked) Color(0xFF4257D5) else White.copy(alpha = 0.16f),
                 shape = CircleShape,
@@ -153,8 +202,8 @@ private fun V3Switch(
     ) {
         Box(
             modifier = Modifier
-                .offset(x = if (checked) 34.dp else 4.dp)
-                .size(38.dp)
+                .offset(x = if (checked) 30.dp else 4.dp)
+                .size(28.dp)
                 .background(White, CircleShape),
         )
     }

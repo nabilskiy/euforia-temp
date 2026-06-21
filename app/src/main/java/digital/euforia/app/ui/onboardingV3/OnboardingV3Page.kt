@@ -151,6 +151,12 @@ sealed class OnboardingV3Page(
         hidesShellChrome = true,
     )
 
+    data object KeepExploringPage : OnboardingV3Page(
+        stepId = "keep_exploring",
+        isBackAllowed = false,
+        hidesShellChrome = true,
+    )
+
     data object PaywallPage : OnboardingV3Page(
         stepId = "paywall",
         isBackAllowed = false,
@@ -177,10 +183,12 @@ val defaultOnboardingV3Pages = listOf(
     OnboardingV3Page.AgePage,
     OnboardingV3Page.SummaryPage,
     OnboardingV3Page.SocialProofPage,
+    OnboardingV3Page.EmailPage,
     OnboardingV3Page.NamePage,
     OnboardingV3Page.NotificationsSetupPage,
     OnboardingV3Page.LoadingPage,
+    OnboardingV3Page.PaywallPage,
     OnboardingV3Page.FirstExperiencePage,
     OnboardingV3Page.RatePage,
-    OnboardingV3Page.PaywallPage,
+    OnboardingV3Page.KeepExploringPage,
 )

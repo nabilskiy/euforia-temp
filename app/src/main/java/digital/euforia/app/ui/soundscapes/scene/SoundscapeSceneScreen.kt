@@ -69,6 +69,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -117,9 +118,11 @@ import digital.euforia.app.ui.soundscapes.widget.SoundscapeSceneTopBar
 import digital.euforia.app.ui.soundscapes.widget.rememberSoundscapeMediaController
 import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.navigation.ONBOARDING_PREVIEW_DONE_RESULT_KEY
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.LinkGenerator
 import digital.euforia.app.ui.util.LocalLocalizedRes
+import digital.euforia.app.ui.util.widget.TriangleTooltipBubble
 import digital.euforia.app.ui.util.widget.ProgressIndicator
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -151,8 +154,12 @@ fun SoundscapeSceneScreen(
     var showSoundsPicker by remember { mutableStateOf(false) }
     var controlsVisible by remember { mutableStateOf(true) }
     var showUnsavedExitDialog by remember { mutableStateOf(false) }
+    var showPreviewCloseDialog by remember { mutableStateOf(false) }
     var showTimerPickerDialog by remember { mutableStateOf(false) }
     var topBarModalVisible by remember { mutableStateOf(false) }
+    var previewRemainingSeconds by remember { mutableIntStateOf(viewModel.introSceneTimerSeconds) }
+    var didCompleteOnboardingPreview by remember { mutableStateOf(false) }
+    var previewHintStep by remember { mutableIntStateOf(0) }
     var showImportSourceDialog by remember { mutableStateOf(false) }
     var showUnsplashPicker by remember { mutableStateOf(false) }
     var showPexelsPicker by remember { mutableStateOf(false) }
@@ -180,8 +187,29 @@ fun SoundscapeSceneScreen(
         controlsVisible = true
         interactionNonce++
     }
+    fun completeOnboardingPreview() {
+        if (didCompleteOnboardingPreview) return
+        didCompleteOnboardingPreview = true
+        viewModel.onStopPlayback()
+        navController.previousBackStackEntry
+            ?.savedStateHandle
+            ?.set(ONBOARDING_PREVIEW_DONE_RESULT_KEY, true)
+        navController.popBackStack()
+    }
+    fun previewProgress(): Float {
+        val total = viewModel.introSceneTimerSeconds.coerceAtLeast(1)
+        val elapsed = total - previewRemainingSeconds
+        return (elapsed / total.toFloat()).coerceIn(0f, 1f)
+    }
     fun requestCloseScene() {
-        if (state.isDirty) showUnsavedExitDialog = true
+        if (viewModel.isOnboardingPreview) {
+            if (previewProgress() < 0.8f) {
+                viewModel.onSetPlaying(false)
+                showPreviewCloseDialog = true
+            } else {
+                completeOnboardingPreview()
+            }
+        } else if (state.isDirty) showUnsavedExitDialog = true
         else navController.popBackStack()
     }
     val pickBackgroundMediaLauncher = rememberLauncherForActivityResult(
@@ -251,6 +279,52 @@ fun SoundscapeSceneScreen(
         if (!showPexelsPicker) return@LaunchedEffect
         viewModel.refreshPexelsBackgroundSearch()
     }
+    LaunchedEffect(viewModel.isOnboardingPreview, state.sceneId) {
+        if (viewModel.isOnboardingPreview) {
+            previewRemainingSeconds = viewModel.introSceneTimerSeconds
+            didCompleteOnboardingPreview = false
+        }
+    }
+    LaunchedEffect(
+        viewModel.isOnboardingPreview,
+        state.sceneId,
+        state.isPlaying,
+        previewRemainingSeconds,
+    ) {
+        if (!viewModel.isOnboardingPreview || !state.isPlaying || didCompleteOnboardingPreview) return@LaunchedEffect
+        if (previewRemainingSeconds <= 0) {
+            completeOnboardingPreview()
+            return@LaunchedEffect
+        }
+        delay(1_000)
+        previewRemainingSeconds = (previewRemainingSeconds - 1).coerceAtLeast(0)
+    }
+    LaunchedEffect(
+        viewModel.isOnboardingPreview,
+        state.isPreparing,
+        state.layers.size,
+        state.soundFloatingButtons.size,
+    ) {
+        val isPreviewReady = state.layers.isNotEmpty() || state.soundFloatingButtons.isNotEmpty()
+        if (!viewModel.isOnboardingPreview || state.isPreparing || !isPreviewReady || previewHintStep != 0) {
+            return@LaunchedEffect
+        }
+        delay(1_000)
+        controlsVisible = true
+        previewHintStep = 1
+    }
+    LaunchedEffect(previewHintStep) {
+        when (previewHintStep) {
+            1 -> {
+                delay(5_000)
+                previewHintStep = 2
+            }
+            2 -> {
+                delay(5_000)
+                previewHintStep = 3
+            }
+        }
+    }
 
     SubscriptionActivityLauncher { launchSubscription ->
         viewModel.collectSideEffect { sideEffect ->
@@ -319,6 +393,8 @@ fun SoundscapeSceneScreen(
                 },
                 subtitle = if (state.isDirty) {
                     localizedRes.string(R.string.audio_scene_unsaved_changes)
+                } else if (viewModel.isOnboardingPreview) {
+                    localizedRes.string(R.string.audio_scene_preview_mode)
                 } else if (state.presetId != null) {
                     localizedRes.string(R.string.playlist_type_my_scenes)
                 } else {
@@ -326,8 +402,13 @@ fun SoundscapeSceneScreen(
                 },
                 showMaxBadge = state.isPro,
                 isDownloaded = state.downloadState == SoundscapeDownloadItem.STATUS_READY,
-                hasActiveTimer = (state.timerSeconds ?: 0) > 0,
+                hasActiveTimer = if (viewModel.isOnboardingPreview) {
+                    previewRemainingSeconds > 0
+                } else {
+                    (state.timerSeconds ?: 0) > 0
+                },
                 canShare = state.presetId == null,
+                isOnboardingPreview = viewModel.isOnboardingPreview,
                 onCollapse = ::requestCloseScene,
                 onSaveChanges = viewModel::onSavePreset,
                 onSaveAndDownload = viewModel::onSaveAndDownload,
@@ -376,8 +457,16 @@ fun SoundscapeSceneScreen(
             SceneBottomControls(
                 visible = controlsVisible,
                 isPlaying = state.isPlaying,
-                timerTotalSeconds = state.timerSeconds,
-                timerRemainingSeconds = state.timerRemainingSeconds,
+                timerTotalSeconds = if (viewModel.isOnboardingPreview) {
+                    viewModel.introSceneTimerSeconds
+                } else {
+                    state.timerSeconds
+                },
+                timerRemainingSeconds = if (viewModel.isOnboardingPreview) {
+                    previewRemainingSeconds
+                } else {
+                    state.timerRemainingSeconds
+                },
                 sceneMusicUrl = state.sceneMusicUrl,
                 musicVolume = state.musicVolume,
                 musicContentDescription = localizedRes.string(R.string.audio_scene_background_music_settings),
@@ -399,6 +488,41 @@ fun SoundscapeSceneScreen(
                     showMusicOptions = true
                 }
             )
+
+            if (viewModel.isOnboardingPreview) {
+                SoundscapePreviewHints(
+                    step = previewHintStep,
+                    soundHint = localizedRes.string(R.string.audio_scene_sound_hint),
+                    musicHint = localizedRes.string(R.string.audio_scene_music_hint),
+                )
+            }
+
+            if (showPreviewCloseDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        showPreviewCloseDialog = false
+                        viewModel.onSetPlaying(true)
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showPreviewCloseDialog = false
+                            completeOnboardingPreview()
+                        }) {
+                            Text(text = localizedRes.string(R.string.intro_preview_close_confirm))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showPreviewCloseDialog = false
+                            viewModel.onSetPlaying(true)
+                        }) {
+                            Text(text = localizedRes.string(R.string.intro_preview_close_cancel))
+                        }
+                    },
+                    title = { Text(text = localizedRes.string(R.string.intro_preview_close_title)) },
+                    text = { Text(text = localizedRes.string(R.string.intro_preview_close_message)) },
+                )
+            }
 
             SceneModalHost(
                 state = state,
@@ -526,6 +650,37 @@ private fun BoxScope.SceneGradientOverlays() {
 }
 
 @Composable
+private fun BoxScope.SoundscapePreviewHints(
+    step: Int,
+    soundHint: String,
+    musicHint: String,
+) {
+    AnimatedVisibility(
+        visible = step == 1,
+        enter = fadeIn(animationSpec = tween(180)),
+        exit = fadeOut(animationSpec = tween(260)),
+        modifier = Modifier
+            .align(Alignment.Center)
+            .offset(y = (-74).dp)
+            .zIndex(6f),
+    ) {
+        TriangleTooltipBubble(text = soundHint)
+    }
+    AnimatedVisibility(
+        visible = step == 2,
+        enter = fadeIn(animationSpec = tween(180)),
+        exit = fadeOut(animationSpec = tween(260)),
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .navigationBarsPadding()
+            .padding(end = 18.dp, bottom = 118.dp)
+            .zIndex(6f),
+    ) {
+        TriangleTooltipBubble(text = musicHint)
+    }
+}
+
+@Composable
 private fun BoxScope.SceneTopControls(
     visible: Boolean,
     title: String,
@@ -534,6 +689,7 @@ private fun BoxScope.SceneTopControls(
     isDownloaded: Boolean,
     hasActiveTimer: Boolean,
     canShare: Boolean,
+    isOnboardingPreview: Boolean,
     onCollapse: () -> Unit,
     onSaveChanges: () -> Unit,
     onSaveAndDownload: (String) -> Unit,
@@ -578,6 +734,7 @@ private fun BoxScope.SceneTopControls(
                 onPreferencesClick = onPreferencesClick,
                 onShare = onShare,
                 canShare = canShare,
+                isOnboardingPreview = isOnboardingPreview,
                 onModalVisibilityChanged = onModalVisibilityChanged
             )
         }

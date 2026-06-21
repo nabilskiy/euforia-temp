@@ -78,6 +78,7 @@ class AudioPlayerViewModel @Inject constructor(
     private val timeOfDay: TimeOfDay = requireNotNull(savedStateHandle.get<TimeOfDay>("timeOfDay"))
     private val entryPoint: AudioPlayerEntryPoint =
         requireNotNull(savedStateHandle.get<AudioPlayerEntryPoint>("entryPoint"))
+    val isOnboardingPreview: Boolean = savedStateHandle["isOnboardingPreview"] ?: false
 
     override val container = container<AudioPlayerState, AudioPlayerSideEffect>(
         initialState = AudioPlayerState(entryPoint = entryPoint, timeOfDay = timeOfDay),
@@ -122,7 +123,12 @@ class AudioPlayerViewModel @Inject constructor(
             }.onFailure {
                 Timber.tag(logTag()).d("Error syncing resources: ${it.message}")
             }
-            syncAccompanimentsUseCase.invoke(true).onSuccess {
+            val requestDemo = if (isOnboardingPreview) {
+                profilePreferences.getIsDemo() || !profilePreferences.getIsPremium()
+            } else {
+                true
+            }
+            syncAccompanimentsUseCase.invoke(requestDemo).onSuccess {
                 analyticSender.introPreparingComplete()
                 getAccompaniment()
             }.onFailure {

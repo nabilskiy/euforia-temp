@@ -32,6 +32,7 @@ import androidx.media3.session.SessionCommand
 import digital.euforia.app.service.soundscapes.beginSoundscapeInterruption
 import digital.euforia.app.service.soundscapes.endSoundscapeInterruption
 import digital.euforia.app.ui.navigation.Home
+import digital.euforia.app.ui.navigation.ONBOARDING_PREVIEW_DONE_RESULT_KEY
 import digital.euforia.app.ui.player.audio.components.VolumeBottomSheet
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 
@@ -53,6 +54,12 @@ fun SharedTransitionScope.AudioPlayerScreen(
     val url = remember(state.accompanimentWithItems) {
         viewModel.getMusicUrlForTimeOfDay()
     }
+    fun completeOnboardingPreview() {
+        navController.previousBackStackEntry
+            ?.savedStateHandle
+            ?.set(ONBOARDING_PREVIEW_DONE_RESULT_KEY, true)
+        navController.popBackStack()
+    }
 
     val controller = rememberMediaController(
         timeOfDayUrl = url,
@@ -65,7 +72,9 @@ fun SharedTransitionScope.AudioPlayerScreen(
         onEnded = {
             //todo show paywall
             viewModel.savePlaybackProgress(1f, isRateShown.value)
-            if (state.entryPoint == AudioPlayerEntryPoint.DAY && !state.isRated) {
+            if (viewModel.isOnboardingPreview) {
+                completeOnboardingPreview()
+            } else if (state.entryPoint == AudioPlayerEntryPoint.DAY && !state.isRated) {
                 isRateShown.value = true
             }
         },
@@ -186,7 +195,11 @@ fun SharedTransitionScope.AudioPlayerScreen(
                     viewModel.onNavigateToPlayer()
                 } else {
                     viewModel.savePlaybackProgress(currentMs / durationMs, isRateShown.value)
-                    navController.popBackStack()
+                    if (viewModel.isOnboardingPreview) {
+                        completeOnboardingPreview()
+                    } else {
+                        navController.popBackStack()
+                    }
                 }
             },
             onPageSelected = viewModel::onPageSelected,

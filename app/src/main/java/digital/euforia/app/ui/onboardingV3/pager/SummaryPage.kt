@@ -1,19 +1,27 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,18 +43,25 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.onboarding.Goal
+import digital.euforia.app.domain.model.onboarding.IntroAnswerItem
 import digital.euforia.app.ui.theme.PrimaryButtonText
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
 
@@ -57,6 +72,9 @@ private val SummaryCard = Color(0xFF1F2228)
 @Composable
 fun SummaryPage(
     selectedGoal: Goal?,
+    selectedProgram: IntroAnswerItem?,
+    selectedScenes: List<IntroAnswerItem>,
+    age: Int?,
     isPageActive: Boolean,
     onNextClick: () -> Unit,
 ) {
@@ -163,20 +181,29 @@ fun SummaryPage(
                 modifier = Modifier
                     .padding(horizontal = 24.dp)
                     .padding(top = 30.dp),
-                contentPadding = PaddingValues(horizontal = 30.dp, vertical = 26.dp),
+                contentPadding = PaddingValues(horizontal = 30.dp, vertical = 28.dp),
             ) {
-                Text(
-                    text = localizedRes.string(R.string.intro_summary_items),
-                    color = White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = 19.sp,
-                        lineHeight = 25.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                SummaryProfileBlock(
+                    age = age,
+                    selectedGoal = selectedGoal,
+                    selectedProgram = selectedProgram,
+                    selectedScenes = selectedScenes,
                 )
             }
+
+            Text(
+                text = localizedRes.string(R.string.intro_summary_footer),
+                color = White.copy(alpha = 0.7f),
+                textAlign = TextAlign.Start,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 20.dp),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp,
+                ),
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -211,6 +238,20 @@ private fun SummaryBottomButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "summaryButtonPulse")
+    val phase = infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2_700, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "summaryButtonPulsePhase",
+    ).value
+    val pulse = 0.5f - (cos(phase * PI.toFloat() * 2f) * 0.5f)
+    val scale = 0.994f + pulse * 0.032f
+    val lift = -4f - pulse * 7f
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -236,6 +277,16 @@ private fun SummaryBottomButton(
             Box(
                 modifier = Modifier
                     .matchParentSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationY = lift
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
                     .blur(7.dp)
                     .background(
                         Brush.horizontalGradient(
@@ -243,24 +294,143 @@ private fun SummaryBottomButton(
                         ),
                         CircleShape,
                     ),
-            )
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(White, CircleShape)
-                    .noRippleClickable(onClick),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = text,
-                    color = PrimaryButtonText,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
                 )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(White, CircleShape)
+                        .noRippleClickable(onClick),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = text,
+                        color = PrimaryButtonText,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun SummaryProfileBlock(
+    age: Int?,
+    selectedGoal: Goal?,
+    selectedProgram: IntroAnswerItem?,
+    selectedScenes: List<IntroAnswerItem>,
+) {
+    val localizedRes = LocalLocalizedRes.current
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        Text(
+            text = localizedRes.string(R.string.intro_summary_items),
+            color = White,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = 19.sp,
+                lineHeight = 25.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            SummaryProfileRow(
+                iconRes = R.drawable.ic_age,
+                title = localizedRes.string(R.string.intro_summary_age),
+                value = age?.toString() ?: localizedRes.string(R.string.intro_summary_age_default),
+                text = localizedRes.string(R.string.intro_summary_age_text),
+            )
+            SummaryProfileRow(
+                iconRes = R.drawable.ic_gender,
+                title = localizedRes.string(R.string.intro_summary_gender),
+                value = localizedRes.string(R.string.intro_summary_gender_default),
+                text = localizedRes.string(R.string.intro_summary_gender_text),
+            )
+            SummaryProfileRow(
+                iconRes = R.drawable.ic_goals,
+                title = localizedRes.string(R.string.intro_summary_goals),
+                value = selectedGoal?.text ?: localizedRes.string(R.string.intro_summary_goals_default),
+                text = localizedRes.string(R.string.intro_summary_goals_text),
+            )
+            SummaryProfileRow(
+                iconRes = R.drawable.ic_programs,
+                title = localizedRes.string(R.string.intro_summary_programs),
+                value = selectedProgram?.text ?: localizedRes.string(R.string.intro_summary_programs_default),
+                text = localizedRes.string(R.string.intro_summary_programs_text),
+            )
+            SummaryProfileRow(
+                iconRes = R.drawable.ic_scenes,
+                title = localizedRes.string(R.string.intro_summary_scenes),
+                value = selectedScenes.takeIf { it.isNotEmpty() }
+                    ?.joinToString(separator = ", ") { it.text }
+                    ?: localizedRes.string(R.string.intro_summary_scenes_default),
+                text = localizedRes.string(R.string.intro_summary_scenes_text),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryProfileRow(
+    iconRes: Int,
+    title: String,
+    value: String,
+    text: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(50.dp)
+                .background(White.copy(alpha = 0.06f), RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(30.dp),
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = White, fontWeight = FontWeight.Bold)) {
+                        append(title)
+                    }
+                    append("  ")
+                    withStyle(SpanStyle(color = SummaryAccentBlue, fontWeight = FontWeight.Bold)) {
+                        append(value)
+                    }
+                },
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                ),
+            )
+            Text(
+                text = text,
+                color = White.copy(alpha = 0.4f),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                ),
+            )
         }
     }
 }

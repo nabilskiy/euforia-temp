@@ -6,20 +6,30 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import digital.euforia.app.R
 import digital.euforia.app.data.analytics.AnalyticSender
+import digital.euforia.app.data.config.EuforiaRemoteConfigFetcher
+import digital.euforia.app.data.repository.AccompanimentRepository
 import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.TimeOfDay
+import digital.euforia.app.domain.model.config.TimeOfDayConfig
+import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
+import digital.euforia.app.domain.model.config.isDaytimeRange
+import digital.euforia.app.domain.model.config.isEveningRange
+import digital.euforia.app.domain.model.config.isMorningRange
 import digital.euforia.app.domain.model.onboarding.Goal
 import digital.euforia.app.domain.model.onboarding.IntroAnswerItem
+import digital.euforia.app.domain.usecase.UpdateNotificationsUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetAppLanguageUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetGoalsUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetIntroAnswersUseCase
 import digital.euforia.app.domain.usecase.onboarding.GetOnboardingV3PagesUseCase
 import digital.euforia.app.ui.util.BackgroundPlayerHelper
+import digital.euforia.app.ui.util.getCurrentTimeOfDay
 import digital.euforia.app.ui.util.openWebLink
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,6 +38,9 @@ class OnboardingV3ViewModel @Inject constructor(
     private val getGoalsUseCase: GetGoalsUseCase,
     private val getIntroAnswersUseCase: GetIntroAnswersUseCase,
     private val getAppLanguageUseCase: GetAppLanguageUseCase,
+    private val remoteConfigFetcher: EuforiaRemoteConfigFetcher,
+    private val accompanimentRepository: AccompanimentRepository,
+    private val updateNotificationsUseCase: UpdateNotificationsUseCase,
     val appPreferences: AppPreferences,
     val profilePreferences: ProfilePreferences,
     private val analyticSender: AnalyticSender,
@@ -51,7 +64,8 @@ class OnboardingV3ViewModel @Inject constructor(
             val dailyCommitments = getIntroAnswersUseCase(R.raw.intro_daily_commitment, languageTag)
             val timeOptions = getIntroAnswersUseCase(R.raw.intro_time, languageTag)
             val scenes = getIntroAnswersUseCase(R.raw.intro_scenes, languageTag)
-            val notificationSettings = loadNotificationSettings()
+            val timeOfDayConfig = remoteConfigFetcher.getTimeOfDayConfig() ?: defaultTimeOfDayConfig()
+            val notificationSettings = loadNotificationSettings(timeOfDayConfig)
             intent {
                 val pages = getOnboardingV3PagesUseCase()
                 reduce {
@@ -63,6 +77,7 @@ class OnboardingV3ViewModel @Inject constructor(
                             dailyCommitments = dailyCommitments,
                             timeOptions = timeOptions,
                             scenes = scenes,
+                            notificationTimeOfDayConfig = timeOfDayConfig,
                             notificationSettings = notificationSettings,
                             currentPage = state.currentPage.copy(
                                 pageType = pages.firstOrNull() ?: OnboardingV3Page.StartPage,
@@ -74,7 +89,10 @@ class OnboardingV3ViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadNotificationSettings(): List<OnboardingV3NotificationSetting> {
+    private suspend fun loadNotificationSettings(
+        timeOfDayConfig: TimeOfDayConfig,
+    ): List<OnboardingV3NotificationSetting> {
+        val defaultConfig = defaultTimeOfDayConfig()
         val morningTime = appPreferences.getMorningNotificationTime()
         val daytimeTime = appPreferences.getDayNotificationTime()
         val eveningTime = appPreferences.getEveningNotificationTime()
@@ -82,13 +100,15 @@ class OnboardingV3ViewModel @Inject constructor(
             OnboardingV3NotificationSetting(
                 slot = OnboardingV3NotificationSlot.Morning,
                 enabled = appPreferences.isMorningNotificationEnabled(),
-                hour = morningTime.first.takeIf { it != 7 } ?: 8,
+                hour = morningTime.first.takeIf { it != defaultConfig.morningBegin }
+                    ?: timeOfDayConfig.morningNotification,
                 minute = morningTime.second,
             ),
             OnboardingV3NotificationSetting(
                 slot = OnboardingV3NotificationSlot.Daytime,
                 enabled = appPreferences.isDayNotificationEnabled(),
-                hour = daytimeTime.first.takeIf { it != 12 } ?: 13,
+                hour = daytimeTime.first.takeIf { it != defaultConfig.daytimeBegin }
+                    ?: timeOfDayConfig.daytimeNotification,
                 minute = daytimeTime.second,
             ),
             OnboardingV3NotificationSetting(
@@ -132,6 +152,12 @@ class OnboardingV3ViewModel @Inject constructor(
         }
     }
 
+    fun onPreviewTypeSelected(type: OnboardingV3PreviewType) {
+        intent {
+            reduce { state.copy(selectedPreviewType = type) }
+        }
+    }
+
     fun onNameUpdated(name: String) {
         intent {
             val trimmed = name.take(30)
@@ -143,38 +169,62 @@ class OnboardingV3ViewModel @Inject constructor(
         }
     }
 
+    fun onAgeSelected(age: Int) {
+        intent {
+            reduce { applyChromeForPage(state.copy(age = age)) }
+        }
+    }
+
     fun onNotificationToggled(slot: OnboardingV3NotificationSlot, enabled: Boolean) {
         intent {
             val updated = state.notificationSettings.map {
                 if (it.slot == slot) it.copy(enabled = enabled) else it
             }
             reduce { applyChromeForPage(state.copy(notificationSettings = updated)) }
-            saveNotificationSettings(updated)
         }
     }
 
-    fun saveNotificationSettings() {
+    fun onNotificationTimeChanged(slot: OnboardingV3NotificationSlot, time: Pair<Int, Int>) {
         intent {
-            saveNotificationSettings(state.notificationSettings)
+            if (!state.notificationTimeOfDayConfig.isAllowedNotificationHour(slot, time.first)) {
+                return@intent
+            }
+            val updated = state.notificationSettings.map {
+                if (it.slot == slot) {
+                    it.copy(hour = time.first, minute = time.second)
+                } else {
+                    it
+                }
+            }
+            reduce { applyChromeForPage(state.copy(notificationSettings = updated)) }
         }
     }
 
-    private fun saveNotificationSettings(settings: List<OnboardingV3NotificationSetting>) {
+    fun onNotificationsSetupConfirmed(hasNotificationPermission: Boolean) {
+        val settings = container.stateFlow.value.notificationSettings
         viewModelScope.launch {
-            settings.forEach { setting ->
-                when (setting.slot) {
-                    OnboardingV3NotificationSlot.Morning -> {
-                        appPreferences.setMorningNotificationEnabled(setting.enabled)
-                        appPreferences.setMorningNotificationTime(setting.hour, setting.minute)
-                    }
-                    OnboardingV3NotificationSlot.Daytime -> {
-                        appPreferences.setDayNotificationEnabled(setting.enabled)
-                        appPreferences.setDayNotificationTime(setting.hour, setting.minute)
-                    }
-                    OnboardingV3NotificationSlot.Evening -> {
-                        appPreferences.setEveningNotificationEnabled(setting.enabled)
-                        appPreferences.setEveningNotificationTime(setting.hour, setting.minute)
-                    }
+            persistNotificationSettings(settings)
+            if (hasNotificationPermission) {
+                appPreferences.setNotificationPermissionGranted(true)
+            }
+            onNextPage()
+        }
+    }
+
+    private suspend fun persistNotificationSettings(settings: List<OnboardingV3NotificationSetting>) {
+        settings.forEach { setting ->
+            when (setting.slot) {
+                OnboardingV3NotificationSlot.Morning -> {
+                    appPreferences.setMorningNotificationEnabled(setting.enabled)
+                    appPreferences.setMorningNotificationTime(setting.hour, setting.minute)
+                }
+                OnboardingV3NotificationSlot.Daytime -> {
+                    appPreferences.setDayNotificationEnabled(setting.enabled)
+                    appPreferences.setDayNotificationTime(setting.hour, setting.minute)
+                }
+                OnboardingV3NotificationSlot.Evening -> {
+                    appPreferences.setEveningNotificationEnabled(setting.enabled)
+                    appPreferences.setEveningNotificationTime(setting.hour, setting.minute)
                 }
             }
         }
@@ -219,7 +269,82 @@ class OnboardingV3ViewModel @Inject constructor(
                 return@intent
             }
             appPreferences.setOnboardingCompleted(true)
-            postSideEffect(OnboardingV3SideEffect.NavigateAudioPlayer())
+            if (appPreferences.isNotificationPermissionGranted()) {
+                updateNotificationsUseCase()
+            }
+            postSideEffect(OnboardingV3SideEffect.NavigateHome)
+        }
+    }
+
+    fun onFirstExperiencePlayNow() {
+        intent {
+            when (state.selectedPreviewType) {
+                OnboardingV3PreviewType.Accompaniment -> {
+                    val effect = resolvePreviewAudioSideEffect()
+                    if (effect != null) {
+                        postSideEffect(effect)
+                    } else {
+                        Timber.tag(TAG).w("Unable to resolve onboarding preview audio session")
+                    }
+                }
+                OnboardingV3PreviewType.Meditation -> {
+                    val meditationId = state.introAnswers[IntroAnswerKeys.PROGRAMS]?.entityId
+                        ?: remoteConfigFetcher.getIntroDefaultMeditationId()
+                    if (meditationId != null) {
+                        postSideEffect(OnboardingV3SideEffect.NavigatePreviewMeditation(meditationId))
+                    } else {
+                        Timber.tag(TAG).w("Unable to resolve onboarding preview meditation")
+                    }
+                }
+                OnboardingV3PreviewType.Soundscape -> {
+                    val sceneId = state.selectedScenes.firstNotNullOfOrNull { it.entityId }
+                        ?: state.introAnswers[IntroAnswerKeys.SCENES]?.entityId
+                        ?: remoteConfigFetcher.getIntroDefaultSceneId()
+                    if (sceneId != null) {
+                        postSideEffect(
+                            OnboardingV3SideEffect.NavigatePreviewSoundscape(
+                                sceneId = sceneId,
+                                introSceneTimerSeconds = remoteConfigFetcher.getIntroSceneTimerSeconds(),
+                            ),
+                        )
+                    } else {
+                        Timber.tag(TAG).w("Unable to resolve onboarding preview soundscape")
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun resolvePreviewAudioSideEffect(): OnboardingV3SideEffect.NavigatePreviewAudio? {
+        val timeOfDayConfig = remoteConfigFetcher.getTimeOfDayConfig() ?: defaultTimeOfDayConfig()
+        val timeOfDay = getCurrentTimeOfDay(timeOfDayConfig)
+        val requestDemo = profilePreferences.getIsDemo() || !profilePreferences.getIsPremium()
+        val accompanimentId = accompanimentRepository
+            .getAccompanimentWithItems(isDemo = requestDemo)
+            .dataOrNull
+            ?.firstOrNull()
+            ?.accompaniment
+            ?.id
+            ?: return null
+
+        return OnboardingV3SideEffect.NavigatePreviewAudio(
+            accompanimentId = accompanimentId,
+            timeOfDay = timeOfDay,
+        )
+    }
+
+    fun onPreviewCompleted() {
+        intent {
+            val ratePosition = state.pages.indexOf(OnboardingV3Page.RatePage)
+            if (ratePosition >= 0) {
+                val newPage = state.currentPage.copy(
+                    position = ratePosition,
+                    pageType = OnboardingV3Page.RatePage,
+                )
+                reduce { applyChromeForPage(state.copy(currentPage = newPage)) }
+            } else {
+                onNextPage()
+            }
         }
     }
 
@@ -283,6 +408,7 @@ data class OnboardingV3State(
     val timeOptions: List<IntroAnswerItem> = emptyList(),
     val scenes: List<IntroAnswerItem> = emptyList(),
     val selectedScenes: List<IntroAnswerItem> = emptyList(),
+    val notificationTimeOfDayConfig: TimeOfDayConfig = defaultTimeOfDayConfig(),
     val notificationSettings: List<OnboardingV3NotificationSetting> = defaultOnboardingV3NotificationSettings,
     val introAnswers: Map<String, IntroAnswerItem> = emptyMap(),
     val currentPage: OnboardingV3CurrentPage = OnboardingV3CurrentPage(),
@@ -290,9 +416,17 @@ data class OnboardingV3State(
     val isNextButtonVisible: Boolean = false,
     val isShellChromeVisible: Boolean = false,
     val selectedGoalId: String? = null,
+    val age: Int? = null,
     val name: String? = null,
     val email: String? = null,
+    val selectedPreviewType: OnboardingV3PreviewType = OnboardingV3PreviewType.Accompaniment,
 )
+
+enum class OnboardingV3PreviewType {
+    Accompaniment,
+    Meditation,
+    Soundscape,
+}
 
 enum class OnboardingV3NotificationSlot {
     Morning,
@@ -313,14 +447,41 @@ val defaultOnboardingV3NotificationSettings = listOf(
     OnboardingV3NotificationSetting(OnboardingV3NotificationSlot.Evening, enabled = true, hour = 20, minute = 0),
 )
 
+fun TimeOfDayConfig.isAllowedNotificationHour(
+    slot: OnboardingV3NotificationSlot,
+    hour: Int,
+): Boolean = when (slot) {
+    OnboardingV3NotificationSlot.Morning -> isMorningRange(hour)
+    OnboardingV3NotificationSlot.Daytime -> isDaytimeRange(hour)
+    OnboardingV3NotificationSlot.Evening -> isEveningRange(hour)
+}
+
 data class OnboardingV3CurrentPage(
     val position: Int = 0,
     val pageType: OnboardingV3Page = OnboardingV3Page.StartPage,
 )
 
 sealed class OnboardingV3SideEffect {
+    data object NavigateHome : OnboardingV3SideEffect()
+
     data class NavigateAudioPlayer(
         val accompanimentId: Int = 67,
         val timeOfDay: TimeOfDay = TimeOfDay.EVENING,
     ) : OnboardingV3SideEffect()
+
+    data class NavigatePreviewAudio(
+        val accompanimentId: Int,
+        val timeOfDay: TimeOfDay,
+    ) : OnboardingV3SideEffect()
+
+    data class NavigatePreviewMeditation(
+        val meditationId: Int,
+    ) : OnboardingV3SideEffect()
+
+    data class NavigatePreviewSoundscape(
+        val sceneId: Int,
+        val introSceneTimerSeconds: Int,
+    ) : OnboardingV3SideEffect()
 }
+
+private const val TAG = "OnboardingV3"

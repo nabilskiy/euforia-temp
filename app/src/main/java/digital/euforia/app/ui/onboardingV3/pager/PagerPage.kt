@@ -26,6 +26,7 @@ fun PagerPage(
                 titleRes = R.string.intro_v3_about_1_title,
                 bodyRes = R.string.intro_v3_about_1_body,
                 boldPartRes = R.string.intro_v3_about_1_bold,
+                voiceRes = R.raw.snd_intro_audio_session_female,
                 centerColor = Color(0xFFD69618),
                 edgeColor = Color(0xFF3D2A0A),
                 iconType = AboutIconType.Headphones,
@@ -37,6 +38,7 @@ fun PagerPage(
                 titleRes = R.string.intro_v3_about_2_title,
                 bodyRes = R.string.intro_v3_about_2_body,
                 boldPartRes = R.string.intro_v3_about_2_bold,
+                voiceRes = R.raw.snd_intro_meditation_female,
                 centerColor = Color(0xFF395BD3),
                 edgeColor = Color(0xFF0D1533),
                 iconType = AboutIconType.Meditation,
@@ -48,6 +50,7 @@ fun PagerPage(
                 titleRes = R.string.intro_v3_about_3_title,
                 bodyRes = R.string.intro_v3_about_3_body,
                 boldPartRes = R.string.intro_v3_about_3_bold,
+                voiceRes = R.raw.snd_intro_soundscape_female,
                 centerColor = Color(0xFFB1385F),
                 edgeColor = Color(0xFF2A0A14),
                 iconType = AboutIconType.Soundscapes,
@@ -106,9 +109,16 @@ fun PagerPage(
             isPageActive = isActive(),
         )
         OnboardingV3Page.DisclaimerPage -> DisclaimerPage(isPageActive = isActive())
-        OnboardingV3Page.AgePage -> AgePage(isPageActive = isActive())
+        OnboardingV3Page.AgePage -> AgePage(
+            selectedAge = state.age,
+            isPageActive = isActive(),
+            onAgeSelected = viewModel::onAgeSelected,
+        )
         OnboardingV3Page.SummaryPage -> SummaryPage(
             selectedGoal = state.goals.find { it.identifier == state.selectedGoalId },
+            selectedProgram = state.introAnswers[IntroAnswerKeys.PROGRAMS],
+            selectedScenes = state.selectedScenes,
+            age = state.age,
             isPageActive = isActive(),
             onNextClick = viewModel::onNextPage,
         )
@@ -120,8 +130,32 @@ fun PagerPage(
         )
         OnboardingV3Page.NotificationsSetupPage -> NotificationsSetupV3Page(
             settings = state.notificationSettings,
+            timeOfDayConfig = state.notificationTimeOfDayConfig,
             isPageActive = isActive(),
             onToggle = viewModel::onNotificationToggled,
+            onTimeChanged = viewModel::onNotificationTimeChanged,
+        )
+        OnboardingV3Page.LoadingPage -> LoadingV3Page(
+            isPageActive = isActive(),
+            onFinished = viewModel::onNextPage,
+        )
+        OnboardingV3Page.PaywallPage -> PaywallV3Page(
+            isPageActive = isActive(),
+            onNextClick = viewModel::onNextPage,
+        )
+        OnboardingV3Page.FirstExperiencePage -> FirstExperiencePage(
+            isPageActive = isActive(),
+            selectedPreviewType = state.selectedPreviewType,
+            onPreviewTypeSelected = viewModel::onPreviewTypeSelected,
+            onPlayNowClick = viewModel::onFirstExperiencePlayNow,
+        )
+        OnboardingV3Page.RatePage -> RateV3Page(
+            isPageActive = isActive(),
+            onSubmit = viewModel::onNextPage,
+        )
+        OnboardingV3Page.KeepExploringPage -> KeepExploringV3Page(
+            isPageActive = isActive(),
+            onFinished = viewModel::onNextPage,
         )
         else -> PlaceholderPage(page = pageType, isPageActive = isActive())
     }

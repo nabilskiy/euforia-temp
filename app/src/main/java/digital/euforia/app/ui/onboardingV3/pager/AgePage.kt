@@ -51,11 +51,16 @@ import kotlin.math.abs
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AgePage(isPageActive: Boolean) {
+fun AgePage(
+    selectedAge: Int?,
+    isPageActive: Boolean,
+    onAgeSelected: (Int) -> Unit,
+) {
     if (!isPageActive) return
 
     val locale = Locale.getDefault()
     val calendar = remember { Calendar.getInstance(locale) }
+    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
     val maxYear = remember { Calendar.getInstance().get(Calendar.YEAR) - 6 }
     val years = remember(maxYear) { (1900..maxYear).toList() }
     val months = remember(locale) {
@@ -66,7 +71,9 @@ fun AgePage(isPageActive: Boolean) {
 
     var selectedDay by remember { mutableIntStateOf(1) }
     var selectedMonth by remember { mutableIntStateOf(0) }
-    var selectedYear by remember { mutableIntStateOf(1990.coerceIn(1900, maxYear)) }
+    var selectedYear by remember {
+        mutableIntStateOf((currentYear - (selectedAge ?: 38)).coerceIn(1900, maxYear))
+    }
     val daysInMonth = remember(selectedMonth, selectedYear) {
         Calendar.getInstance().apply {
             set(Calendar.YEAR, selectedYear)
@@ -104,6 +111,9 @@ fun AgePage(isPageActive: Boolean) {
     PickerSelectionEffect(dayState, dayItems.size) { selectedDay = dayItems[it] }
     PickerSelectionEffect(monthState, months.size) { selectedMonth = it }
     PickerSelectionEffect(yearState, years.size) { selectedYear = years[it] }
+    LaunchedEffect(selectedYear) {
+        onAgeSelected((currentYear - selectedYear).coerceAtLeast(6))
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Box(

@@ -15,6 +15,9 @@ class GetOnboardingV3PagesUseCase @Inject constructor(
         defaultOnboardingV3Pages.filter { page ->
             when (page) {
                 OnboardingV3Page.GoalFeedbackPage -> true // runtime: only if goal selected (VM)
+                OnboardingV3Page.LoadingPage,
+                OnboardingV3Page.PaywallPage,
+                OnboardingV3Page.KeepExploringPage -> true // matches iOS: new terminal steps bypass step_show RC
                 else -> remoteConfigFetcher.getIntroStepShow(page.stepId)
             }
         }

@@ -6,6 +6,8 @@ import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.programs.publication.PublicationType
 import kotlinx.serialization.Serializable
 
+const val ONBOARDING_PREVIEW_DONE_RESULT_KEY = "onboarding_preview_done"
+
 @Serializable
 @Keep
 data class Splash(val deepLinkUri: String? = null) : HomeDestination()
@@ -55,6 +57,8 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val playlistId: Int? = null,
         /** Room `soundscape_presets.id` when opened via `mysaved/{id}` deep link; [sceneId] remains the synthetic copy id. */
         val savedId: Int? = null,
+        val isOnboardingPreview: Boolean = false,
+        val introSceneTimerSeconds: Int = 600,
     ) : HomeDestination(showNavBar = false)
 
     @Serializable
@@ -72,7 +76,8 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     data class AudioPlayer(
         val accompanimentId: Int,
         val timeOfDay: TimeOfDay,
-        val entryPoint: AudioPlayerEntryPoint
+        val entryPoint: AudioPlayerEntryPoint,
+        val isOnboardingPreview: Boolean = false,
     ) : HomeDestination()
 
     @Serializable
@@ -183,6 +188,7 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
     data class PublicationPlayer(
         val id: Int,
         val publicationType: PublicationType,
+        val isOnboardingPreview: Boolean = false,
     ) : HomeDestination(showNavBar = false)
 
     @Serializable

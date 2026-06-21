@@ -71,6 +71,8 @@ class SoundscapeSceneViewModel @Inject constructor(
 ) : ViewModel(), ContainerHost<SoundscapeSceneState, SoundscapeSceneSideEffect> {
     private val sceneId: Int = savedStateHandle["sceneId"] ?: 0
     private val playlistId: Int? = savedStateHandle["playlistId"]
+    val isOnboardingPreview: Boolean = savedStateHandle["isOnboardingPreview"] ?: false
+    val introSceneTimerSeconds: Int = savedStateHandle["introSceneTimerSeconds"] ?: 600
     private val openedPresetId: Int? = presetIdFromCopySceneId(sceneId)
     private var sceneCategoryAliasesById: Map<Int, String> = emptyMap()
 
@@ -147,7 +149,7 @@ class SoundscapeSceneViewModel @Inject constructor(
                 return@intent
             }
             val isPremium = profilePreferences.getIsPremium()
-            if (scene.pro && !isPremium) {
+            if (scene.pro && !isPremium && !isOnboardingPreview) {
                 postSideEffect(SoundscapeSceneSideEffect.NavigateToPaywall)
                 return@intent
             }
@@ -533,6 +535,15 @@ class SoundscapeSceneViewModel @Inject constructor(
     }
 
     fun onPlayPause() = playbackController.playPause()
+
+    fun onSetPlaying(playing: Boolean) {
+        playbackController.setPlaying(playing)
+    }
+
+    fun onStopPlayback(fadeOut: Boolean = true) {
+        playbackController.stop(fadeOut)
+    }
+
     fun onLayerVolume(layerKey: String, volume: Float) {
         analyticSender.soundscapeLayerVolumeChanged(layerKey = layerKey, volume = volume)
         playbackController.setLayerVolume(layerKey, volume)
