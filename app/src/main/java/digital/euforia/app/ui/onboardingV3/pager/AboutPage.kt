@@ -43,6 +43,7 @@ import digital.euforia.app.R
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.MediaPlayerHelper
+import kotlinx.coroutines.delay
 
 data class AboutPageConfig(
     val titleRes: Int,
@@ -90,6 +91,8 @@ fun AboutPage(
     }
 
     LaunchedEffect(config.voiceRes) {
+        // Wait until the outgoing page is disposed so its cleanup doesn't cut the new voice.
+        delay(360)
         MediaPlayerHelper.play(context, config.voiceRes)
     }
 

@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -75,6 +77,7 @@ fun ScenesPreviewPage(
     if (!isPageActive) return
 
     var sceneIndex by remember { mutableIntStateOf(0) }
+    var hasRenderedFirstFrame by remember { mutableStateOf(false) }
     var sceneAudioPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     val currentSceneAudioPlayer = rememberUpdatedState(sceneAudioPlayer)
     val appearance = remember { Animatable(0f) }
@@ -137,11 +140,20 @@ fun ScenesPreviewPage(
     val titleAppear = scenesIntroStagger(appearance.value, start = 0f, end = 0.65f)
     val bodyAppear = scenesIntroStagger(appearance.value, start = 0.12f, end = 0.78f)
     val localizedRes = LocalLocalizedRes.current
+    val videoAlpha by animateFloatAsState(
+        targetValue = if (hasRenderedFirstFrame) 1f else 0f,
+        animationSpec = tween(durationMillis = 220),
+        label = "scenesPreviewFirstFrameAlpha",
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
+        ScenesPreviewWarmFallback()
+
         AnimatedContent(
             targetState = sceneIndex,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = videoAlpha },
             transitionSpec = {
                 fadeIn(tween(SCENE_TRANSITION_MS)) togetherWith
                         fadeOut(tween(SCENE_TRANSITION_MS)) using
@@ -149,7 +161,10 @@ fun ScenesPreviewPage(
             },
             label = "scenesPreviewVideo",
         ) { index ->
-            SceneVideoBackground(player = scenePlayers[index])
+            SceneVideoBackground(
+                player = scenePlayers[index],
+                onFirstFrameRendered = { hasRenderedFirstFrame = true },
+            )
         }
 
         Box(
@@ -234,14 +249,29 @@ fun ScenesPreviewPage(
 }
 
 @Composable
-private fun SceneVideoBackground(player: ExoPlayer) {
+private fun SceneVideoBackground(
+    player: ExoPlayer,
+    onFirstFrameRendered: () -> Unit,
+) {
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+            override fun onRenderedFirstFrame() {
+                onFirstFrameRendered()
+            }
+        }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener) }
+    }
+
     AndroidView(
         factory = { ctx ->
             LayoutInflater.from(ctx).inflate(R.layout.player_view_texture, null, false).also { root ->
+                root.setBackgroundColor(android.graphics.Color.TRANSPARENT)
                 root.findViewById<PlayerView>(R.id.player_view).apply {
                     this.player = player
                     useController = false
                     resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
                     setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
                     setKeepContentOnPlayerReset(true)
                 }
@@ -251,6 +281,24 @@ private fun SceneVideoBackground(player: ExoPlayer) {
             root.findViewById<PlayerView>(R.id.player_view).player = player
         },
         modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@Composable
+private fun ScenesPreviewWarmFallback() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0.00f to Color(0xFFE4D2B8),
+                        0.34f to Color(0xFFA86A3D),
+                        0.68f to Color(0xFF4E1A12),
+                        1.00f to Color(0xFF030713),
+                    ),
+                ),
+            ),
     )
 }
 

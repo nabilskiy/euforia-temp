@@ -99,7 +99,7 @@ fun KeepExploringV3Page(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF18191D))
-            .padding(horizontal = 36.dp),
+            .padding(horizontal = 28.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -107,8 +107,8 @@ fun KeepExploringV3Page(
             color = White,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.displayMedium.copy(
-                fontSize = 45.sp,
-                lineHeight = 58.sp,
+                fontSize = 38.sp,
+                lineHeight = 49.sp,
                 fontWeight = FontWeight.Bold,
             ),
             modifier = Modifier

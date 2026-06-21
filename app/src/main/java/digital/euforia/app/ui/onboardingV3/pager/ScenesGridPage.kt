@@ -71,17 +71,20 @@ fun ScenesGridPage(
         verticalArrangement = Arrangement.spacedBy(30.dp),
         contentPadding = PaddingValues(
             start = 28.dp,
-            top = 205.dp,
+            top = 238.dp,
             end = 28.dp,
             bottom = 150.dp,
         ),
     ) {
         itemsIndexed(scenes, key = { _, scene -> scene.identifier }) { index, scene ->
+            val isSelected = selectedScenes.any { it.identifier == scene.identifier }
+            val isDisabled = selectedScenes.size >= MAX_SELECTED_SCENES && !isSelected
             SceneCard(
                 index = index,
                 scene = scene,
-                isSelected = selectedScenes.any { it.identifier == scene.identifier },
-                onClick = { onSceneSelected(scene) },
+                isSelected = isSelected,
+                isDisabled = isDisabled,
+                onClick = if (isDisabled) null else ({ onSceneSelected(scene) }),
             )
         }
         item {
@@ -96,7 +99,8 @@ private fun SceneCard(
     index: Int,
     scene: IntroAnswerItem,
     isSelected: Boolean,
-    onClick: () -> Unit,
+    isDisabled: Boolean,
+    onClick: (() -> Unit)?,
 ) {
     val shape = RoundedCornerShape(20.dp)
     val appear = remember(scene.identifier) { Animatable(0f) }
@@ -119,7 +123,7 @@ private fun SceneCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer {
-                    alpha = appear.value
+                    alpha = appear.value * if (isDisabled) 0.35f else 1f
                     translationY = (1f - appear.value) * startOffsetY
                     scaleX = 0.8f + appear.value * 0.2f
                     scaleY = 0.8f + appear.value * 0.2f
@@ -152,6 +156,7 @@ private fun SceneCard(
                 }
                 SelectionBadge(
                     isSelected = isSelected,
+                    isDisabled = isDisabled,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(10.dp),
@@ -202,6 +207,7 @@ private fun SceneCard(
 @Composable
 private fun SelectionBadge(
     isSelected: Boolean,
+    isDisabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -213,7 +219,11 @@ private fun SelectionBadge(
             )
             .border(
                 width = 2.dp,
-                color = if (isSelected) White else White.copy(alpha = 0.75f),
+                color = when {
+                    isSelected -> White
+                    isDisabled -> White.copy(alpha = 0.28f)
+                    else -> White.copy(alpha = 0.75f)
+                },
                 shape = CircleShape,
             ),
         contentAlignment = Alignment.Center,
@@ -228,6 +238,8 @@ private fun SelectionBadge(
         }
     }
 }
+
+private const val MAX_SELECTED_SCENES = 3
 
 @Composable
 private fun String.drawableResourceId(): Int {

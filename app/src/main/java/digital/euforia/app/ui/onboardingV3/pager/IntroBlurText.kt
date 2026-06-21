@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 
 internal const val INTRO_TEXT_TRANSITION_MS = 1_000
 internal const val INTRO_TEXT_HOLD_MS = 2_600
-internal const val INTRO_BRAND_LETTER_MS = 3_000
+internal const val INTRO_BRAND_REVEAL_MS = 1_800
 internal const val INTRO_BEFORE_LAST_TEXT_MS = 1_000
 internal const val INTRO_SHOW_BUTTONS_MS = 1_000
 

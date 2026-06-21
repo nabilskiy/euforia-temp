@@ -230,7 +230,10 @@ private fun OnboardingV3Content(
             )
         }
 
-        if (!chromePage.hidesShellChrome && chromePage != OnboardingV3Page.StartPage) {
+        val shouldShowFooter = !chromePage.hidesShellChrome &&
+                chromePage != OnboardingV3Page.StartPage &&
+                (!chromePage.requiresSelectionBeforeNext || state.isNextEnabled)
+        if (shouldShowFooter) {
             V3Footer(
                 isTermsShown = false,
                 isButtonEnabled = state.isNextEnabled,
@@ -294,6 +297,17 @@ private val OnboardingV3Page.topBarSubtitleRes: Int?
     get() = when (this) {
         OnboardingV3Page.AgePage -> R.string.intro_age_info
         else -> null
+    }
+
+private val OnboardingV3Page.requiresSelectionBeforeNext: Boolean
+    get() = when (this) {
+        OnboardingV3Page.GoalsPage,
+        OnboardingV3Page.ProgramsPage,
+        OnboardingV3Page.DailyCommitmentPage,
+        OnboardingV3Page.TimePage,
+        OnboardingV3Page.ScenesPage -> true
+
+        else -> false
     }
 
 @Composable

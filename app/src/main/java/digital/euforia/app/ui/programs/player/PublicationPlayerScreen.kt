@@ -21,10 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -83,6 +85,7 @@ import digital.euforia.app.ui.theme.DarkGray
 import digital.euforia.app.ui.theme.NavBarBackground
 import digital.euforia.app.ui.theme.PrimaryBackground
 import digital.euforia.app.ui.theme.White
+import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.formatDuration
 import digital.euforia.app.ui.util.sharePublication
@@ -196,6 +199,7 @@ private fun PublicationPlayerContent(
 
     if (videoUrl.isNullOrBlank()) return
     var showSheet by remember { mutableStateOf(false) }
+    var showPreviewCloseDialog by remember { mutableStateOf(false) }
     val playlistSheetState = remember { mutableStateOf(false) }
     var volume by remember { mutableFloatStateOf(0.35f) }
 
@@ -248,7 +252,8 @@ private fun PublicationPlayerContent(
                 onClose = {
                     onCloseClick()
                     if (isOnboardingPreview) {
-                        onOnboardingPreviewClose()
+                        controllerPlayer?.pause()
+                        showPreviewCloseDialog = true
                     } else {
                         navController.popBackStack()
                     }
@@ -278,11 +283,40 @@ private fun PublicationPlayerContent(
                 },
                 onFavouriteClick = onFavouriteClick,
                 onSeek = onSeek,
+                isOnboardingPreview = isOnboardingPreview,
                 isVolumeSheetVisible = showSheet
             )
         }
 
-        if (playlistSheetState.value && playlist != null && publicationInfo != null) {
+        if (showPreviewCloseDialog) {
+            val localizedRes = LocalLocalizedRes.current
+            AlertDialog(
+                onDismissRequest = {
+                    showPreviewCloseDialog = false
+                    controllerPlayer?.play()
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showPreviewCloseDialog = false
+                        onOnboardingPreviewClose()
+                    }) {
+                        Text(text = localizedRes.string(R.string.intro_preview_close_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showPreviewCloseDialog = false
+                        controllerPlayer?.play()
+                    }) {
+                        Text(text = localizedRes.string(R.string.intro_preview_close_cancel))
+                    }
+                },
+                title = { Text(text = localizedRes.string(R.string.intro_preview_close_title)) },
+                text = { Text(text = localizedRes.string(R.string.intro_preview_close_message)) },
+            )
+        }
+
+        if (playlistSheetState.value && playlist != null) {
             PlaylistBottomSheet(
                 playlist = playlist,
                 selectedPublicationId = currentMediaId ?: publicationInfo.id,
@@ -325,6 +359,7 @@ private fun ExerciseVideoPlayer(
     onPlaylistClick: () -> Unit,
     onFavouriteClick: (PublicationInfo) -> Unit,
     onSeek: () -> Unit,
+    isOnboardingPreview: Boolean,
     isVolumeSheetVisible: Boolean = false,
 ) {
     val context = LocalContext.current
@@ -576,7 +611,8 @@ private fun ExerciseVideoPlayer(
                         interactionTick++
                     }
                 },
-                onSeek = onSeek
+                onSeek = onSeek,
+                isOnboardingPreview = isOnboardingPreview,
             )
         }
     }
@@ -611,6 +647,7 @@ private fun BoxScope.PlayerControlsOverlay(
     onFavouriteClick: (PublicationInfo) -> Unit,
     onScrubbingChange: (Boolean) -> Unit,
     onSeek: () -> Unit,
+    isOnboardingPreview: Boolean,
 ) {
     val context = LocalContext.current
     var durationMs by remember {
@@ -660,7 +697,8 @@ private fun BoxScope.PlayerControlsOverlay(
             onToggleFullscreen = {
                 onUserInteraction(); onToggleFullscreen()
             },
-            onFavouriteClick = onFavouriteClick
+            onFavouriteClick = onFavouriteClick,
+            isOnboardingPreview = isOnboardingPreview,
         )
 
         PlayPauseButton(
@@ -807,8 +845,10 @@ private fun BoxScope.ControlsTopBar(
     onClose: () -> Unit,
     onToggleFullscreen: () -> Unit,
     onFavouriteClick: (PublicationInfo) -> Unit,
+    isOnboardingPreview: Boolean,
 ) {
     val context = LocalContext.current
+    val localizedRes = LocalLocalizedRes.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -824,13 +864,27 @@ private fun BoxScope.ControlsTopBar(
                 tint = White
             )
         }
-        Text(
-            text = title,
-            color = White,
-            modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
-            textAlign = TextAlign.Center,
-        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = title,
+                color = White,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = SemiBold),
+                textAlign = TextAlign.Center,
+            )
+            if (isOnboardingPreview) {
+                Text(
+                    text = localizedRes.string(R.string.audio_scene_preview_mode),
+                    color = White.copy(alpha = 0.55f),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (isLandscape) {
                 IconButton(onClick = onToggleFullscreen) {
@@ -841,19 +895,23 @@ private fun BoxScope.ControlsTopBar(
                     )
                 }
             }
-            PublicationOptionMenu(
-                isFavourite = publicationInfo.isFavourite,
-                expanded = isOptionsExpanded,
-                onExpandedChange = onOptionsExpandedChange,
-                onAddFavouriteClick = { onFavouriteClick(publicationInfo) },
-                onShareClick = {
-                    sharePublication(
-                        context = context,
-                        publicationType = publicationInfo.publicationType,
-                        id = publicationInfo.id
-                    )
-                },
-            )
+            if (isOnboardingPreview) {
+                Box(modifier = Modifier.size(48.dp))
+            } else {
+                PublicationOptionMenu(
+                    isFavourite = publicationInfo.isFavourite,
+                    expanded = isOptionsExpanded,
+                    onExpandedChange = onOptionsExpandedChange,
+                    onAddFavouriteClick = { onFavouriteClick(publicationInfo) },
+                    onShareClick = {
+                        sharePublication(
+                            context = context,
+                            publicationType = publicationInfo.publicationType,
+                            id = publicationInfo.id
+                        )
+                    },
+                )
+            }
         }
     }
 }

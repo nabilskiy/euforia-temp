@@ -1,6 +1,7 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,8 +43,13 @@ fun SocialProofPage(isPageActive: Boolean) {
     val localizedRes = LocalLocalizedRes.current
     val appear = remember { Animatable(0f) }
 
-    LaunchedEffect(Unit) {
-        appear.animateTo(1f, tween(700))
+    LaunchedEffect(isPageActive) {
+        if (!isPageActive) return@LaunchedEffect
+        appear.snapTo(0f)
+        appear.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 950, easing = FastOutSlowInEasing),
+        )
     }
 
     Column(
@@ -79,6 +85,7 @@ fun SocialProofPage(isPageActive: Boolean) {
                 .introProofAppear(appear.value, 0.15f),
         )
         SocialProofCard(
+            progress = appear.value,
             modifier = Modifier
                 .padding(top = 18.dp)
                 .introProofAppear(appear.value, 0.3f),
@@ -87,7 +94,10 @@ fun SocialProofPage(isPageActive: Boolean) {
 }
 
 @Composable
-private fun SocialProofCard(modifier: Modifier = Modifier) {
+private fun SocialProofCard(
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
     val localizedRes = LocalLocalizedRes.current
 
     Column(
@@ -107,15 +117,17 @@ private fun SocialProofCard(modifier: Modifier = Modifier) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(RoundedCornerShape(10.dp)),
+                    .clip(RoundedCornerShape(10.dp))
+                    .introProofAppear(progress, 0.40f),
             )
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(5) {
+                    repeat(5) { index ->
                         Text(
                             text = "★",
                             color = Color(0xFFFFD214),
                             style = MaterialTheme.typography.headlineSmall.copy(fontSize = 32.sp),
+                            modifier = Modifier.introProofAppear(progress, 0.48f + index * 0.04f),
                         )
                     }
                 }
@@ -123,6 +135,7 @@ private fun SocialProofCard(modifier: Modifier = Modifier) {
                     text = localizedRes.string(R.string.intro_social_proof_step_user_name),
                     color = White.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                    modifier = Modifier.introProofAppear(progress, 0.58f),
                 )
             }
         }
@@ -136,6 +149,7 @@ private fun SocialProofCard(modifier: Modifier = Modifier) {
                 lineHeight = 31.sp,
                 fontWeight = FontWeight.Normal,
             ),
+            modifier = Modifier.introProofAppear(progress, 0.66f),
         )
     }
 }
@@ -144,8 +158,8 @@ private fun Modifier.introProofAppear(progress: Float, delayFraction: Float): Mo
     val value = ((progress - delayFraction) / (1f - delayFraction)).coerceIn(0f, 1f)
     return graphicsLayer {
         alpha = value
-        translationY = (1f - value) * 22f
-        scaleX = 0.98f + value * 0.02f
-        scaleY = 0.98f + value * 0.02f
+        translationY = (1f - value) * 38f
+        scaleX = 0.96f + value * 0.04f
+        scaleY = 0.96f + value * 0.04f
     }
 }

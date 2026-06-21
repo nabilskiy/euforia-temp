@@ -461,7 +461,7 @@ private fun SummaryGraph(
 
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val graphTop = 10.dp.toPx()
+            val graphTop = 36.dp.toPx()
             val lineWidth = 5.dp.toPx()
             val scaleX = size.width / 404f
             val baseSamples = summaryGraphSamples()
@@ -550,6 +550,11 @@ private fun SummaryGraphLabels(
                 if (isDirectionUp) progress else progress
             }
             val appear = ((dotsProgress - index * 0.2f) / 0.6f).coerceIn(0f, 1f)
+            val titleOffsetY = when (index) {
+                0 -> if (isDirectionUp) 96.dp else 0.dp
+                1 -> 54.dp
+                else -> if (isDirectionUp) 0.dp else 96.dp
+            }
             Text(
                 text = dot.title,
                 color = White,
@@ -560,11 +565,7 @@ private fun SummaryGraphLabels(
                     .graphicsLayer {
                         alpha = appear
                         translationX = (x - 0.5f) * size.width
-                        translationY = when (index) {
-                            0 -> 96.dp.toPx()
-                            1 -> 54.dp.toPx()
-                            else -> 0.dp.toPx()
-                        }
+                        translationY = titleOffsetY.toPx()
                     },
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontSize = 16.sp,

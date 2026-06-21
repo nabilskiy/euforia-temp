@@ -17,3 +17,4 @@ local.properties
 /euforia.properties
 /app/keystore.jks
 /ios
+/ctx 

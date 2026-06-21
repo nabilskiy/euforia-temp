@@ -59,7 +59,7 @@ fun SingleChoiceQuestionPage(
         verticalArrangement = spacedBy(18.dp),
         contentPadding = PaddingValues(
             start = 18.dp,
-            top = 192.dp,
+            top = 230.dp,
             end = 18.dp,
             bottom = 132.dp,
         ),

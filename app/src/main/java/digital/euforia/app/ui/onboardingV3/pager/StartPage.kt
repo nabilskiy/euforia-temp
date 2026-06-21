@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import androidx.annotation.RawRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -15,19 +16,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +57,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import digital.euforia.app.R
 import digital.euforia.app.ui.onboardingV3.OnboardingV3ViewModel
+import digital.euforia.app.ui.theme.Inter
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.MediaPlayerHelper
@@ -72,7 +75,7 @@ private const val BRAND_TEXT = "EUFORIA"
 
 private data class IntroVoiceText(
     val text: String,
-    @RawRes val voiceRes: Int,
+    @param:RawRes val voiceRes: Int,
 )
 
 @Composable
@@ -111,10 +114,11 @@ fun StartPage(
     var displayText by remember { mutableStateOf("") }
     var isLargeText by remember { mutableStateOf(true) }
     var showsBloom by remember { mutableStateOf(false) }
-    var brandVisibleChars by remember { mutableIntStateOf(0) }
+    var isBrandVisible by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(false) }
 
     val bloomProgress = remember { Animatable(0f) }
+    val brandProgress = remember { Animatable(0f) }
     val contentOffsetY = remember { Animatable(0f) }
 
     val mainFontSize = if (isLargeText) 35.sp else 20.sp
@@ -125,12 +129,13 @@ fun StartPage(
         displayText = ""
         isLargeText = true
         showsBloom = false
-        brandVisibleChars = 0
+        isBrandVisible = false
         showControls = false
         blurAnim.alpha.snapTo(1f)
         blurAnim.scale.snapTo(1f)
         blurAnim.blurRadius.snapTo(0f)
         bloomProgress.snapTo(0f)
+        brandProgress.snapTo(0f)
         contentOffsetY.snapTo(0f)
 
         for (item in introTexts) {
@@ -147,16 +152,20 @@ fun StartPage(
         showIntroText(blurAnim, text = "", onTextChanged = { displayText = it }, holdAfterShow = false)
 
         showsBloom = true
-        bloomProgress.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(durationMillis = 1_000, easing = LinearOutSlowInEasing),
-        )
-
-        val letterDelay = INTRO_BRAND_LETTER_MS / BRAND_TEXT.length
-        for (i in 1..BRAND_TEXT.length) {
-            if (!isActive) return@LaunchedEffect
-            brandVisibleChars = i
-            delay(letterDelay.toLong())
+        isBrandVisible = true
+        coroutineScope {
+            launch {
+                bloomProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 1_000, easing = LinearOutSlowInEasing),
+                )
+            }
+            launch {
+                brandProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = INTRO_BRAND_REVEAL_MS, easing = LinearEasing),
+                )
+            }
         }
 
         isLargeText = false
@@ -198,7 +207,7 @@ fun StartPage(
     ) {
         StartIosLikeBackground()
 
-        if (!showsBloom && brandVisibleChars == 0) {
+        if (!showsBloom && !isBrandVisible) {
             IntroBlurText(
                 text = displayText,
                 animState = blurAnim,
@@ -228,17 +237,10 @@ fun StartPage(
                     }
                 }
 
-                if (brandVisibleChars > 0) {
-                    Text(
-                        text = BRAND_TEXT.take(brandVisibleChars),
-                        color = White,
-                        fontSize = 50.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 4.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.graphicsLayer {
-                            alpha = bloomProgress.value.coerceIn(0f, 1f)
-                        },
+                if (isBrandVisible) {
+                    IntroBrandText(
+                        progress = brandProgress.value,
+                        modifier = Modifier.height(60.dp),
                     )
                 }
 
@@ -281,6 +283,36 @@ fun StartPage(
                     onTermsClick = viewModel::onTermsClicked,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun IntroBrandText(
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BRAND_TEXT.forEachIndexed { index, letter ->
+            val letterProgress = ((progress * BRAND_TEXT.length) - index).coerceIn(0f, 1f)
+            Text(
+                text = letter.toString(),
+                color = White,
+                fontSize = 54.sp,
+                fontFamily = Inter,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier
+                    .graphicsLayer {
+                        alpha = letterProgress
+                        scaleX = 0.8f + letterProgress * 0.2f
+                        scaleY = 0.8f + letterProgress * 0.2f
+                    }
+                    .blur(((1f - letterProgress) * 20f).dp),
+            )
         }
     }
 }

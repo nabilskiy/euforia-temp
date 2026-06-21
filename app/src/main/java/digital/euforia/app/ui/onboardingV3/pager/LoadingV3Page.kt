@@ -74,7 +74,7 @@ fun LoadingV3Page(
     val contentAppear = remember { Animatable(0f) }
     val playState = if (phase == LoadingV3Phase.Preparing) PlayState.LOADING else PlayState.LOADED
     val animationPadding by animateDpAsState(
-        targetValue = if (phase == LoadingV3Phase.Ready) 180.dp else 0.dp,
+        targetValue = if (phase == LoadingV3Phase.Ready) 0.dp else 180.dp,
         animationSpec = tween(durationMillis = 2_000),
         label = "loadingV3AnimationPadding",
     )
