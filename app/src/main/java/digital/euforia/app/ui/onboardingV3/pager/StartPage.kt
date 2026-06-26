@@ -51,12 +51,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import digital.euforia.app.R
+import digital.euforia.app.ui.onboardingV3.components.V3PrimaryButton
 import digital.euforia.app.ui.onboardingV3.OnboardingV3ViewModel
 import digital.euforia.app.ui.theme.Inter
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.MediaPlayerHelper
-import digital.euforia.app.ui.util.widget.AnimatedSizeButton
 import digital.euforia.app.ui.util.widget.TermsAndPrivacyText
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -191,10 +191,10 @@ fun StartPage(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF171724),
-                        Color(0xFF111827),
-                        Color(0xFF0D1320),
+                    colorStops = arrayOf(
+                        0.0f to Color(0xFF161821),
+                        0.56f to Color(0xFF11141D),
+                        1.0f to Color(0xFF0C1018),
                     ),
                 ),
             ),
@@ -265,10 +265,9 @@ fun StartPage(
                     .padding(horizontal = 24.dp, vertical = 30.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                AnimatedSizeButton(
+                V3PrimaryButton(
                     text = localizedRes.string(R.string.intro_v3_start_button),
                     isEnabled = true,
-                    isVisible = true,
                     onClick = { viewModel.onStartFlowCompleted() },
                 )
                 TermsAndPrivacyText(
@@ -357,13 +356,13 @@ private fun StartIosLikeBackground() {
     ) {
         // Matches iOS IntroStartViewController: CirclesView(colors purple/blue, alpha 0.1)
         // plus a subtle full-screen GlassView-like vignette.
-        val firstCenter = Offset(x = size.width * 0.20f, y = size.height * 0.36f)
-        val firstRadius = size.maxDimension * 0.55f
+        val firstCenter = Offset(x = size.width * 0.15f, y = size.height * 0.34f)
+        val firstRadius = size.maxDimension * 0.62f
         drawCircle(
             brush = Brush.radialGradient(
                 colorStops = arrayOf(
-                    0.0f to Color(0xFF9933A2).copy(alpha = 0.10f),
-                    0.45f to Color(0xFF9933A2).copy(alpha = 0.045f),
+                    0.0f to Color(0xFF9934A2).copy(alpha = 0.12f),
+                    0.42f to Color(0xFF9934A2).copy(alpha = 0.055f),
                     1.0f to Color.Transparent,
                 ),
                 center = firstCenter,
@@ -373,13 +372,13 @@ private fun StartIosLikeBackground() {
             center = firstCenter,
             blendMode = BlendMode.Screen,
         )
-        val secondCenter = Offset(x = size.width * 0.78f, y = size.height * 0.52f)
-        val secondRadius = size.maxDimension * 0.58f
+        val secondCenter = Offset(x = size.width * 0.82f, y = size.height * 0.50f)
+        val secondRadius = size.maxDimension * 0.64f
         drawCircle(
             brush = Brush.radialGradient(
                 colorStops = arrayOf(
-                    0.0f to Color(0xFF0C42AE).copy(alpha = 0.10f),
-                    0.48f to Color(0xFF0C42AE).copy(alpha = 0.045f),
+                    0.0f to Color(0xFF0C42AE).copy(alpha = 0.12f),
+                    0.46f to Color(0xFF0C42AE).copy(alpha = 0.055f),
                     1.0f to Color.Transparent,
                 ),
                 center = secondCenter,
@@ -392,10 +391,10 @@ private fun StartIosLikeBackground() {
         drawRect(
             brush = Brush.verticalGradient(
                 colorStops = arrayOf(
-                    0.0f to Color.White.copy(alpha = 0.018f),
-                    0.34f to Color.Transparent,
-                    0.72f to Color.Black.copy(alpha = 0.035f),
-                    1.0f to Color.Black.copy(alpha = 0.08f),
+                    0.0f to Color.White.copy(alpha = 0.012f),
+                    0.36f to Color.Transparent,
+                    0.74f to Color.Black.copy(alpha = 0.04f),
+                    1.0f to Color.Black.copy(alpha = 0.11f),
                 ),
             ),
         )

@@ -166,6 +166,16 @@
     <string name="intro_final_listen_welcome">Використовуйте навушники</string>
     <string name="intro_final_title">Підготовка Вашої Euforia...</string>
     <string name="intro_final_subtitle">Це займе кілька секунд</string>
+    <string name="intro_final_timer_schedule">Запланувати</string>
+    <string name="intro_final_timer_today">Сьогодні</string>
+    <string name="intro_final_timer_tomorrow">Завтра</string>
+    <string name="intro_final_scheduled_title">До зустрічі %1$s о %2$s</string>
+    <string name="intro_final_scheduled_subtitle">Ми нагадаємо Вам, коли настане час першого досвіду Euforia.</string>
+    <string name="intro_final_scheduled_proceed">Перейти до застосунку</string>
+    <string name="intro_final_scheduled_cancel">Скасувати нагадування</string>
+    <string name="intro_first_experience_reminder_notification_text">Ваш перший досвід Euforia готовий.</string>
+    <string name="intro_first_experience_reminder_channel_name">Нагадування першого досвіду</string>
+    <string name="intro_first_experience_reminder_channel_description">Нагадування для продовження Вашого першого досвіду Euforia</string>
 
     <!-- Purchases -->
     <string name="restore_purchases">Відновити покупки</string>

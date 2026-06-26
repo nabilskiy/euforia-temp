@@ -21,5 +21,17 @@ interface NotificationScheduler {
         days: Int
     )
 
+    fun scheduleFirstExperienceReminder(
+        triggerAtMillis: Long,
+        previewType: String,
+        entityId: Int?,
+        accompanimentId: Int?,
+        timeOfDay: String?,
+        sceneTimerSeconds: Int,
+        imageUrl: String?
+    )
+
     fun cancel(type: NotificationType)
+
+    fun cancelFirstExperienceReminder()
 }

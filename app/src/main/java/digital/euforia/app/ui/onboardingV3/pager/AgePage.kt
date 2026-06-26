@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -32,9 +32,12 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,12 +45,12 @@ import digital.euforia.app.ui.theme.BottomSheetBackground
 import digital.euforia.app.ui.theme.White
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.min
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -92,25 +95,35 @@ fun AgePage(
     val itemHeight = 46.dp
     val pickerHeight = 216.dp
     val verticalPad = (pickerHeight - itemHeight) / 2
-    val dayState = rememberLazyListState()
-    val monthState = rememberLazyListState()
-    val yearState = rememberLazyListState()
+    val dayState = rememberCircularWheelState(selectedDay - 1, dayItems.size)
+    val monthState = rememberCircularWheelState(selectedMonth, months.size)
+    val yearState = rememberCircularWheelState((selectedYear - years.first()).coerceIn(0, years.lastIndex), years.size)
     val density = LocalDensity.current
+    val hapticFeedback = LocalHapticFeedback.current
 
-    LaunchedEffect(daysInMonth, selectedYear) {
-        delay(32)
+    LaunchedEffect(selectedMonth, selectedYear, daysInMonth) {
+        delay(80)
         val itemPx = with(density) { itemHeight.roundToPx() }
         val dayOffset = dayState.centerOffsetFor(itemPx)
-        val monthOffset = monthState.centerOffsetFor(itemPx)
-        val yearOffset = yearState.centerOffsetFor(itemPx)
-        dayState.scrollToItem((selectedDay - 1).coerceIn(0, daysInMonth - 1), dayOffset)
-        monthState.scrollToItem(selectedMonth.coerceIn(0, 11), monthOffset)
-        yearState.scrollToItem((selectedYear - years.first()).coerceIn(0, years.lastIndex), yearOffset)
+        val targetDayIndex = (selectedDay - 1).coerceIn(0, daysInMonth - 1)
+        dayState.scrollToItem(
+            index = dayState.nearestCircularIndex(targetDayIndex, daysInMonth),
+            scrollOffset = dayOffset,
+        )
     }
 
-    PickerSelectionEffect(dayState, dayItems.size) { selectedDay = dayItems[it] }
-    PickerSelectionEffect(monthState, months.size) { selectedMonth = it }
-    PickerSelectionEffect(yearState, years.size) { selectedYear = years[it] }
+    PickerSelectionEffect(dayState, dayItems.size) {
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        selectedDay = dayItems[it]
+    }
+    PickerSelectionEffect(monthState, months.size) {
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        selectedMonth = it
+    }
+    PickerSelectionEffect(yearState, years.size) {
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        selectedYear = years[it]
+    }
     LaunchedEffect(selectedYear) {
         onAgeSelected((currentYear - selectedYear).coerceAtLeast(6))
     }
@@ -147,7 +160,7 @@ fun AgePage(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(278.dp)
                 .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                 .background(BottomSheetBackground),
         ) {
@@ -164,7 +177,7 @@ fun AgePage(
                         .height(48.dp)
                         .align(Alignment.Center)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(White.copy(alpha = 0.12f)),
+                        .background(White.copy(alpha = 0.10f)),
                 )
                 Row(
                     modifier = Modifier
@@ -207,12 +220,20 @@ private fun PickerSelectionEffect(
     onSelected: (Int) -> Unit,
 ) {
     LaunchedEffect(listState, itemCount) {
-        snapshotFlow { listState.isScrollInProgress }
+        var isInitialEmission = true
+        snapshotFlow { listState.centeredItemIndex()?.floorMod(itemCount) }
             .distinctUntilChanged()
-            .filter { !it }
-            .collect {
-                delay(48)
-                val idx = listState.centeredItemIndex()?.coerceIn(0, itemCount - 1) ?: return@collect
+            .collect { idx ->
+                idx ?: return@collect
+                if (!isInitialEmission && listState.isScrollInProgress) {
+                    onSelected(idx)
+                    return@collect
+                }
+                if (isInitialEmission) {
+                    isInitialEmission = false
+                    return@collect
+                }
+                delay(32)
                 onSelected(idx)
             }
     }
@@ -228,8 +249,16 @@ private fun DateWheelColumn(
     width: Dp,
 ) {
     val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = state)
+    val density = LocalDensity.current
+    val itemHeightPx = with(density) { itemHeight.toPx() }
     val selectedIndex by remember(state, items.size) {
-        derivedStateOf { state.centeredItemIndex()?.coerceIn(0, items.lastIndex) ?: -1 }
+        derivedStateOf { state.centeredItemIndex()?.floorMod(items.size) ?: -1 }
+    }
+    val viewportCenter by remember(state) {
+        derivedStateOf {
+            val layoutInfo = state.layoutInfo
+            (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) * 0.5f
+        }
     }
 
     LazyColumn(
@@ -241,20 +270,41 @@ private fun DateWheelColumn(
         contentPadding = PaddingValues(vertical = verticalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        itemsIndexed(items, key = { index, _ -> index }) { index, item ->
-            val selected = index == selectedIndex
+        items(Int.MAX_VALUE, key = { index -> index }) { index ->
+            val itemIndex = index.floorMod(items.size)
+            val item = items[itemIndex]
+            val selected = itemIndex == selectedIndex
+            val itemInfo = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+            val distanceFromCenter = if (itemInfo != null && itemHeightPx > 0f) {
+                ((itemInfo.offset + itemInfo.size * 0.5f) - viewportCenter) / itemHeightPx
+            } else {
+                0f
+            }
+            val clampedDistance = distanceFromCenter.coerceIn(-3f, 3f)
+            val absoluteDistance = abs(clampedDistance)
+            val rowAlpha = if (selected) 1f else (0.68f - absoluteDistance * 0.12f).coerceAtLeast(0.32f)
+            val rowScale = 1f - min(absoluteDistance * 0.055f, 0.16f)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(itemHeight)
-                    .padding(horizontal = 2.dp),
+                    .padding(horizontal = 2.dp)
+                    .graphicsLayer {
+                        cameraDistance = 14f * density.density
+                        rotationX = -clampedDistance * 24f
+                        scaleX = rowScale
+                        scaleY = rowScale
+                        alpha = rowAlpha
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = item,
-                    color = if (selected) White else White.copy(alpha = 0.28f),
+                    color = if (selected) White.copy(alpha = 0.98f) else White.copy(alpha = 0.78f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = 22.sp,
+                        lineHeight = 28.sp,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                     ),
                 )
@@ -272,7 +322,27 @@ private fun LazyListState.centeredItemIndex(): Int? {
     }?.index
 }
 
+@Composable
+private fun rememberCircularWheelState(selectedIndex: Int, itemCount: Int): LazyListState {
+    val initialIndex = remember(selectedIndex, itemCount) {
+        val center = Int.MAX_VALUE / 2
+        center - center.floorMod(itemCount) + selectedIndex
+    }
+    return rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+}
+
+private fun LazyListState.nearestCircularIndex(itemIndex: Int, itemCount: Int): Int {
+    val current = firstVisibleItemIndex
+    val base = current - current.floorMod(itemCount)
+    return listOf(base - itemCount + itemIndex, base + itemIndex, base + itemCount + itemIndex)
+        .minBy { abs(it - current) }
+}
+
 private fun LazyListState.centerOffsetFor(itemPx: Int): Int {
     val viewport = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
     return if (viewport > 0) -((viewport - itemPx) / 2) else 0
+}
+
+private fun Int.floorMod(other: Int): Int {
+    return ((this % other) + other) % other
 }

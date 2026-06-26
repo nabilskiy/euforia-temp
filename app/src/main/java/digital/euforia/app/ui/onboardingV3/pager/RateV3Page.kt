@@ -36,9 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
@@ -47,25 +45,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import digital.euforia.app.R
-import digital.euforia.app.ui.theme.PrimaryButtonText
+import digital.euforia.app.ui.onboardingV3.components.V3PrimaryButton
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
 import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.delay
 
-private val RateButtonGlow = Brush.linearGradient(
-    colors = listOf(
-        Color(0xFFE29B31),
-        Color(0xFFFF5589),
-        Color(0xFF204FC0),
-    ),
-)
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RateV3Page(
     isPageActive: Boolean,
-    onSubmit: () -> Unit,
+    onSubmit: (rating: Int, comment: String) -> Unit,
 ) {
     if (!isPageActive) return
 
@@ -197,43 +187,58 @@ fun RateV3Page(
                             prefix = "+",
                         )
                     }
-                    AnimatedVisibility(visible = showComment, enter = fadeIn(tween(220))) {
-                        OutlinedTextField(
-                            value = comment,
-                            onValueChange = { comment = it.take(280) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 24.dp),
-                            minLines = 3,
-                            maxLines = 5,
-                            placeholder = {
-                                Text(
-                                    text = localizedRes.string(R.string.intro_rate_comment_placeholder),
-                                    color = White.copy(alpha = 0.32f),
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = White,
-                                unfocusedTextColor = White,
-                                focusedBorderColor = White.copy(alpha = 0.18f),
-                                unfocusedBorderColor = White.copy(alpha = 0.10f),
-                                cursorColor = White,
-                                focusedContainerColor = White.copy(alpha = 0.08f),
-                                unfocusedContainerColor = White.copy(alpha = 0.08f),
-                            ),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                        )
-                    }
+                }
+            }
+
+            AnimatedVisibility(visible = showComment, enter = fadeIn(tween(220))) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = localizedRes.string(R.string.intro_rate_comment),
+                        color = White,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    OutlinedTextField(
+                        value = comment,
+                        onValueChange = { comment = it.take(280) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 5,
+                        maxLines = 8,
+                        placeholder = {
+                            Text(
+                                text = localizedRes.string(R.string.intro_rate_comment_placeholder),
+                                color = White.copy(alpha = 0.25f),
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = White,
+                            unfocusedTextColor = White,
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            cursorColor = White,
+                            focusedContainerColor = White.copy(alpha = 0.08f),
+                            unfocusedContainerColor = White.copy(alpha = 0.08f),
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                    )
                 }
             }
         }
 
-        RateSubmitButton(
+        AnimatedVisibility(
+            visible = rating > 0,
             modifier = Modifier.align(Alignment.BottomCenter),
-            text = localizedRes.string(R.string.intro_rate_next),
-            isEnabled = rating > 0,
-            onClick = onSubmit,
-        )
+            enter = fadeIn(tween(220)),
+        ) {
+            RateSubmitButton(
+                text = localizedRes.string(R.string.intro_rate_next),
+                onClick = { onSubmit(rating, comment) },
+            )
+        }
     }
 }
 
@@ -273,47 +278,18 @@ private fun EmotionChip(
 
 @Composable
 private fun RateSubmitButton(
-    modifier: Modifier,
     text: String,
-    isEnabled: Boolean,
     onClick: () -> Unit,
 ) {
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(bottom = 32.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .background(
-                    brush = if (isEnabled) RateButtonGlow else Brush.linearGradient(
-                        listOf(Color.Transparent, Color.Transparent),
-                    ),
-                    shape = CircleShape,
-                )
-                .padding(3.dp)
-                .alpha(if (isEnabled) 1f else 0.45f)
-                .align(Alignment.Center)
-                .clickable(enabled = isEnabled, onClick = onClick),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(White, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = text,
-                    color = PrimaryButtonText,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-            }
-        }
+        V3PrimaryButton(
+            text = text,
+            onClick = onClick,
+        )
     }
 }

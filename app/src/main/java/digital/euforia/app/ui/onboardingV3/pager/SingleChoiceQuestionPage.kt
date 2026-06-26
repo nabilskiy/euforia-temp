@@ -1,8 +1,14 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement.spacedBy
@@ -33,13 +39,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.onboarding.IntroAnswerItem
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.AnimatedSizeBox
 import digital.euforia.app.ui.util.widget.fadeBottom
-import digital.euforia.app.ui.util.widget.fadeTop
 import kotlinx.coroutines.delay
 
 @Composable
@@ -47,6 +53,7 @@ fun SingleChoiceQuestionPage(
     answers: List<IntroAnswerItem>,
     selectedId: String?,
     onAnswerSelected: (IntroAnswerItem) -> Unit,
+    topPadding: Dp,
     isPageActive: Boolean,
 ) {
     if (!isPageActive) return
@@ -54,12 +61,11 @@ fun SingleChoiceQuestionPage(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .fadeTop()
             .fadeBottom(),
         verticalArrangement = spacedBy(18.dp),
         contentPadding = PaddingValues(
             start = 18.dp,
-            top = 230.dp,
+            top = topPadding,
             end = 18.dp,
             bottom = 132.dp,
         ),
@@ -88,16 +94,16 @@ private fun QuestionAnswerItemView(
 ) {
     val shape = RoundedCornerShape(25.dp)
     val appear = remember(answer.identifier) { Animatable(0f) }
-    val startOffsetY = with(LocalDensity.current) { 80.dp.toPx() }
+    val startOffsetY = with(LocalDensity.current) { 34.dp.toPx() }
 
     LaunchedEffect(answer.identifier) {
         appear.snapTo(0f)
-        delay(index * 50L)
+        delay(index * 44L)
         appear.animateTo(
             targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = 0.7f,
-                stiffness = Spring.StiffnessMediumLow,
+            animationSpec = tween(
+                durationMillis = 620,
+                easing = FastOutSlowInEasing,
             ),
         )
     }
@@ -109,9 +115,15 @@ private fun QuestionAnswerItemView(
                 .graphicsLayer {
                     alpha = appear.value
                     translationY = (1f - appear.value) * startOffsetY
-                    scaleX = 0.8f + appear.value * 0.2f
-                    scaleY = 0.8f + appear.value * 0.2f
+                    scaleX = 0.96f + appear.value * 0.04f
+                    scaleY = 0.96f + appear.value * 0.04f
                 }
+                .animateContentSize(
+                    animationSpec = tween(
+                        durationMillis = 340,
+                        easing = FastOutSlowInEasing,
+                    ),
+                )
                 .heightIn(min = 62.dp)
                 .background(Color.White.copy(alpha = 0.04f), shape)
                 .then(
@@ -144,25 +156,38 @@ private fun QuestionAnswerItemView(
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 )
 
-                if (isSelected && !answer.subtitle.isNullOrBlank()) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 16.dp),
-                        color = Color.White.copy(alpha = 0.1f),
-                    )
-                    IntroBoldText(
-                        text = answer.subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = White.copy(alpha = 0.6f),
-                        boldColor = White,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Start,
-                    )
+                AnimatedVisibility(
+                    visible = isSelected && !answer.subtitle.isNullOrBlank(),
+                    enter = expandVertically(
+                        animationSpec = tween(340, easing = FastOutSlowInEasing),
+                    ) + fadeIn(tween(240, delayMillis = 60)),
+                    exit = shrinkVertically(
+                        animationSpec = tween(260, easing = FastOutSlowInEasing),
+                    ) + fadeOut(tween(180)),
+                ) {
+                    Column {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            color = Color.White.copy(alpha = 0.1f),
+                        )
+                        IntroBoldText(
+                            text = answer.subtitle.orEmpty(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = White.copy(alpha = 0.6f),
+                            boldColor = White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Start,
+                        )
+                    }
                 }
             }
-            if (isSelected) {
+            AnimatedVisibility(
+                visible = isSelected,
+                modifier = Modifier.align(Alignment.Top),
+                enter = fadeIn(tween(180, delayMillis = 80)),
+                exit = fadeOut(tween(120)),
+            ) {
                 Icon(
-                    modifier = Modifier
-                        .align(Alignment.Top)
-                        .padding(top = 22.dp, end = 16.dp),
+                    modifier = Modifier.padding(top = 22.dp, end = 16.dp),
                     painter = painterResource(R.drawable.ic_check),
                     contentDescription = null,
                     tint = White,

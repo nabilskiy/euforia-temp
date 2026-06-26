@@ -15,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -74,7 +75,7 @@ fun LoadingV3Page(
     val contentAppear = remember { Animatable(0f) }
     val playState = if (phase == LoadingV3Phase.Preparing) PlayState.LOADING else PlayState.LOADED
     val animationPadding by animateDpAsState(
-        targetValue = if (phase == LoadingV3Phase.Ready) 0.dp else 180.dp,
+        targetValue = 0.dp,
         animationSpec = tween(durationMillis = 2_000),
         label = "loadingV3AnimationPadding",
     )
@@ -233,18 +234,23 @@ private fun LoadingCenterButton(
         Box(
             modifier = Modifier
                 .size(92.dp * glowPulse)
-                .blur(18.dp)
-                .background(
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFB123FF).copy(alpha = 0.75f),
-                            Color(0xFF073CFF).copy(alpha = 0.45f),
-                            Color.Transparent,
+                        colorStops = arrayOf(
+                            0.0f to Color(0xFFB123FF).copy(alpha = 0.58f),
+                            0.42f to Color(0xFF073CFF).copy(alpha = 0.34f),
+                            1.0f to Color.Transparent,
                         ),
+                        center = center,
+                        radius = size.minDimension / 2f,
                     ),
-                    shape = CircleShape,
-                ),
-        )
+                    radius = size.minDimension / 2f,
+                    center = center,
+                )
+            }
+        }
         Box(
             modifier = Modifier
                 .size(90.dp)

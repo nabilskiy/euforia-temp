@@ -1,12 +1,14 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,34 +50,42 @@ fun DisclaimerPage(isPageActive: Boolean) {
 
     LaunchedEffect(Unit) {
         launch {
+            delay(80L)
             imageAppear.animateTo(
                 targetValue = 1f,
-                animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                animationSpec = spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessLow),
             )
         }
         launch {
-            delay(120L)
+            delay(260L)
             iconAppear.animateTo(
                 targetValue = 1f,
-                animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow),
+                animationSpec = spring(dampingRatio = 0.78f, stiffness = Spring.StiffnessLow),
             )
         }
         launch {
-            delay(180L)
+            delay(360L)
             textAppear.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 650),
+                animationSpec = tween(durationMillis = 780, easing = FastOutSlowInEasing),
             )
         }
     }
 
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 40.dp)
-            .padding(top = 96.dp, bottom = 142.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        val imageSize = (maxWidth - 58.dp) / 2f
+        val topPadding = maxHeight * 0.135f
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .padding(top = topPadding, bottom = 142.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.TopCenter,
@@ -85,12 +95,13 @@ fun DisclaimerPage(isPageActive: Boolean) {
                     painter = painterResource(R.drawable.img_dictor_man),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(150.dp)
+                        .size(imageSize)
                         .graphicsLayer {
                             alpha = imageAppear.value
-                            scaleX = 0.8f + imageAppear.value * 0.2f
-                            scaleY = 0.8f + imageAppear.value * 0.2f
-                            translationX = (1f - imageAppear.value) * -50f
+                            scaleX = 0.86f + imageAppear.value * 0.14f
+                            scaleY = 0.86f + imageAppear.value * 0.14f
+                            translationX = (1f - imageAppear.value) * -70f
+                            translationY = (1f - imageAppear.value) * 18f
                         }
                         .clip(RoundedCornerShape(20.dp)),
                     contentScale = ContentScale.Crop,
@@ -100,12 +111,13 @@ fun DisclaimerPage(isPageActive: Boolean) {
                     contentDescription = null,
                     modifier = Modifier
                         .padding(start = 10.dp)
-                        .size(150.dp)
+                        .size(imageSize)
                         .graphicsLayer {
                             alpha = imageAppear.value
-                            scaleX = 0.8f + imageAppear.value * 0.2f
-                            scaleY = 0.8f + imageAppear.value * 0.2f
-                            translationX = (1f - imageAppear.value) * 50f
+                            scaleX = 0.86f + imageAppear.value * 0.14f
+                            scaleY = 0.86f + imageAppear.value * 0.14f
+                            translationX = (1f - imageAppear.value) * 70f
+                            translationY = (1f - imageAppear.value) * 18f
                         }
                         .clip(RoundedCornerShape(20.dp)),
                     contentScale = ContentScale.Crop,
@@ -115,7 +127,7 @@ fun DisclaimerPage(isPageActive: Boolean) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(top = 120.dp)
+                    .padding(top = imageSize - 30.dp)
                     .size(66.dp)
                     .background(Color(0xFF17191F), CircleShape),
                 contentAlignment = Alignment.Center,
@@ -127,8 +139,9 @@ fun DisclaimerPage(isPageActive: Boolean) {
                         .size(60.dp)
                         .graphicsLayer {
                             alpha = iconAppear.value
-                            scaleX = 0.2f + iconAppear.value * 0.8f
-                            scaleY = 0.2f + iconAppear.value * 0.8f
+                            scaleX = 0.35f + iconAppear.value * 0.65f
+                            scaleY = 0.35f + iconAppear.value * 0.65f
+                            translationY = (1f - iconAppear.value) * 12f
                         },
                 )
             }
@@ -144,21 +157,22 @@ fun DisclaimerPage(isPageActive: Boolean) {
                 fontWeight = FontWeight.Bold,
             ),
             modifier = Modifier
-                .padding(top = 82.dp)
+                .padding(top = 56.dp)
                 .graphicsLayer {
                     alpha = textAppear.value
-                    translationY = (1f - textAppear.value) * 24f
+                    translationY = (1f - textAppear.value) * 30f
                 },
         )
 
         IntroBoldText(
             text = localizedRes.string(R.string.intro_disclaimer_text),
             modifier = Modifier
-                .padding(top = 50.dp)
+                .padding(top = 34.dp)
+                .padding(horizontal = 14.dp)
                 .graphicsLayer {
-                    val appear = ((textAppear.value - 0.15f) / 0.85f).coerceIn(0f, 1f)
+                    val appear = ((textAppear.value - 0.12f) / 0.88f).coerceIn(0f, 1f)
                     alpha = appear
-                    translationY = (1f - appear) * 24f
+                    translationY = (1f - appear) * 32f
                 },
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontSize = 16.sp,
@@ -166,5 +180,6 @@ fun DisclaimerPage(isPageActive: Boolean) {
                 fontWeight = FontWeight.Medium,
             ),
         )
+        }
     }
 }

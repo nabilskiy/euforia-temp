@@ -2,7 +2,11 @@ package digital.euforia.app.ui.onboardingV3.pager
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.unit.Dp
 import digital.euforia.app.R
+import digital.euforia.app.ui.onboarding.pager.EmailPage
 import digital.euforia.app.ui.onboardingV3.IntroAnswerKeys
 import digital.euforia.app.ui.onboardingV3.OnboardingV3Page
 import digital.euforia.app.ui.onboardingV3.OnboardingV3State
@@ -14,10 +18,14 @@ fun PagerPage(
     viewModel: OnboardingV3ViewModel,
     state: OnboardingV3State,
     position: Int,
+    activePosition: Int = state.currentPage.position,
+    listTopPadding: Dp,
 ) {
     val pageType = state.pages.getOrNull(position) ?: return
-    val isActive = { true }
+    val isActive = { position == activePosition }
     val localizedRes = LocalLocalizedRes.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     when (pageType) {
         OnboardingV3Page.StartPage -> StartPage(viewModel, isPageActive = isActive())
@@ -61,6 +69,7 @@ fun PagerPage(
             viewModel = viewModel,
             goals = state.goals,
             selectedGoalId = state.selectedGoalId,
+            topPadding = listTopPadding,
             isPageActive = isActive(),
         )
         OnboardingV3Page.GoalFeedbackPage -> GoalFeedbackPage(
@@ -77,18 +86,21 @@ fun PagerPage(
             answers = state.programs,
             selectedId = state.introAnswers[IntroAnswerKeys.PROGRAMS]?.identifier,
             onAnswerSelected = { viewModel.onAnswerSelected(IntroAnswerKeys.PROGRAMS, it) },
+            topPadding = listTopPadding,
             isPageActive = isActive(),
         )
         OnboardingV3Page.DailyCommitmentPage -> SingleChoiceQuestionPage(
             answers = state.dailyCommitments,
             selectedId = state.introAnswers[IntroAnswerKeys.DAILY_COMMITMENT]?.identifier,
             onAnswerSelected = { viewModel.onAnswerSelected(IntroAnswerKeys.DAILY_COMMITMENT, it) },
+            topPadding = listTopPadding,
             isPageActive = isActive(),
         )
         OnboardingV3Page.TimePage -> SingleChoiceQuestionPage(
             answers = state.timeOptions,
             selectedId = state.introAnswers[IntroAnswerKeys.TIME]?.identifier,
             onAnswerSelected = { viewModel.onAnswerSelected(IntroAnswerKeys.TIME, it) },
+            topPadding = listTopPadding,
             isPageActive = isActive(),
         )
         OnboardingV3Page.ScenesPreviewPage -> ScenesPreviewPage(
@@ -100,6 +112,7 @@ fun PagerPage(
             scenes = state.scenes,
             selectedScenes = state.selectedScenes,
             onSceneSelected = viewModel::onSceneSelected,
+            topPadding = listTopPadding,
             isPageActive = isActive(),
         )
         OnboardingV3Page.FeedbackLoop2Page -> FeedbackLoopPage(
@@ -123,6 +136,14 @@ fun PagerPage(
             onNextClick = viewModel::onNextPage,
         )
         OnboardingV3Page.SocialProofPage -> SocialProofPage(isPageActive = isActive())
+        OnboardingV3Page.EmailPage -> EmailPage(
+            email = state.email,
+            isValid = state.isNextEnabled,
+            focusManager = focusManager,
+            keyboardController = keyboardController,
+            isPageOpened = isActive,
+            onEmailUpdated = viewModel::onEmailUpdated,
+        )
         OnboardingV3Page.NamePage -> NameV3Page(
             name = state.name,
             isPageActive = isActive(),
@@ -146,12 +167,21 @@ fun PagerPage(
         OnboardingV3Page.FirstExperiencePage -> FirstExperiencePage(
             isPageActive = isActive(),
             selectedPreviewType = state.selectedPreviewType,
+            reminderDayOffset = state.firstExperienceReminderDayOffset,
+            reminderHour = state.firstExperienceReminderHour,
+            reminderMinute = state.firstExperienceReminderMinute,
+            reminderScheduledAt = state.firstExperienceReminderScheduledAt,
+            isReminderScheduled = state.isFirstExperienceReminderScheduled,
             onPreviewTypeSelected = viewModel::onPreviewTypeSelected,
+            onReminderTimeChanged = viewModel::onFirstExperienceReminderTimeChanged,
+            onReminderScheduleClick = viewModel::onFirstExperienceReminderScheduled,
+            onReminderProceedClick = viewModel::onFirstExperienceProceedAfterReminder,
+            onReminderCancelClick = viewModel::onFirstExperienceReminderCancelled,
             onPlayNowClick = viewModel::onFirstExperiencePlayNow,
         )
         OnboardingV3Page.RatePage -> RateV3Page(
             isPageActive = isActive(),
-            onSubmit = viewModel::onNextPage,
+            onSubmit = viewModel::onRateSubmitted,
         )
         OnboardingV3Page.KeepExploringPage -> KeepExploringV3Page(
             isPageActive = isActive(),

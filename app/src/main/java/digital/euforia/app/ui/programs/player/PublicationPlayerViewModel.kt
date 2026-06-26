@@ -366,7 +366,7 @@ class PublicationPlayerViewModel @Inject constructor(
             ).map { publicationInfo ->
                 Timber.tag("PUBLICATION_PLAYBACK").d("loadPublication: fetched info for $id")
                 publicationInfo.also {
-                    if (it.publicationType == PublicationType.MEDITATION) {
+                    if (!isOnboardingPreview && it.publicationType == PublicationType.MEDITATION) {
                         publicationInfo.packageId?.let { categoryId ->
                             getPlaylistUseCase.invoke(categoryId).onSuccess { playlist ->
                                 Timber.tag("PUBLICATION_PLAYBACK")

@@ -72,6 +72,21 @@ class AnalyticSender @Inject constructor(
         )
     }
 
+    fun introRate(
+        rating: Int,
+        entityId: Int?,
+        contentType: String,
+    ) {
+        logEvent(
+            eventName = "intro_rate",
+            params = Bundle().apply {
+                putInt("rating", rating)
+                entityId?.let { putInt("entity_id", it) }
+                putString("content_type", contentType)
+            },
+        )
+    }
+
     fun introGenderShow() {
         logEvent(eventName = "intro_gender_show")
     }

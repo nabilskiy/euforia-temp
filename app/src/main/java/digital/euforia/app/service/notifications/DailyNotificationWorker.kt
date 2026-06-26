@@ -75,6 +75,7 @@ class DailyNotificationWorker(
         if (message.isBlank()) return
 
         val context = applicationContext
+        val quietHours = LocalNotificationDeliveryMode.isQuietHours()
 
         val soundResId = when (notificationSoundType) {
             "default" -> R.raw.snd_new_accompaniment_2
@@ -92,13 +93,16 @@ class DailyNotificationWorker(
 
         // Create channel if needed (Android O+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channelId = "${CHANNEL_ID}_${soundResId}"
+            val channelId = if (quietHours) {
+                LocalNotificationDeliveryMode.ensureQuietChannel(context)
+            } else {
+                "${CHANNEL_ID}_${soundResId}"
+            }
             val manager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             
-            if (manager.getNotificationChannel(channelId) == null) {
-                val channel = NotificationChannel(channelId, CHANNEL_NAME, importance).apply {
+            if (!quietHours && manager.getNotificationChannel(channelId) == null) {
+                val channel = NotificationChannel(channelId, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
                     description = CHANNEL_DESCRIPTION
                     val audioAttributes = AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -127,11 +131,7 @@ class DailyNotificationWorker(
 
             val title = context.getString(R.string.app_name)
 
-            val priority = if (isTimeSensitive) {
-                NotificationCompat.PRIORITY_HIGH
-            } else {
-                NotificationCompat.PRIORITY_DEFAULT
-            }
+            val priority = LocalNotificationDeliveryMode.priority(quietHours, isTimeSensitive)
 
             val notificationBuilder = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -141,9 +141,12 @@ class DailyNotificationWorker(
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(priority)
-                .setSound(soundUri)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isTimeSensitive) {
+            if (!quietHours) {
+                notificationBuilder.setSound(soundUri)
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isTimeSensitive && !quietHours) {
                 notificationBuilder.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             }
 
@@ -175,11 +178,7 @@ class DailyNotificationWorker(
 
             val title = context.getString(R.string.app_name)
 
-            val priority = if (isTimeSensitive) {
-                NotificationCompat.PRIORITY_HIGH
-            } else {
-                NotificationCompat.PRIORITY_DEFAULT
-            }
+            val priority = LocalNotificationDeliveryMode.priority(quietHours, isTimeSensitive)
 
             val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -189,7 +188,10 @@ class DailyNotificationWorker(
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(priority)
-                .setSound(soundUri)
+
+            if (!quietHours) {
+                notificationBuilder.setSound(soundUri)
+            }
 
             val notification = notificationBuilder.build()
 

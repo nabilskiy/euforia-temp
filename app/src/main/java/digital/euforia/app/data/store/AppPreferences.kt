@@ -61,6 +61,17 @@ class AppPreferences(
     private val keySoundscapesLastPreset = intPreferencesKey("soundscapes_last_preset")
     private val keyFavoriteMusicIds = stringSetPreferencesKey("favorite_music_ids")
     private val keySoundAnimationsEnabled = booleanPreferencesKey("sound_animations_enabled")
+    private val keyFirstExperienceReminderType = stringPreferencesKey("first_experience_reminder_type")
+    private val keyFirstExperienceReminderEntityId = intPreferencesKey("first_experience_reminder_entity_id")
+    private val keyFirstExperienceReminderAccompanimentId =
+        intPreferencesKey("first_experience_reminder_accompaniment_id")
+    private val keyFirstExperienceReminderTimeOfDay =
+        stringPreferencesKey("first_experience_reminder_time_of_day")
+    private val keyFirstExperienceReminderSceneTimerSeconds =
+        intPreferencesKey("first_experience_reminder_scene_timer_seconds")
+    private val keyFirstExperienceReminderImageUrl = stringPreferencesKey("first_experience_reminder_image_url")
+    private val keyFirstExperienceReminderTriggerAt =
+        longPreferencesKey("first_experience_reminder_trigger_at")
 
     // Rating app preferences
     private val keyRateAppLaunchCount = intPreferencesKey("rate_app_launch_count")
@@ -632,6 +643,49 @@ class AppPreferences(
         }
     }
 
+    suspend fun saveFirstExperienceReminder(reminder: FirstExperienceReminderPreferences) {
+        store.edit { preferences ->
+            preferences[keyFirstExperienceReminderType] = reminder.previewType
+            reminder.entityId?.let { preferences[keyFirstExperienceReminderEntityId] = it }
+                ?: preferences.remove(keyFirstExperienceReminderEntityId)
+            reminder.accompanimentId?.let { preferences[keyFirstExperienceReminderAccompanimentId] = it }
+                ?: preferences.remove(keyFirstExperienceReminderAccompanimentId)
+            reminder.timeOfDay?.let { preferences[keyFirstExperienceReminderTimeOfDay] = it }
+                ?: preferences.remove(keyFirstExperienceReminderTimeOfDay)
+            preferences[keyFirstExperienceReminderSceneTimerSeconds] = reminder.sceneTimerSeconds
+            reminder.imageUrl?.let { preferences[keyFirstExperienceReminderImageUrl] = it }
+                ?: preferences.remove(keyFirstExperienceReminderImageUrl)
+            preferences[keyFirstExperienceReminderTriggerAt] = reminder.triggerAtMillis
+        }
+    }
+
+    suspend fun getFirstExperienceReminder(): FirstExperienceReminderPreferences? {
+        val preferences = store.data.firstOrNull() ?: return null
+        val previewType = preferences[keyFirstExperienceReminderType] ?: return null
+        val triggerAt = preferences[keyFirstExperienceReminderTriggerAt] ?: return null
+        return FirstExperienceReminderPreferences(
+            previewType = previewType,
+            entityId = preferences[keyFirstExperienceReminderEntityId],
+            accompanimentId = preferences[keyFirstExperienceReminderAccompanimentId],
+            timeOfDay = preferences[keyFirstExperienceReminderTimeOfDay],
+            sceneTimerSeconds = preferences[keyFirstExperienceReminderSceneTimerSeconds] ?: 600,
+            imageUrl = preferences[keyFirstExperienceReminderImageUrl],
+            triggerAtMillis = triggerAt,
+        )
+    }
+
+    suspend fun clearFirstExperienceReminder() {
+        store.edit { preferences ->
+            preferences.remove(keyFirstExperienceReminderType)
+            preferences.remove(keyFirstExperienceReminderEntityId)
+            preferences.remove(keyFirstExperienceReminderAccompanimentId)
+            preferences.remove(keyFirstExperienceReminderTimeOfDay)
+            preferences.remove(keyFirstExperienceReminderSceneTimerSeconds)
+            preferences.remove(keyFirstExperienceReminderImageUrl)
+            preferences.remove(keyFirstExperienceReminderTriggerAt)
+        }
+    }
+
     private suspend fun checkDailyReset() {
         val today = java.time.LocalDate.now().toString()
         val lastReset = store.data.firstOrNull()?.get(keyLastPlaybackResetDate)
@@ -644,3 +698,13 @@ class AppPreferences(
         }
     }
 }
+
+data class FirstExperienceReminderPreferences(
+    val previewType: String,
+    val entityId: Int?,
+    val accompanimentId: Int?,
+    val timeOfDay: String?,
+    val sceneTimerSeconds: Int,
+    val imageUrl: String?,
+    val triggerAtMillis: Long,
+)

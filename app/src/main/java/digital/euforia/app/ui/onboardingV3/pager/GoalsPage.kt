@@ -1,8 +1,8 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement.spacedBy
@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.onboarding.Goal
@@ -39,7 +40,6 @@ import digital.euforia.app.ui.onboardingV3.OnboardingV3ViewModel
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.widget.AnimatedSizeBox
 import digital.euforia.app.ui.util.widget.fadeBottom
-import digital.euforia.app.ui.util.widget.fadeTop
 import kotlinx.coroutines.delay
 
 @Composable
@@ -47,6 +47,7 @@ fun GoalsPage(
     viewModel: OnboardingV3ViewModel,
     goals: List<Goal>,
     selectedGoalId: String?,
+    topPadding: Dp,
     isPageActive: Boolean,
 ) {
     if (!isPageActive) return
@@ -54,12 +55,11 @@ fun GoalsPage(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .fadeTop()
             .fadeBottom(),
         verticalArrangement = spacedBy(18.dp),
         contentPadding = PaddingValues(
             start = 18.dp,
-            top = 192.dp,
+            top = topPadding,
             end = 18.dp,
             bottom = 132.dp,
         ),
@@ -88,16 +88,16 @@ private fun V3GoalItemView(
 ) {
     val shape = RoundedCornerShape(25.dp)
     val appear = remember(goal.identifier) { Animatable(0f) }
-    val startOffsetY = with(LocalDensity.current) { 80.dp.toPx() }
+    val startOffsetY = with(LocalDensity.current) { 34.dp.toPx() }
 
     LaunchedEffect(goal.identifier) {
         appear.snapTo(0f)
-        delay(index * 50L)
+        delay(index * 44L)
         appear.animateTo(
             targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = 0.7f,
-                stiffness = Spring.StiffnessMediumLow,
+            animationSpec = tween(
+                durationMillis = 620,
+                easing = FastOutSlowInEasing,
             ),
         )
     }
@@ -109,8 +109,8 @@ private fun V3GoalItemView(
                 .graphicsLayer {
                     alpha = appear.value
                     translationY = (1f - appear.value) * startOffsetY
-                    scaleX = 0.8f + appear.value * 0.2f
-                    scaleY = 0.8f + appear.value * 0.2f
+                    scaleX = 0.96f + appear.value * 0.04f
+                    scaleY = 0.96f + appear.value * 0.04f
                 }
                 .heightIn(min = 62.dp)
                 .background(Color.White.copy(alpha = 0.04f), shape)

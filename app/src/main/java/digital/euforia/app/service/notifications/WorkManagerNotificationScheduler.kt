@@ -94,8 +94,49 @@ class WorkManagerNotificationScheduler(
         }
     }
 
+    override fun scheduleFirstExperienceReminder(
+        triggerAtMillis: Long,
+        previewType: String,
+        entityId: Int?,
+        accompanimentId: Int?,
+        timeOfDay: String?,
+        sceneTimerSeconds: Int,
+        imageUrl: String?,
+    ) {
+        val nowMillis = System.currentTimeMillis()
+        val delay = (triggerAtMillis - nowMillis).coerceAtLeast(0L)
+        val request = OneTimeWorkRequestBuilder<FirstExperienceReminderWorker>()
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .setInputData(
+                workDataOf(
+                    FirstExperienceReminderWorker.KEY_PREVIEW_TYPE to previewType,
+                    FirstExperienceReminderWorker.KEY_ENTITY_ID to (entityId ?: -1),
+                    FirstExperienceReminderWorker.KEY_ACCOMPANIMENT_ID to (accompanimentId ?: -1),
+                    FirstExperienceReminderWorker.KEY_TIME_OF_DAY to timeOfDay.orEmpty(),
+                    FirstExperienceReminderWorker.KEY_SCENE_TIMER_SECONDS to sceneTimerSeconds,
+                    FirstExperienceReminderWorker.KEY_IMAGE_URL to imageUrl.orEmpty(),
+                ),
+            )
+            .addTag(FIRST_EXPERIENCE_REMINDER_TAG)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            FIRST_EXPERIENCE_REMINDER_TAG,
+            ExistingWorkPolicy.REPLACE,
+            request,
+        )
+    }
+
     override fun cancel(type: NotificationType) {
         WorkManager.getInstance(context)
             .cancelAllWorkByTag("notification_${type.name.lowercase()}")
+    }
+
+    override fun cancelFirstExperienceReminder() {
+        WorkManager.getInstance(context).cancelAllWorkByTag(FIRST_EXPERIENCE_REMINDER_TAG)
+    }
+
+    private companion object {
+        const val FIRST_EXPERIENCE_REMINDER_TAG = "notification_first_experience_reminder"
     }
 }

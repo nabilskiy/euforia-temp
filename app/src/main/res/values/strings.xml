@@ -193,7 +193,17 @@
     <string name="intro_final_timer_title">Your mental health matters</string>
     <string name="intro_final_timer_message">Taking care of yourself isn\'t something to rush - it happens in your own time, in your own way. Choose a time that feels natural and comfortable for you.</string>
     <string name="intro_final_timer_ok">Set reminder</string>
+    <string name="intro_final_timer_schedule">Schedule</string>
     <string name="intro_final_timer_cancel">Play now</string>
+    <string name="intro_final_timer_today">Today</string>
+    <string name="intro_final_timer_tomorrow">Tomorrow</string>
+    <string name="intro_final_scheduled_title">See you %1$s at %2$s</string>
+    <string name="intro_final_scheduled_subtitle">We\'ll remind you when it\'s time for your first Euforia experience.</string>
+    <string name="intro_final_scheduled_proceed">Proceed to the app</string>
+    <string name="intro_final_scheduled_cancel">Cancel reminder</string>
+    <string name="intro_first_experience_reminder_notification_text">Your first Euforia experience is ready.</string>
+    <string name="intro_first_experience_reminder_channel_name">First experience reminders</string>
+    <string name="intro_first_experience_reminder_channel_description">Reminders to continue your first Euforia experience</string>
     <string name="intro_paywall_title">Unlock Your Personalized\nProgram</string>
     <string name="intro_paywall_benefit_sessions">New unique Euforia sessions\nevery day</string>
     <string name="intro_paywall_benefit_content">Discover guided meditations\nand articles on stress, anxiety,\nsleep, and more</string>
@@ -218,6 +228,7 @@
     <string name="intro_rate_feel_lighter">Lighter</string>
     <string name="intro_rate_feel_no_change">No change yet</string>
     <string name="intro_rate_add_thoughts">Add your thoughts</string>
+    <string name="intro_rate_comment">Share your feedback</string>
     <string name="intro_rate_comment_placeholder">Share what changed for you</string>
     <string name="intro_rate_next">Submit</string>
     <string name="intro_rate_thank_you">Thank you</string>

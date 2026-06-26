@@ -169,6 +169,16 @@
     <string name="intro_final_listen_welcome">Usa audífonos</string>
     <string name="intro_final_title">Estamos preparando tu Euforia…</string>
     <string name="intro_final_subtitle">Esto podría tomar unos momentos</string>
+    <string name="intro_final_timer_schedule">Programar</string>
+    <string name="intro_final_timer_today">Hoy</string>
+    <string name="intro_final_timer_tomorrow">Mañana</string>
+    <string name="intro_final_scheduled_title">Nos vemos %1$s a las %2$s</string>
+    <string name="intro_final_scheduled_subtitle">Te recordaremos cuando sea el momento de tu primera experiencia Euforia.</string>
+    <string name="intro_final_scheduled_proceed">Ir a la app</string>
+    <string name="intro_final_scheduled_cancel">Cancelar recordatorio</string>
+    <string name="intro_first_experience_reminder_notification_text">Tu primera experiencia Euforia está lista.</string>
+    <string name="intro_first_experience_reminder_channel_name">Recordatorios de primera experiencia</string>
+    <string name="intro_first_experience_reminder_channel_description">Recordatorios para continuar tu primera experiencia Euforia</string>
 
     <!-- Purchases -->
     <string name="restore_purchases">Restaurar las compras</string>

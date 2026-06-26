@@ -2,6 +2,7 @@ package digital.euforia.app.domain.usecase
 
 import android.net.Uri
 import digital.euforia.app.data.repository.AccompanimentRepository
+import digital.euforia.app.data.store.AppPreferences
 import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.soundscapes.copySceneIdFromPresetId
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 class ParseDeepLinkUseCase @Inject constructor(
     private val accompanimentRepository: AccompanimentRepository,
-    private val profilePreferences: ProfilePreferences
+    private val profilePreferences: ProfilePreferences,
+    private val appPreferences: AppPreferences,
 ) {
 
     suspend operator fun invoke(uri: Uri): HomeDestination {
@@ -56,6 +58,63 @@ class ParseDeepLinkUseCase @Inject constructor(
         fun segInt(i: Int): Int? = segments.getOrNull(i)?.toIntOrNull()
 
         return when (host) {
+            "continue_intro_preview" -> {
+                val storedReminder = appPreferences.getFirstExperienceReminder()
+                val previewType = uri.getQueryParameter("type")
+                    ?.takeIf { it.isNotBlank() }
+                    ?: storedReminder?.previewType
+                val entityId = uri.getQueryParameter("entity_id")
+                    ?.toIntOrNull()
+                    ?: storedReminder?.entityId
+                val accompanimentId = uri.getQueryParameter("accompaniment_id")
+                    ?.toIntOrNull()
+                    ?: storedReminder?.accompanimentId
+                val timeOfDay = uri.getQueryParameter("time_of_day")
+                    ?.takeIf { it.isNotBlank() }
+                    ?: storedReminder?.timeOfDay
+                val sceneTimerSeconds = uri.getQueryParameter("scene_timer_seconds")
+                    ?.toIntOrNull()
+                    ?: storedReminder?.sceneTimerSeconds
+                    ?: DEFAULT_INTRO_SCENE_TIMER_SECONDS
+
+                appPreferences.clearFirstExperienceReminder()
+
+                when (previewType) {
+                    "Accompaniment" -> {
+                        val fallbackId = resolveCurrentAccompanimentId()
+                        HomeDestination.AudioPlayer(
+                            accompanimentId = accompanimentId ?: fallbackId,
+                            timeOfDay = timeOfDay.toTimeOfDayOrDefault(),
+                            entryPoint = AudioPlayerEntryPoint.ONBOARDING,
+                            isOnboardingPreview = true,
+                        )
+                    }
+                    "Meditation" -> {
+                        if (entityId == null) {
+                            HomeDestination.Plan
+                        } else {
+                            HomeDestination.PublicationPlayer(
+                                id = entityId,
+                                publicationType = PublicationType.MEDITATION,
+                                isOnboardingPreview = true,
+                            )
+                        }
+                    }
+                    "Soundscape" -> {
+                        if (entityId == null) {
+                            HomeDestination.Soundscapes
+                        } else {
+                            HomeDestination.SoundscapesScene(
+                                sceneId = entityId,
+                                isOnboardingPreview = true,
+                                introSceneTimerSeconds = sceneTimerSeconds,
+                            )
+                        }
+                    }
+                    else -> HomeDestination.Plan
+                }
+            }
+
             // Session
             "session" -> {
                 val isDemo = profilePreferences.getIsDemo()
@@ -299,5 +358,22 @@ class ParseDeepLinkUseCase @Inject constructor(
 //            else -> HomeDestination.Plan
             else -> HomeDestination.Plan
         }
+    }
+
+    private suspend fun resolveCurrentAccompanimentId(): Int {
+        val isDemo = profilePreferences.getIsDemo()
+        val completedDays = accompanimentRepository.getCompletedAccompanimentsCount()
+        val accompaniments = accompanimentRepository.getAllWithItemsFlow(isDemo).firstOrNull() ?: emptyList()
+        return accompaniments.getOrNull(completedDays)?.accompaniment?.id ?: 1
+    }
+
+    private fun String?.toTimeOfDayOrDefault(): TimeOfDay {
+        return runCatching {
+            TimeOfDay.valueOf(this ?: TimeOfDay.EVENING.name)
+        }.getOrDefault(TimeOfDay.EVENING)
+    }
+
+    private companion object {
+        const val DEFAULT_INTRO_SCENE_TIMER_SECONDS = 600
     }
 }

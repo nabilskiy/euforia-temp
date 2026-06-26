@@ -4,6 +4,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -75,61 +77,77 @@ fun GoalFeedbackPage(
             .fillMaxSize()
             .padding(horizontal = 40.dp),
     ) {
-        val lottieSize = (maxWidth * 0.86f).coerceAtMost(292.dp)
-        val titleTop = maxHeight * 0.13f
-        val lottieTop = maxHeight * 0.29f
-        val textTop = maxHeight * 0.66f
+        val isCompactHeight = maxHeight < 760.dp
+        val isLongFeedback = feedback.length > 150
+        val textFontSize = when {
+            isCompactHeight || isLongFeedback -> 16.sp
+            maxHeight < 840.dp -> 17.sp
+            else -> 19.sp
+        }
+        val textLineHeight = when {
+            isCompactHeight || isLongFeedback -> 25.sp
+            maxHeight < 840.dp -> 27.sp
+            else -> 30.sp
+        }
+        val lottieSize = (maxWidth * if (isCompactHeight) 0.78f else 0.86f).coerceAtMost(292.dp)
+        val topPadding = if (isCompactHeight) 92.dp else 110.dp
+        val bottomReserve = if (isCompactHeight) 166.dp else 182.dp
 
-        Text(
-            text = title,
-            color = White,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontSize = 26.sp,
-                lineHeight = 32.sp,
-                fontWeight = FontWeight.Bold,
-            ),
-            textAlign = TextAlign.Center,
+        Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(top = titleTop)
-                .graphicsLayer {
-                    alpha = titleAppear
-                    translationY = (1f - titleAppear) * 18f
-                },
-        )
+                .fillMaxSize()
+                .padding(top = topPadding, bottom = bottomReserve),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = title,
+                color = White,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontSize = 26.sp,
+                    lineHeight = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = titleAppear
+                        translationY = (1f - titleAppear) * 18f
+                    },
+            )
 
-        LottieAnimation(
-            composition = composition,
-            iterations = IterateForever,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = lottieTop)
-                .size(lottieSize)
-                .graphicsLayer {
-                    alpha = imageAppear
-                    scaleX = 0.96f + imageAppear * 0.04f
-                    scaleY = 0.96f + imageAppear * 0.04f
-                },
-            contentScale = ContentScale.Fit,
-        )
+            Spacer(modifier = Modifier.weight(if (isCompactHeight) 0.85f else 1f))
 
-        IntroBoldText(
-            text = feedback,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(top = textTop)
-                .graphicsLayer {
-                    alpha = textAppear
-                    translationY = (1f - textAppear) * 24f
-                },
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 20.sp,
-                lineHeight = 31.sp,
-                fontWeight = FontWeight.Medium,
-            ),
-        )
+            LottieAnimation(
+                composition = composition,
+                iterations = IterateForever,
+                modifier = Modifier
+                    .size(lottieSize)
+                    .graphicsLayer {
+                        alpha = imageAppear
+                        scaleX = 0.96f + imageAppear * 0.04f
+                        scaleY = 0.96f + imageAppear * 0.04f
+                    },
+                contentScale = ContentScale.Fit,
+            )
+
+            Spacer(modifier = Modifier.weight(if (isCompactHeight) 0.58f else 0.72f))
+
+            IntroBoldText(
+                text = feedback,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = textAppear
+                        translationY = (1f - textAppear) * 24f
+                    },
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = textFontSize,
+                    lineHeight = textLineHeight,
+                    fontWeight = FontWeight.Medium,
+                ),
+            )
+        }
     }
 }
 

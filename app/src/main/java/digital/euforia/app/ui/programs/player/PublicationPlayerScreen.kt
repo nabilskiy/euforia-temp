@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.view.LayoutInflater
+import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -211,6 +212,19 @@ private fun PublicationPlayerContent(
     }
 
     var controllerPlayer by remember { mutableStateOf<Player?>(null) }
+    fun requestClose() {
+        onCloseClick()
+        if (isOnboardingPreview) {
+            controllerPlayer?.pause()
+            showPreviewCloseDialog = true
+        } else {
+            navController.popBackStack()
+        }
+    }
+    BackHandler(enabled = true) {
+        requestClose()
+    }
+
     LaunchedEffect(Unit) {
         controllerPlayer = getController(context)
     }
@@ -249,15 +263,7 @@ private fun PublicationPlayerContent(
                 selectedSoundIndex = selectedSoundIndex,
                 getController = getController,
                 onPrepareAndPlay = onPrepareAndPlay,
-                onClose = {
-                    onCloseClick()
-                    if (isOnboardingPreview) {
-                        controllerPlayer?.pause()
-                        showPreviewCloseDialog = true
-                    } else {
-                        navController.popBackStack()
-                    }
-                },
+                onClose = ::requestClose,
                 onSoundEffectClick = { index ->
                     if (index != selectedSoundIndex) {
                         onSoundEffectClick(index)
@@ -464,8 +470,10 @@ private fun ExerciseVideoPlayer(
                 publicationInfo.publicationType == PublicationType.MEDITATION
             val selectedSfx = soundEffects.getOrNull(selectedSoundIndex)
             val coverUrl =
-                if (isMeditation && selectedSfx != null && !selectedSfx.videoUrl.isNullOrBlank()) {
-                    selectedSfx.videoUrl
+                if (isMeditation) {
+                    selectedSfx?.videoUrl?.takeIf { it.isNotBlank() }
+                        ?: soundEffects.firstNotNullOfOrNull { it.videoUrl?.takeIf(String::isNotBlank) }
+                        ?: publicationInfo.categoryVideoCoverUrl
                 } else {
                     publicationInfo.categoryVideoCoverUrl
                 }
@@ -736,7 +744,8 @@ private fun BoxScope.PlayerControlsOverlay(
             onSoundEffectClick = onSoundEffectClick,
             onMuteClick = onMuteClick,
             onPlaylistClick = onPlaylistClick,
-            onUserInteraction = onUserInteraction
+            onUserInteraction = onUserInteraction,
+            isOnboardingPreview = isOnboardingPreview,
         )
     }
 }
@@ -958,6 +967,7 @@ private fun BoxScope.BottomControls(
     onMuteClick: () -> Unit,
     onPlaylistClick: () -> Unit,
     onUserInteraction: () -> Unit,
+    isOnboardingPreview: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -1022,12 +1032,16 @@ private fun BoxScope.BottomControls(
             Text(text = formatDuration(positionMs), color = White)
             if (!isLandscape) {
                 if (type == PublicationType.MEDITATION) {
-                    IconButton(onClick = onPlaylistClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_playlist),
-                            contentDescription = "Playlist",
-                            tint = White
-                        )
+                    if (isOnboardingPreview) {
+                        Box(modifier = Modifier.size(48.dp))
+                    } else {
+                        IconButton(onClick = onPlaylistClick) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_playlist),
+                                contentDescription = "Playlist",
+                                tint = White
+                            )
+                        }
                     }
                 } else {
                     IconButton(onClick = onToggleFullscreen) {

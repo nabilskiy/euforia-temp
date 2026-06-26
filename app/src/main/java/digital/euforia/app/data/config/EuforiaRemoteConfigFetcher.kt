@@ -94,6 +94,12 @@ class EuforiaRemoteConfigFetcher(
         return getBooleanConfig("intro_${stepId}_step_show").dataOrNull ?: default
     }
 
+    fun getIntroSkipDelaySeconds(): Double {
+        return runCatching { remoteConfig.getDouble(KEY_INTRO_SKIP_DELAY) }
+            .getOrDefault(0.0)
+            .coerceAtLeast(0.0)
+    }
+
     fun getIntroSceneTimerSeconds(): Int {
         return runCatching { remoteConfig.getLong(KEY_INTRO_SCENE_TIMER).toInt() }
             .getOrDefault(DEFAULT_INTRO_SCENE_TIMER_SECONDS)
@@ -364,6 +370,7 @@ class EuforiaRemoteConfigFetcher(
         private const val KEY_INTRO_REASONS_STEP_SHOW = "intro_reasons_step_show"
         private const val KEY_INTRO_VIDEO_SKIP_ALLOW = "intro_video_skip_allow"
         private const val KEY_INTRO_VARIANT = "intro_variant"
+        private const val KEY_INTRO_SKIP_DELAY = "intro_skip_delay"
         private const val KEY_INTRO_SCENE_TIMER = "intro_scene_timer"
         private const val KEY_INTRO_DEFAULT_MEDITATION_ID = "intro_default_meditation_id"
         private const val KEY_INTRO_DEFAULT_SCENE_ID = "intro_default_scene_id"

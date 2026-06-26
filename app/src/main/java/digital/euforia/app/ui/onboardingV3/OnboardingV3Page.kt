@@ -90,11 +90,13 @@ sealed class OnboardingV3Page(
 
     data object DisclaimerPage : OnboardingV3Page(
         stepId = "disclaimer",
+        isSkippable = true,
     )
 
     data object AgePage : OnboardingV3Page(
         stepId = "age",
         titleRes = R.string.intro_v3_age_title,
+        isSkippable = true,
         isQuestion = true,
     )
 

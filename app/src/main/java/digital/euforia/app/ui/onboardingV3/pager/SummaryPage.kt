@@ -1,11 +1,6 @@
 package digital.euforia.app.ui.onboardingV3.pager
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
@@ -22,9 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -34,8 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -54,14 +47,12 @@ import androidx.compose.ui.unit.sp
 import digital.euforia.app.R
 import digital.euforia.app.domain.model.onboarding.Goal
 import digital.euforia.app.domain.model.onboarding.IntroAnswerItem
-import digital.euforia.app.ui.theme.PrimaryButtonText
+import digital.euforia.app.ui.onboardingV3.components.V3GradientTitleButton
+import digital.euforia.app.ui.onboardingV3.components.v3BeaconLiftCapsuleAnimation
 import digital.euforia.app.ui.theme.White
 import digital.euforia.app.ui.util.LocalLocalizedRes
-import digital.euforia.app.ui.util.widget.noRippleClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
 
@@ -114,7 +105,7 @@ fun SummaryPage(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(top = 40.dp)
-                .padding(bottom = 124.dp),
+                .padding(bottom = 190.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
@@ -156,7 +147,7 @@ fun SummaryPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(240.dp)
-                    .padding(top = 20.dp),
+                    .padding(top = 10.dp),
             )
 
             SummaryCard(
@@ -206,8 +197,32 @@ fun SummaryPage(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.fillMaxWidth().navigationBarsPadding())
         }
 
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(230.dp)
+                .navigationBarsPadding()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0f to Color(0x0017191F),
+                            0.30f to Color(0xF217191F),
+                            1f to Color(0xFF17191F),
+                        ),
+                    ),
+                ),
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(96.dp)
+                .background(Color(0xFF17191F)),
+        )
         SummaryBottomButton(
             text = localizedRes.string(R.string.intro_summary_button),
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -238,82 +253,27 @@ private fun SummaryBottomButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "summaryButtonPulse")
-    val phase = infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2_700, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "summaryButtonPulsePhase",
-    ).value
-    val pulse = 0.5f - (cos(phase * PI.toFloat() * 2f) * 0.5f)
-    val scale = 0.994f + pulse * 0.032f
-    val lift = -4f - pulse * 7f
-
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0x0017191F),
-                        Color(0xFF17191F),
+                    colorStops = arrayOf(
+                        0f to Color(0x0017191F),
+                        0.36f to Color(0xF217191F),
+                        1f to Color(0xFF17191F),
                     ),
                 ),
             )
             .padding(horizontal = 40.dp, vertical = 30.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .fillMaxWidth()
-                .height(60.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        translationY = lift
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                    .blur(7.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(Color(0xFFE29B31), Color(0xFFFF5589), Color(0xFF204FC0)),
-                        ),
-                        CircleShape,
-                    ),
-                )
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(White, CircleShape)
-                        .noRippleClickable(onClick),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = text,
-                        color = PrimaryButtonText,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    )
-                }
-            }
-        }
+        V3GradientTitleButton(
+            text = text,
+            modifier = Modifier.v3BeaconLiftCapsuleAnimation(),
+            onClick = onClick,
+        )
     }
 }
 
@@ -489,11 +449,24 @@ private fun SummaryGraph(
                 startX = 0f,
                 endX = size.width,
             )
+            val graphFadeBrush = Brush.verticalGradient(
+                colorStops = arrayOf(
+                    0f to Color.Transparent,
+                    1f to Color(0xFF17191F),
+                ),
+                startY = graphTop,
+                endY = size.height,
+            )
 
             drawPath(
                 path = fillPath,
                 brush = graphBrush,
-                alpha = graphProgress * 0.34f,
+                alpha = graphProgress * 0.60f,
+            )
+            drawPath(
+                path = fillPath,
+                brush = graphFadeBrush,
+                alpha = graphProgress,
             )
             drawPath(
                 path = visiblePath,
@@ -504,11 +477,21 @@ private fun SummaryGraph(
             dots.forEachIndexed { index, dot ->
                 val dotProgress = ((dotsProgress - index * 0.2f) / 0.6f).coerceIn(0f, 1f)
                 val point = samples.pointAtProgress(dot.progress)
-                drawLine(
-                    color = Color.Black.copy(alpha = 0.35f),
-                    start = Offset(point.x, point.y),
-                    end = Offset(point.x, size.height - 28.dp.toPx()),
-                    strokeWidth = 2.dp.toPx(),
+                val lineWidthPx = 2.dp.toPx()
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.35f),
+                            Color.Black.copy(alpha = 0f),
+                        ),
+                        startY = point.y,
+                        endY = size.height - 28.dp.toPx(),
+                    ),
+                    topLeft = Offset(point.x - lineWidthPx / 2f, point.y),
+                    size = Size(
+                        width = lineWidthPx,
+                        height = size.height - 28.dp.toPx() - point.y,
+                    ),
                 )
                 drawCircle(
                     color = if (point.x < size.width * 0.56f) SummaryAccentPink else SummaryAccentBlue,
@@ -521,6 +504,19 @@ private fun SummaryGraph(
                     center = point,
                 )
             }
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to Color(0x0017191F),
+                        0.62f to Color(0xF217191F),
+                        1f to Color(0xFF17191F),
+                    ),
+                    startY = size.height - 82.dp.toPx(),
+                    endY = size.height,
+                ),
+                topLeft = Offset(0f, size.height - 82.dp.toPx()),
+                size = Size(width = size.width, height = 82.dp.toPx()),
+            )
         }
         SummaryGraphLabels(
             isDirectionUp = isDirectionUp,
@@ -551,9 +547,9 @@ private fun SummaryGraphLabels(
             }
             val appear = ((dotsProgress - index * 0.2f) / 0.6f).coerceIn(0f, 1f)
             val titleOffsetY = when (index) {
-                0 -> if (isDirectionUp) 96.dp else 0.dp
-                1 -> 54.dp
-                else -> if (isDirectionUp) 0.dp else 96.dp
+                0 -> if (isDirectionUp) 82.dp else (-18).dp
+                1 -> 42.dp
+                else -> if (isDirectionUp) (-18).dp else 82.dp
             }
             Text(
                 text = dot.title,
