@@ -59,6 +59,7 @@ sealed class HomeDestination(val showNavBar: Boolean = true) {
         val savedId: Int? = null,
         val isOnboardingPreview: Boolean = false,
         val introSceneTimerSeconds: Int = 600,
+        val previewTitle: String? = null,
     ) : HomeDestination(showNavBar = false)
 
     @Serializable

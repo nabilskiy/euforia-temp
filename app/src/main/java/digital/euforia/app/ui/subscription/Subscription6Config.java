@@ -2,6 +2,7 @@ package digital.euforia.app.ui.subscription;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import digital.euforia.app.domain.usecase.translation.GetTranslationUseCase;
 import digital.euforia.app.ui.subscription.UserActivity;
 import digital.euforia.app.ui.subscription.RC;
 
@@ -33,11 +34,13 @@ public class Subscription6Config implements Serializable {
 
     public List<Subscription6Item> items;
 
-    public Subscription6Config(UserActivity activity) {
+    public Subscription6Config(UserActivity activity, GetTranslationUseCase getTranslationUseCase) {
         button_month = RC.getString(activity.getRC(), "premium_6_button_month");
         button_year = RC.getString(activity.getRC(), "premium_6_button_year");
-        year_label = RC.getString(activity.getRC(), "premium_6_year_label");
-        year_line2 = RC.getString(activity.getRC(), "premium_6_line2nd_year");
+        year_label = getTranslationUseCase.resolveOrOriginal(
+                RC.getString(activity.getRC(), "premium_6_year_label"));
+        year_line2 = getTranslationUseCase.resolveOrOriginal(
+                RC.getString(activity.getRC(), "premium_6_line2nd_year"));
         name_month = RC.getString(activity.getRC(), "premium_6_name_month");
         name_year = RC.getString(activity.getRC(), "premium_6_name_year");
         offer_month = RC.getString(activity.getRC(), "premium_6_offer_month");

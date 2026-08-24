@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -117,7 +116,7 @@ fun KeepExploringV3Page(
                     scaleX = anim.scale.value
                     scaleY = anim.scale.value
                 }
-                .blur(anim.blur.value.dp),
+                .introAnimatedTextBlur(anim.blur.value.dp),
         )
     }
 }

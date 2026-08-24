@@ -57,6 +57,10 @@ class MusicRepository(
 
     fun getByIdFlow(id: Int): Flow<MusicEntity?> = musicDao.getByIdFlow(id)
 
+    suspend fun getById(id: Int): MusicEntity? = withContext(Dispatchers.IO) {
+        musicDao.getById(id)
+    }
+
     fun getByCategoryIdFlow(categoryId: Int): Flow<List<MusicEntity>> =
         musicDao.getByCategoryIdFlow(categoryId)
 

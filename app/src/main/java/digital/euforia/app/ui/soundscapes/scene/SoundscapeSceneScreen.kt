@@ -94,6 +94,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import kotlin.math.hypot
 import androidx.media3.common.util.UnstableApi
@@ -122,7 +123,6 @@ import digital.euforia.app.ui.navigation.ONBOARDING_PREVIEW_DONE_RESULT_KEY
 import digital.euforia.app.ui.util.SubscriptionActivityLauncher
 import digital.euforia.app.ui.util.LinkGenerator
 import digital.euforia.app.ui.util.LocalLocalizedRes
-import digital.euforia.app.ui.util.widget.TriangleTooltipBubble
 import digital.euforia.app.ui.util.widget.ProgressIndicator
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -661,10 +661,10 @@ private fun BoxScope.SoundscapePreviewHints(
         exit = fadeOut(animationSpec = tween(260)),
         modifier = Modifier
             .align(Alignment.Center)
-            .offset(y = (-74).dp)
+            .offset(x = 36.dp, y = 84.dp)
             .zIndex(6f),
     ) {
-        TriangleTooltipBubble(text = soundHint)
+        SoundscapePreviewHintBubble(text = soundHint)
     }
     AnimatedVisibility(
         visible = step == 2,
@@ -676,8 +676,29 @@ private fun BoxScope.SoundscapePreviewHints(
             .padding(end = 18.dp, bottom = 118.dp)
             .zIndex(6f),
     ) {
-        TriangleTooltipBubble(text = musicHint)
+        SoundscapePreviewHintBubble(text = musicHint)
     }
+}
+
+@Composable
+private fun SoundscapePreviewHintBubble(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        color = White,
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodyLarge.copy(
+            fontSize = 17.sp,
+            lineHeight = 22.sp,
+        ),
+        modifier = modifier
+            .width(210.dp)
+            .clip(RoundedCornerShape(9.dp))
+            .background(Color(0xFF1D2230).copy(alpha = 0.94f))
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+    )
 }
 
 @Composable

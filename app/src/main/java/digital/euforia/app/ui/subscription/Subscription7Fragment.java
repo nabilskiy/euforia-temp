@@ -35,6 +35,9 @@ import digital.euforia.app.App;
 import digital.euforia.app.R;
 import digital.euforia.app.billing.localdb.AugmentedSkuDetails;
 import digital.euforia.app.billing.model.SubscriptionInfoModel;
+import digital.euforia.app.domain.usecase.translation.GetTranslationUseCase;
+
+import javax.inject.Inject;
 
 
 /**
@@ -45,6 +48,9 @@ import digital.euforia.app.billing.model.SubscriptionInfoModel;
 @UnstableApi
 @dagger.hilt.android.AndroidEntryPoint
 public class Subscription7Fragment extends SubscriptionFragment {
+
+    @Inject
+    GetTranslationUseCase getTranslationUseCase;
 
     private static final int DEFAULT_VIDEO = R.raw.vid_subs_4;
 
@@ -116,7 +122,7 @@ public class Subscription7Fragment extends SubscriptionFragment {
 
     @Override
     protected void onPremiumPreSetup() {
-        this.config = new Subscription7Config(activity);
+        this.config = new Subscription7Config(activity, getTranslationUseCase);
     }
 
     void onAnnualClick() {

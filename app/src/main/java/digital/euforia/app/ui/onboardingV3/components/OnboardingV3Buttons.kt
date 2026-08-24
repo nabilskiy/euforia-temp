@@ -244,16 +244,16 @@ private fun BoxScope.V3ButtonGlow(
     V3GlowCapsule(
         brush = gradientBrush,
         alpha = 0.45f,
-        blurRadius = 10.dp,
-        scaleX = 1.03f,
-        scaleY = 1.1f,
+        blurRadius = 8.dp,
+        scaleX = 1.02f,
+        scaleY = 1.06f,
     )
     V3GlowCapsule(
         brush = gradientBrush,
         alpha = 0.90f,
         blurRadius = 3.dp,
-        scaleX = 1.015f,
-        scaleY = 1.05f,
+        scaleX = 1.01f,
+        scaleY = 1.03f,
     )
 }
 

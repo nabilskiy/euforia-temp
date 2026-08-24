@@ -109,8 +109,6 @@ private fun NotificationTimeCard(
         OnboardingV3NotificationSlot.Evening -> R.string.intro_notifications_evening_title
     }
 
-    val hourBounds = timeOfDayConfig.notificationHourBounds(setting.slot)
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -160,11 +158,13 @@ private fun NotificationTimeCard(
                         fontWeight = FontWeight.Light,
                     ),
                 )
+                val hourBounds = timeOfDayConfig.notificationHourBounds(setting.slot)
                 TimePickerView(
                     expanded = isExpanded && setting.enabled,
                     initialTime = setting.hour to setting.minute,
                     fromHour = hourBounds.first,
                     toHour = hourBounds.second,
+                    toMinute = 0,
                     onTimeChanged = onTimeChanged,
                     onExpandedChange = onExpandChange,
                 )
@@ -180,9 +180,9 @@ private fun NotificationTimeCard(
 private fun TimeOfDayConfig.notificationHourBounds(
     slot: OnboardingV3NotificationSlot,
 ): Pair<Int, Int> = when (slot) {
-    OnboardingV3NotificationSlot.Morning -> morningBegin to (daytimeBegin - 1).coerceAtLeast(morningBegin)
-    OnboardingV3NotificationSlot.Daytime -> daytimeBegin to (eveningBegin - 1).coerceAtLeast(daytimeBegin)
-    OnboardingV3NotificationSlot.Evening -> eveningBegin to morningBegin
+    OnboardingV3NotificationSlot.Morning -> 5 to 12
+    OnboardingV3NotificationSlot.Daytime -> 12 to 18
+    OnboardingV3NotificationSlot.Evening -> 19 to 0
 }
 
 @Composable

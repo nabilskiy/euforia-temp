@@ -93,6 +93,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import digital.euforia.app.databinding.ActivityUserBinding;
+import digital.euforia.app.ui.util.SystemBarsUtilsKt;
 //import pro.oncreate.easynet.data.NError;
 //import pro.oncreate.easynet.models.NRequestModel;
 //import pro.oncreate.easynet.models.NResponseModel;
@@ -147,6 +148,7 @@ public class UserActivity extends digital.euforia.app.ui.base.FragmentBaseActivi
     @UnstableApi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SystemBarsUtilsKt.setupEdgeToEdge(this);
         getWindow().setBackgroundDrawableResource(R.color.colorPrimary);
         updateNavigationBarColor();
 
@@ -576,26 +578,9 @@ public class UserActivity extends digital.euforia.app.ui.base.FragmentBaseActivi
 
     private void updateNavigationBarColor() {
         Fragment currentFragment = getCurrentFragment();
-        boolean blackNavigation = false;
-
-//        getWindow().setNavigationBarColor(blackNavigation ? Color.BLACK
-//                : ContextCompat.getColor(this, R.color.colorNavigation));
-
-        getWindow().getDecorView().setSystemUiVisibility(blackNavigation
-                ? getWindow().getDecorView().getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-                : getWindow().getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-
         try {
-            if (blackNavigation) {
-                bottomNavigationLayout.setVisibility(View.GONE);
-                return;
-            }
-
             BaseFragment cf = (BaseFragment) currentFragment;
             if (!cf.isChildFragment()) {
-//                if (cf.getNavigationItem() != null) {
-//                    selectTab(cf.getNavigationItem());
-//                }
                 bottomNavigationLayout.setVisibility(cf.bottomNavigationRequired() ? View.VISIBLE : View.GONE);
             }
         } catch (Exception ignored) {

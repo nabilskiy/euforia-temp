@@ -304,7 +304,7 @@ private fun IntroBrandText(
                         scaleX = 0.8f + letterProgress * 0.2f
                         scaleY = 0.8f + letterProgress * 0.2f
                     }
-                    .blur(((1f - letterProgress) * 20f).dp),
+                    .introAnimatedTextBlur(((1f - letterProgress) * 20f).dp),
             )
         }
     }

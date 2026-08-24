@@ -76,45 +76,88 @@ private const val SCENE_TRANSITION_MS = 1_200
 private const val SCENE_AUDIO_FADE_MS = 1_000L
 private val SceneSoundButtonSize = 60.dp
 
+class ScenesPreviewPrewarmState(
+    val players: List<ExoPlayer>,
+) {
+    var firstSceneFrameRendered by mutableStateOf(false)
+        private set
+
+    fun markFirstSceneFrameRendered() {
+        firstSceneFrameRendered = true
+    }
+
+    fun release() {
+        players.forEach { it.release() }
+    }
+}
+
+@Composable
+internal fun rememberScenesPreviewPrewarmState(): ScenesPreviewPrewarmState {
+    val context = LocalContext.current
+    val state = remember(context) {
+        ScenesPreviewPrewarmState(
+            players = introScenes.map { scene ->
+                ExoPlayer.Builder(context).build().apply {
+                    repeatMode = ExoPlayer.REPEAT_MODE_ONE
+                    volume = 0f
+                    setMediaItem(MediaItem.fromUri(scene.videoUrl))
+                    prepare()
+                    playWhenReady = false
+                }
+            },
+        )
+    }
+    DisposableEffect(state) {
+        onDispose { state.release() }
+    }
+    return state
+}
+
+@Composable
+internal fun ScenesPreviewPrewarmHost(
+    state: ScenesPreviewPrewarmState,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (!enabled || state.firstSceneFrameRendered) return
+
+    SceneVideoBackground(
+        player = state.players.first(),
+        modifier = modifier.graphicsLayer { alpha = 0.01f },
+        onFirstFrameRendered = state::markFirstSceneFrameRendered,
+    )
+}
+
 @Composable
 fun ScenesPreviewPage(
     isPageActive: Boolean,
+    prewarmState: ScenesPreviewPrewarmState,
     onBackClick: () -> Unit,
     onNextClick: () -> Unit,
 ) {
     if (!isPageActive) return
 
     var sceneIndex by remember { mutableIntStateOf(0) }
-    var hasRenderedFirstFrame by remember { mutableStateOf(false) }
     var sceneAudioPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     val currentSceneAudioPlayer = rememberUpdatedState(sceneAudioPlayer)
     val appearance = remember { Animatable(0f) }
     val context = LocalContext.current
-    val scenePlayers = remember(context) {
-        introScenes.map { scene ->
-            ExoPlayer.Builder(context).build().apply {
-                repeatMode = ExoPlayer.REPEAT_MODE_ONE
-                volume = 0f
-                setMediaItem(MediaItem.fromUri(scene.videoUrl))
-                prepare()
-                // Match iOS prefetch behavior: start buffering before the scene is shown.
-                playWhenReady = true
-            }
-        }
-    }
+    val scenePlayers = prewarmState.players
 
     DisposableEffect(scenePlayers) {
         BackgroundPlayerHelper.pauseWithFade()
         onDispose {
             currentSceneAudioPlayer.value?.release()
             sceneAudioPlayer = null
-            scenePlayers.forEach { it.release() }
+            scenePlayers.forEach { it.playWhenReady = false }
             BackgroundPlayerHelper.resumeWithFade(context, R.raw.bgm_intro)
         }
     }
 
     LaunchedEffect(Unit) {
-        delay(300L)
+        while (!prewarmState.firstSceneFrameRendered) {
+            delay(16L)
+        }
         appearance.animateTo(
             targetValue = 1f,
             animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
@@ -129,6 +172,10 @@ fun ScenesPreviewPage(
     }
 
     LaunchedEffect(sceneIndex) {
+        scenePlayers.forEachIndexed { index, player ->
+            player.playWhenReady = index == sceneIndex
+        }
+
         val oldPlayer = sceneAudioPlayer
         if (oldPlayer != null) {
             launch {
@@ -148,20 +195,16 @@ fun ScenesPreviewPage(
     val titleAppear = scenesIntroStagger(appearance.value, start = 0f, end = 0.65f)
     val bodyAppear = scenesIntroStagger(appearance.value, start = 0.12f, end = 0.78f)
     val localizedRes = LocalLocalizedRes.current
-    val videoAlpha by animateFloatAsState(
-        targetValue = if (hasRenderedFirstFrame) 1f else 0f,
-        animationSpec = tween(durationMillis = 220),
-        label = "scenesPreviewFirstFrameAlpha",
+    val chromeAlpha by animateFloatAsState(
+        targetValue = if (prewarmState.firstSceneFrameRendered) 1f else 0f,
+        animationSpec = tween(durationMillis = 180),
+        label = "scenesPreviewChromeAlpha",
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ScenesPreviewWarmFallback()
-
         AnimatedContent(
             targetState = sceneIndex,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = videoAlpha },
+            modifier = Modifier.fillMaxSize(),
             transitionSpec = {
                 fadeIn(tween(SCENE_TRANSITION_MS)) togetherWith
                         fadeOut(tween(SCENE_TRANSITION_MS)) using
@@ -171,13 +214,21 @@ fun ScenesPreviewPage(
         ) { index ->
             SceneVideoBackground(
                 player = scenePlayers[index],
-                onFirstFrameRendered = { hasRenderedFirstFrame = true },
+                modifier = Modifier.graphicsLayer {
+                    alpha = if (index == 0 && !prewarmState.firstSceneFrameRendered) 0.01f else 1f
+                },
+                onFirstFrameRendered = {
+                    if (index == 0) {
+                        prewarmState.markFirstSceneFrameRendered()
+                    }
+                },
             )
         }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer { alpha = chromeAlpha }
                 .background(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
@@ -193,12 +244,15 @@ fun ScenesPreviewPage(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .graphicsLayer { alpha = chromeAlpha }
                 .height(330.dp),
         ) {
             SceneBottomTint(gradient = introScenes[sceneIndex].bottomGradient)
         }
 
-        SceneSoundIcons(scene = introScenes[sceneIndex])
+        Box(modifier = Modifier.graphicsLayer { alpha = chromeAlpha }) {
+            SceneSoundIcons(scene = introScenes[sceneIndex])
+        }
 
         Icon(
             modifier = Modifier
@@ -206,6 +260,7 @@ fun ScenesPreviewPage(
                 .padding(start = 16.dp, top = 20.dp)
                 .size(24.dp)
                 .align(Alignment.TopStart)
+                .graphicsLayer { alpha = chromeAlpha }
                 .noRippleClickable(onBackClick),
             painter = painterResource(R.drawable.ic_arrow_back),
             contentDescription = null,
@@ -216,6 +271,7 @@ fun ScenesPreviewPage(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
+                .graphicsLayer { alpha = chromeAlpha }
                 .padding(start = 40.dp, end = 40.dp, bottom = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -259,6 +315,7 @@ fun ScenesPreviewPage(
 @Composable
 private fun SceneVideoBackground(
     player: ExoPlayer,
+    modifier: Modifier = Modifier,
     onFirstFrameRendered: () -> Unit,
 ) {
     DisposableEffect(player) {
@@ -288,25 +345,7 @@ private fun SceneVideoBackground(
         update = { root ->
             root.findViewById<PlayerView>(R.id.player_view).player = player
         },
-        modifier = Modifier.fillMaxSize(),
-    )
-}
-
-@Composable
-private fun ScenesPreviewWarmFallback() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colorStops = arrayOf(
-                        0.00f to Color(0xFFE4D2B8),
-                        0.34f to Color(0xFFA86A3D),
-                        0.68f to Color(0xFF4E1A12),
-                        1.00f to Color(0xFF030713),
-                    ),
-                ),
-            ),
+        modifier = modifier.fillMaxSize(),
     )
 }
 

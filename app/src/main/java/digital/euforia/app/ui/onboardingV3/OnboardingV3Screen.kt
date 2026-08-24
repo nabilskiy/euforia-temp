@@ -80,6 +80,8 @@ import digital.euforia.app.ui.navigation.HomeDestination
 import digital.euforia.app.ui.navigation.ONBOARDING_PREVIEW_DONE_RESULT_KEY
 import digital.euforia.app.ui.navigation.OnboardingV3
 import digital.euforia.app.ui.onboardingV3.pager.PagerPage
+import digital.euforia.app.ui.onboardingV3.pager.ScenesPreviewPrewarmHost
+import digital.euforia.app.ui.onboardingV3.pager.rememberScenesPreviewPrewarmState
 import digital.euforia.app.ui.player.audio.AudioPlayerEntryPoint
 import digital.euforia.app.ui.programs.publication.PublicationType
 import digital.euforia.app.ui.onboardingV3.components.V3PrimaryButton
@@ -178,6 +180,7 @@ fun OnboardingV3Screen(
                         sceneId = effect.sceneId,
                         isOnboardingPreview = true,
                         introSceneTimerSeconds = effect.introSceneTimerSeconds,
+                        previewTitle = effect.previewTitle,
                     ),
                 )
             }
@@ -208,6 +211,7 @@ private fun OnboardingV3Content(
     var isQuestionProgressRevealPreparing by remember { mutableStateOf(false) }
     var questionProgressAppearanceTrigger by remember { mutableIntStateOf(0) }
     val progressEntrance = remember { Animatable(1f) }
+    val scenesPreviewPrewarmState = rememberScenesPreviewPrewarmState()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
@@ -309,6 +313,14 @@ private fun OnboardingV3Content(
             )
             .noRippleClickable { },
     ) {
+        val scenesPreviewPosition = state.pages.indexOf(OnboardingV3Page.ScenesPreviewPage)
+        ScenesPreviewPrewarmHost(
+            state = scenesPreviewPrewarmState,
+            enabled = scenesPreviewPosition > 0 &&
+                    state.currentPage.position == scenesPreviewPosition - 1,
+            modifier = Modifier.fillMaxSize(),
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -322,6 +334,7 @@ private fun OnboardingV3Content(
             PagerPage(
                 viewModel = viewModel,
                 state = state,
+                scenesPreviewPrewarmState = scenesPreviewPrewarmState,
                 position = displayedPosition,
                 activePosition = displayedPosition,
                 listTopPadding = measuredTopPadding ?: pageType.fallbackListTopPadding,

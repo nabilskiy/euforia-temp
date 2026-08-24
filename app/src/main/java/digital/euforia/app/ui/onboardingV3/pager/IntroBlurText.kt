@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
@@ -101,6 +102,10 @@ internal suspend fun showIntroText(
     }
 }
 
+internal fun Modifier.introAnimatedTextBlur(radius: Dp): Modifier {
+    return blur(radius, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+}
+
 @Composable
 internal fun IntroBlurText(
     text: String,
@@ -134,6 +139,6 @@ internal fun IntroBlurText(
                 scaleY = scale
             }
             .alpha(animState.alpha.value)
-            .blur(animState.blurRadius.value.dp),
+            .introAnimatedTextBlur(animState.blurRadius.value.dp),
     )
 }

@@ -21,6 +21,9 @@ interface MusicDao {
     @Query("SELECT * FROM music WHERE id = :id")
     fun getByIdFlow(id: Int): Flow<Music?>
 
+    @Query("SELECT * FROM music WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Int): Music?
+
     @Query("SELECT * FROM music WHERE category_id = :categoryId ORDER BY id DESC")
     fun getByCategoryIdFlow(categoryId: Int): Flow<List<Music>>
 

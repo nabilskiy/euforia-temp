@@ -18,6 +18,9 @@ import com.google.gson.Gson;
 import digital.euforia.app.R;
 import digital.euforia.app.billing.localdb.AugmentedSkuDetails;
 import digital.euforia.app.billing.model.SubscriptionInfoModel;
+import digital.euforia.app.domain.usecase.translation.GetTranslationUseCase;
+
+import javax.inject.Inject;
 
 
 /**
@@ -28,6 +31,9 @@ import digital.euforia.app.billing.model.SubscriptionInfoModel;
 @UnstableApi
 @dagger.hilt.android.AndroidEntryPoint
 public class Subscription6Fragment extends SubscriptionFragment {
+
+    @Inject
+    GetTranslationUseCase getTranslationUseCase;
 
         TextView title;
     LinearLayout items;
@@ -94,7 +100,7 @@ public class Subscription6Fragment extends SubscriptionFragment {
 
     @Override
     protected void onPremiumPreSetup() {
-        this.config = new Subscription6Config(activity);
+        this.config = new Subscription6Config(activity, getTranslationUseCase);
     }
 
     void onAnnualClick() {

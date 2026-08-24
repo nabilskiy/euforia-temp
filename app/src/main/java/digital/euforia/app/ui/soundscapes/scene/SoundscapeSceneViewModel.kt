@@ -50,6 +50,14 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
 
+private val InternalSceneTitleRegex = Regex("^Scene\\s+\\d+$", RegexOption.IGNORE_CASE)
+
+private data class DefaultSceneMusic(
+    val id: Int?,
+    val url: String?,
+    val title: String?,
+)
+
 @HiltViewModel
 class SoundscapeSceneViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -73,6 +81,7 @@ class SoundscapeSceneViewModel @Inject constructor(
     private val playlistId: Int? = savedStateHandle["playlistId"]
     val isOnboardingPreview: Boolean = savedStateHandle["isOnboardingPreview"] ?: false
     val introSceneTimerSeconds: Int = savedStateHandle["introSceneTimerSeconds"] ?: 600
+    private val onboardingPreviewTitle: String = savedStateHandle["previewTitle"] ?: ""
     private val openedPresetId: Int? = presetIdFromCopySceneId(sceneId)
     private var sceneCategoryAliasesById: Map<Int, String> = emptyMap()
 
@@ -117,7 +126,7 @@ class SoundscapeSceneViewModel @Inject constructor(
                 val localAlias = earlyScene.categoryId?.let(sceneCategoryAliasesById::get)
                 reduce {
                     state.copy(
-                        title = openedPreset?.name?.ifBlank { earlyScene.name } ?: earlyScene.name,
+                        title = resolveDisplaySceneTitle(openedPreset?.name?.ifBlank { earlyScene.name } ?: earlyScene.name),
                         videoUrl = earlyScene.videoUrl,
                         imageUrl = earlyScene.imagePreviewUrl ?: earlyScene.imageUrl,
                         isPro = earlyScene.pro,
@@ -188,8 +197,9 @@ class SoundscapeSceneViewModel @Inject constructor(
             val manifest = SoundscapeOfflineManifest.fromJsonOrNull(readyDownload?.localPath)
             val resolvedVideoUrl = resolveVideoPlaybackUrl(scene, remoteScene, manifest)
             val resolvedImageUrl = resolveImagePlaybackUrl(scene, remoteScene, manifest)
+            val defaultSceneMusic = resolveDefaultSceneMusic(remoteScene = remoteScene, scene = scene)
             val resolvedSceneMusicUrl = resolveMusicPlaybackUrl(
-                preferredUrl = loaded.selectedMusicUrl ?: remoteScene.resolveDefaultSceneMusicUrl(),
+                preferredUrl = loaded.selectedMusicUrl ?: defaultSceneMusic?.url,
                 manifest = manifest
             )
             val usesImageBackground = loaded.backgroundSource == "image" || loaded.backgroundSource == "local_image"
@@ -223,14 +233,14 @@ class SoundscapeSceneViewModel @Inject constructor(
             reduce {
                 val sceneCategoryAlias = scene.categoryId?.let(sceneCategoryAliasesById::get)
                 state.copy(
-                    title = openedPreset?.name?.ifBlank { scene.name } ?: scene.name,
+                    title = resolveDisplaySceneTitle(openedPreset?.name?.ifBlank { scene.name } ?: scene.name),
                     subtitle = remoteScene?.subtitle.orEmpty(),
                     videoUrl = resolvedBackgroundVideoUrl,
                     imageUrl = resolvedBackgroundImageUrl,
-                    selectedMusicId = loaded.selectedMusicId ?: remoteScene?.sceneMusics?.firstOrNull()?.music?.id,
+                    selectedMusicId = loaded.selectedMusicId ?: defaultSceneMusic?.id,
                     sceneMusicUrl = resolvedSceneMusicUrl,
                     sceneMusicTitle = loaded.selectedMusicTitle
-                        ?: remoteScene?.sceneMusics?.firstOrNull()?.music?.name?.takeIf { !it.isNullOrBlank() },
+                        ?: defaultSceneMusic?.title,
                     sceneMusicVolumeFactor = loaded.musicFactor,
                     isPro = scene.pro,
                     sceneCategoryId = scene.categoryId,
@@ -253,10 +263,20 @@ class SoundscapeSceneViewModel @Inject constructor(
                     ),
                 )
             }
-            val sceneTitleForPlayback = container.stateFlow.value.title.ifBlank { scene.name }
+            val sceneTitleForPlayback = container.stateFlow.value.title.ifBlank {
+                resolveDisplaySceneTitle(scene.name)
+            }
             startScenePreparation(sceneTitleForPlayback, loaded.finalLayers)
             analyticSender.scenesItemClick()
         }
+    }
+
+    private fun resolveDisplaySceneTitle(rawTitle: String?): String {
+        val previewTitle = onboardingPreviewTitle.trim()
+        if (isOnboardingPreview && previewTitle.isNotBlank()) return previewTitle
+
+        val title = rawTitle.orEmpty().trim()
+        return if (isOnboardingPreview && title.isInternalSceneTitle()) "" else title
     }
 
     private fun startScenePreparation(sceneTitle: String, layers: List<SoundscapeLayerState>) {
@@ -314,6 +334,29 @@ class SoundscapeSceneViewModel @Inject constructor(
         return sm.musicFileUrl?.takeIf { it.isNotBlank() }
             ?: sm.music?.fileUrl?.takeIf { it.isNotBlank() }
             ?: sm.music?.file?.url?.takeIf { it.isNotBlank() }
+    }
+
+    private suspend fun resolveDefaultSceneMusic(
+        remoteScene: NetworkScene?,
+        scene: Scene,
+    ): DefaultSceneMusic? {
+        val remoteMusic = remoteScene?.sceneMusics?.firstOrNull()
+        val remoteMusicUrl = remoteScene.resolveDefaultSceneMusicUrl()
+        if (!remoteMusicUrl.isNullOrBlank()) {
+            return DefaultSceneMusic(
+                id = remoteMusic?.music?.id,
+                url = remoteMusicUrl,
+                title = remoteMusic?.music?.name?.takeIf { !it.isNullOrBlank() },
+            )
+        }
+
+        val localMusicId = scene.musicId ?: return null
+        val localMusic = musicRepository.getById(localMusicId) ?: return null
+        return DefaultSceneMusic(
+            id = localMusic.id,
+            url = localMusic.fileUrl.takeIf { it.isNotBlank() } ?: localMusic.file?.url,
+            title = localMusic.name.takeIf { it.isNotBlank() },
+        )
     }
 
     private suspend fun resolveVideoPlaybackUrl(
@@ -1175,8 +1218,9 @@ class SoundscapeSceneViewModel @Inject constructor(
                 val editorSceneId = container.stateFlow.value.sceneId
                 if (playback.sceneId != editorSceneId) return@collectLatest
                 reduce {
+                    val playbackTitle = resolveDisplaySceneTitle(playback.sceneTitle)
                     state.copy(
-                        title = playback.sceneTitle,
+                        title = playbackTitle.ifBlank { state.title },
                         isPlaying = playback.isPlaying,
                         layers = playback.layers.map {
                             SoundLayerUi(
@@ -1355,6 +1399,8 @@ data class SceneMusicCategoryUi(
     val alias: String = "",
     val position: Int = 0,
 )
+
+private fun String.isInternalSceneTitle(): Boolean = InternalSceneTitleRegex.matches(trim())
 
 sealed class SoundscapeSceneSideEffect {
     data object NavigateToPaywall : SoundscapeSceneSideEffect()

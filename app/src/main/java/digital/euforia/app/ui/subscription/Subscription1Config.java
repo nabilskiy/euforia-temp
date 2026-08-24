@@ -64,13 +64,10 @@ public class Subscription1Config implements Serializable {
         button_month = RC.getString(activity.getRC(), "premium_1_button_month");
         button_year = RC.getString(activity.getRC(), "premium_1_button_year");
 
-        String nameMonthKey = RC.getString(activity.getRC(), "premium_1_name_month");
-        String translatedNameMonth = getTranslationUseCase.getNow(nameMonthKey, true);
-        name_month = translatedNameMonth.isEmpty() ? nameMonthKey : translatedNameMonth;
-
-        String nameYearKey = RC.getString(activity.getRC(), "premium_1_name_year");
-        String translatedNameYear = getTranslationUseCase.getNow(nameYearKey, true);
-        name_year = translatedNameYear.isEmpty() ? nameYearKey : translatedNameYear;
+        name_month = getTranslationUseCase.resolveOrOriginal(
+                RC.getString(activity.getRC(), "premium_1_name_month"));
+        name_year = getTranslationUseCase.resolveOrOriginal(
+                RC.getString(activity.getRC(), "premium_1_name_year"));
 
         offer_month = RC.getString(activity.getRC(), "premium_1_offer_month");
         offer_year = RC.getString(activity.getRC(), "premium_1_offer_year");
@@ -83,8 +80,10 @@ public class Subscription1Config implements Serializable {
         video_from_primary = RC.getString(activity.getRC(), "premium_1_video_from_primary");
         video_from_second = RC.getString(activity.getRC(), "premium_1_video_from_second");
 
-        year_label = RC.getString(activity.getRC(), "premium_1_year_label");
-        year_line2 = RC.getString(activity.getRC(), "premium_1_line2nd_year");
+        year_label = getTranslationUseCase.resolveOrOriginal(
+                RC.getString(activity.getRC(), "premium_1_year_label"));
+        year_line2 = getTranslationUseCase.resolveOrOriginal(
+                RC.getString(activity.getRC(), "premium_1_line2nd_year"));
 
         title_caps = RC.getBoolean(activity.getRC(), "premium_1_title_caps");
         title_color = "#" + RC.getString(activity.getRC(), "premium_1_title_color");

@@ -56,10 +56,24 @@ fun TimePickerView(
     expanded: Boolean,
     initialTime: Pair<Int, Int>,
     fromHour: Int = 0,
+    fromMinute: Int = 0,
     toHour: Int = 23,
+    toMinute: Int = 59,
     onTimeChanged: (Pair<Int, Int>) -> Unit,
     onExpandedChange: (Boolean) -> Unit
 ) {
+    val initialBoundedTime = initialTime.coerceToTimeBounds(fromHour, fromMinute, toHour, toMinute)
+    var selectedHour by remember { mutableIntStateOf(initialBoundedTime.first) }
+    var selectedMinute by remember { mutableIntStateOf(initialBoundedTime.second) }
+
+    LaunchedEffect(expanded, initialTime, fromHour, fromMinute, toHour, toMinute) {
+        if (expanded) {
+            val boundedTime = initialTime.coerceToTimeBounds(fromHour, fromMinute, toHour, toMinute)
+            selectedHour = boundedTime.first
+            selectedMinute = boundedTime.second
+        }
+    }
+
     DropdownMenu(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         containerColor = DarkGray,
@@ -68,13 +82,19 @@ fun TimePickerView(
         onDismissRequest = { onExpandedChange(false) }
     ) {
         PickHourMinute(
-            initialHour = initialTime.first,
-            initialMinute = initialTime.second,
+            initialHour = selectedHour,
+            initialMinute = selectedMinute,
             onHourChange = {
-                onTimeChanged(it to initialTime.second)
+                val boundedTime = (it to selectedMinute).coerceToTimeBounds(fromHour, fromMinute, toHour, toMinute)
+                selectedHour = boundedTime.first
+                selectedMinute = boundedTime.second
+                onTimeChanged(selectedHour to selectedMinute)
             },
             onMinuteChange = {
-                onTimeChanged(initialTime.first to it)
+                val boundedTime = (selectedHour to it).coerceToTimeBounds(fromHour, fromMinute, toHour, toMinute)
+                selectedHour = boundedTime.first
+                selectedMinute = boundedTime.second
+                onTimeChanged(selectedHour to selectedMinute)
             },
             focusIndicator = PickTimeFocusIndicator(
                 enabled = true,
@@ -165,6 +185,28 @@ fun TimePickerView(
 //            )
 //        }
     }
+}
+
+private fun Pair<Int, Int>.coerceToTimeBounds(
+    fromHour: Int,
+    fromMinute: Int,
+    toHour: Int,
+    toMinute: Int,
+): Pair<Int, Int> {
+    val start = fromHour.coerceIn(0, 23) * 60 + fromMinute.coerceIn(0, 59)
+    val end = toHour.coerceIn(0, 23) * 60 + toMinute.coerceIn(0, 59)
+    val total = first.coerceIn(0, 23) * 60 + second.coerceIn(0, 59)
+    val boundedTotal = if (start <= end) {
+        total.coerceIn(start, end)
+    } else if (total >= start || total <= end) {
+        total
+    } else {
+        val distanceToStart = (start - total + 24 * 60) % (24 * 60)
+        val distanceToEnd = (total - end + 24 * 60) % (24 * 60)
+        if (distanceToStart <= distanceToEnd) start else end
+    }
+
+    return (boundedTotal / 60).coerceIn(0, 23) to boundedTotal % 60
 }
 
 @Composable

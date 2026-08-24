@@ -17,6 +17,7 @@ import digital.euforia.app.ui.util.LocalLocalizedRes
 fun PagerPage(
     viewModel: OnboardingV3ViewModel,
     state: OnboardingV3State,
+    scenesPreviewPrewarmState: ScenesPreviewPrewarmState,
     position: Int,
     activePosition: Int = state.currentPage.position,
     listTopPadding: Dp,
@@ -105,6 +106,7 @@ fun PagerPage(
         )
         OnboardingV3Page.ScenesPreviewPage -> ScenesPreviewPage(
             isPageActive = isActive(),
+            prewarmState = scenesPreviewPrewarmState,
             onBackClick = viewModel::onPreviousPage,
             onNextClick = viewModel::onNextPage,
         )

@@ -30,12 +30,14 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.PendingPurchasesParams
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
-import com.android.billingclient.api.SkuDetails
-import com.android.billingclient.api.SkuDetailsParams
 import com.google.gson.Gson
+import java.util.concurrent.ConcurrentHashMap
 import digital.euforia.app.billing.localdb.AugmentedSkuDetails
 import digital.euforia.app.billing.localdb.Entitlement
 import digital.euforia.app.billing.localdb.LocalBillingDb
@@ -62,6 +64,7 @@ class BillingRepository private constructor(private val application: Application
     private lateinit var playStoreBillingClient: BillingClient
     private lateinit var localCacheBillingClient: LocalBillingDb
     var currentPurchases: List<Purchase>? = null
+    private val productDetailsById = ConcurrentHashMap<String, ProductDetails>()
 
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
 
@@ -109,32 +112,46 @@ class BillingRepository private constructor(private val application: Application
 
     private fun instantiateAndConnectToPlayBillingService() {
         playStoreBillingClient = BillingClient.newBuilder(application.applicationContext)
-            .enablePendingPurchases()
-            .setListener(this).build()
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder()
+                    .enableOneTimeProducts()
+                    .build()
+            )
+            .setListener(this)
+            .build()
         connectToPlayBillingService()
     }
 
     public fun connectToPlayBillingService(): Boolean {
         if (!playStoreBillingClient.isReady) {
+            Log.d("BillingRepository", "startConnection, isReady=false")
             playStoreBillingClient.startConnection(this)
             return true
         }
+        Log.d("BillingRepository", "BillingClient already ready, querying products")
+        queryProductDetailsAsync(BillingClient.ProductType.INAPP, BillingSku.INAPP_SKUS)
+        queryProductDetailsAsync(BillingClient.ProductType.SUBS, BillingSku.SUBS_SKUS)
+        queryPurchasesAsync()
         return false
     }
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                querySkuDetailsAsync(BillingClient.ProductType.INAPP, BillingSku.INAPP_SKUS)
-                querySkuDetailsAsync(BillingClient.ProductType.SUBS, BillingSku.SUBS_SKUS)
+                Log.d(
+                    "BillingRepository",
+                    "onBillingSetupFinished OK, querying products"
+                )
+                queryProductDetailsAsync(BillingClient.ProductType.INAPP, BillingSku.INAPP_SKUS)
+                queryProductDetailsAsync(BillingClient.ProductType.SUBS, BillingSku.SUBS_SKUS)
                 queryPurchasesAsync()
             }
 
-            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
-
-            }
-
             else -> {
+                Log.w(
+                    "BillingRepository",
+                    "onBillingSetupFinished: ${billingResult.responseCode} ${billingResult.debugMessage}"
+                )
             }
         }
     }
@@ -199,16 +216,11 @@ class BillingRepository private constructor(private val application: Application
             val validPurchases = HashSet<Purchase>(purchasesResult.size)
             purchasesResult.forEach { purchase ->
                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                    if (isSignatureValid(purchase)) {
+                    if (purchase.isSuspended) {
+                        // Suspended subs stay attributed to the user but must not grant access.
+                    } else if (isSignatureValid(purchase)) {
                         validPurchases.add(purchase)
-                    } else {
-
                     }
-                } else if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
-                    
-
-                } else {
-
                 }
             }
             val (consumables, nonConsumables) = validPurchases.partition {
@@ -322,17 +334,41 @@ class BillingRepository private constructor(private val application: Application
         return succeeded
     }
 
-    private fun querySkuDetailsAsync(
-        @BillingClient.SkuType skuType: String,
-        skuList: List<String>
-    ) {
-        val params = SkuDetailsParams.newBuilder().setSkusList(skuList).setType(skuType).build()
-        playStoreBillingClient.querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
+    private fun queryProductDetailsAsync(productType: String, productIds: List<String>) {
+        if (productIds.isEmpty()) return
+        val productList = productIds.map { productId ->
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(productId)
+                .setProductType(productType)
+                .build()
+        }
+        val params = QueryProductDetailsParams.newBuilder()
+            .setProductList(productList)
+            .build()
+        playStoreBillingClient.queryProductDetailsAsync(params) { billingResult, queryProductDetailsResult ->
+            val fetched = queryProductDetailsResult.productDetailsList
+            val unfetched = queryProductDetailsResult.unfetchedProductList
+            Log.d(
+                "BillingRepository",
+                "queryProductDetails($productType) code=${billingResult.responseCode} " +
+                    "msg=${billingResult.debugMessage} fetched=${fetched.size} unfetched=${unfetched.size}"
+            )
+            unfetched.forEach { product ->
+                Log.w(
+                    "BillingRepository",
+                    "unfetched product=${product.productId} status=${product.statusCode}"
+                )
+            }
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
-                    skuDetailsList.orEmpty().forEach {
+                    fetched.forEach { productDetails ->
+                        productDetailsById[productDetails.productId] = productDetails
                         CoroutineScope(Job() + Dispatchers.IO).launch {
-                            localCacheBillingClient.skuDetailsDao().insertOrUpdate(it)
+                            try {
+                                localCacheBillingClient.skuDetailsDao().insertOrUpdate(productDetails)
+                            } catch (t: Throwable) {
+                                Log.e("BillingRepository", "insertOrUpdate failed for ${productDetails.productId}", t)
+                            }
                         }
                     }
                 }
@@ -340,27 +376,28 @@ class BillingRepository private constructor(private val application: Application
         }
     }
 
-    fun launchBillingFlow(activity: Activity, augmentedSkuDetails: AugmentedSkuDetails) =
-        augmentedSkuDetails.originalJson?.let {
-            launchBillingFlow(activity, SkuDetails(it))
+    fun launchBillingFlow(activity: Activity, augmentedSkuDetails: AugmentedSkuDetails) {
+        val productDetails = productDetailsById[augmentedSkuDetails.sku]
+        if (productDetails == null) {
+            Log.e(
+                "BillingRepository",
+                "launchBillingFlow missing ProductDetails for ${augmentedSkuDetails.sku}"
+            )
+            return
         }
-
-    fun launchBillingFlow(activity: Activity, skuDetails: SkuDetails) {
-        val oldSku: String? = getOldSku(skuDetails.sku)
-        val billingBuilder = BillingFlowParams.newBuilder().setSkuDetails(skuDetails)
-//        oldSku?.let {
-//            val oldPurchase = getPurchaseForSku(currentPurchases, it)
-//            if (oldPurchase != null)
-//                billingBuilder.setOldSku(oldPurchase.products[0], oldPurchase.purchaseToken)
-//        }
-        playStoreBillingClient.launchBillingFlow(activity, billingBuilder.build())
-    }
-
-    private fun getOldSku(sku: String?): String? {
-        currentPurchases?.forEach { purchase ->
-            if (purchase.products[0] != sku) return purchase.products[0]
-        }
-        return null
+        val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
+            .setProductDetails(productDetails)
+            .apply {
+                val offerToken = ProductDetailsMapper.selectedOfferToken(productDetails)
+                if (!offerToken.isNullOrEmpty()) {
+                    setOfferToken(offerToken)
+                }
+            }
+            .build()
+        val billingFlowParams = BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParams))
+            .build()
+        playStoreBillingClient.launchBillingFlow(activity, billingFlowParams)
     }
 
     // After launchBillingFlow !! или при старте приложение (если есть необработанные)
@@ -473,20 +510,6 @@ class BillingRepository private constructor(private val application: Application
         fun contains(o: Any): Boolean {
             return SUBS_SKUS.contains(o)
         }
-    }
-
-    /**
-     * Return purchase for the provided SKU, if it exists.
-     */
-    private fun getPurchaseForSku(purchases: List<Purchase>?, sku: String): Purchase? {
-        if (purchases != null) {
-            for (purchase in purchases) {
-                if (sku == purchase.products[0]) {
-                    return purchase
-                }
-            }
-        }
-        return null
     }
 }
 

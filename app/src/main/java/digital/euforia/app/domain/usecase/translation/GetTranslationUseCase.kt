@@ -22,6 +22,12 @@ class GetTranslationUseCase @Inject constructor(
         invoke(key, isFormatted)
     }
 
+    fun resolveOrOriginal(raw: String?): String {
+        if (raw.isNullOrBlank()) return raw.orEmpty()
+        val translated = getNow(raw, true)
+        return translated.ifEmpty { raw }
+    }
+
     private fun String.clearFormatting(): String {
         val rx = Regex("""\$\{rc\.strings\.([^}]+)\}""")
         val value = rx

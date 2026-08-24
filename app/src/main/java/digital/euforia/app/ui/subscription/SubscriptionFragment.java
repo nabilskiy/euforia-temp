@@ -5,6 +5,9 @@ import static digital.euforia.app.ui.subscription.UserActivity.PURCHASE_SUCCESS;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.StrikethroughSpan;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,6 +17,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.activity.OnBackPressedCallback;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.LifecycleOwnerKt;
 import androidx.media3.common.util.UnstableApi;
@@ -159,6 +164,8 @@ public abstract class SubscriptionFragment extends BaseFragment<UserActivity> {
         if (getPremiumYearly != null)
             getPremiumYearly.setOnClickListener(view -> onGetPremiumYearlyClick());
 
+        applyNavigationBarInsets(v);
+
         // Handle system back press: finish the hosting Activity when this fragment is on screen
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
                 new OnBackPressedCallback(true) {
@@ -186,6 +193,52 @@ public abstract class SubscriptionFragment extends BaseFragment<UserActivity> {
 //            }
         } catch (Exception ignored) {
         }
+    }
+
+    private void applyNavigationBarInsets(@NonNull View root) {
+        View bottomPanel = root.findViewById(R.id.container);
+        if (bottomPanel == null) {
+            bottomPanel = root.findViewById(R.id.subscribeContainer);
+        }
+        if (bottomPanel == null) {
+            bottomPanel = root.findViewById(R.id.layout);
+        }
+        if (bottomPanel == null) {
+            bottomPanel = terms;
+        }
+        if (bottomPanel == null) {
+            return;
+        }
+        final View target = bottomPanel;
+        final int originalPaddingBottom = target.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            applyBottomNavPadding(target, originalPaddingBottom, insets);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+        root.post(() -> {
+            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(root);
+            if (insets != null) {
+                applyBottomNavPadding(target, originalPaddingBottom, insets);
+            }
+        });
+    }
+
+    private void applyBottomNavPadding(
+            @NonNull View target,
+            int originalPaddingBottom,
+            @NonNull WindowInsetsCompat insets
+    ) {
+        int bottom = Math.max(
+                insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom,
+                insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
+        );
+        target.setPadding(
+                target.getPaddingLeft(),
+                target.getPaddingTop(),
+                target.getPaddingRight(),
+                originalPaddingBottom + bottom
+        );
     }
 
     protected String onGetSubscriptionButtonText() {
@@ -452,14 +505,24 @@ public abstract class SubscriptionFragment extends BaseFragment<UserActivity> {
                 return;
             }
 
-            if (text.contains("~~") && text.contains("~~")) {
-//                String formText = StringUtils.substringBetween(text, "~~", "~~");
-//                text = text.replace("~~", "");
-//
-//                SimpleText simpleText = SimpleText.from(text)
-//                        .first(formText)
-//                        .strikethrough();
-//                textView.setText(simpleText);
+            int strikeOpen = text.indexOf("~~");
+            int strikeClose = strikeOpen >= 0 ? text.indexOf("~~", strikeOpen + 2) : -1;
+            if (strikeOpen >= 0 && strikeClose > strikeOpen) {
+                String before = text.substring(0, strikeOpen);
+                String strike = text.substring(strikeOpen + 2, strikeClose);
+                String after = text.substring(strikeClose + 2);
+                SpannableString spannable = new SpannableString(before + strike + after);
+                int strikeStart = before.length();
+                int strikeEnd = strikeStart + strike.length();
+                if (strikeStart < strikeEnd) {
+                    spannable.setSpan(
+                            new StrikethroughSpan(),
+                            strikeStart,
+                            strikeEnd,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    );
+                }
+                textView.setText(spannable);
                 return;
             }
 

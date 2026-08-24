@@ -15,9 +15,6 @@ import digital.euforia.app.data.store.ProfilePreferences
 import digital.euforia.app.domain.model.TimeOfDay
 import digital.euforia.app.domain.model.config.TimeOfDayConfig
 import digital.euforia.app.domain.model.config.defaultTimeOfDayConfig
-import digital.euforia.app.domain.model.config.isDaytimeRange
-import digital.euforia.app.domain.model.config.isEveningRange
-import digital.euforia.app.domain.model.config.isMorningRange
 import digital.euforia.app.domain.model.onboarding.Goal
 import digital.euforia.app.domain.model.onboarding.IntroAnswerItem
 import digital.euforia.app.domain.usecase.UpdateNotificationsUseCase
@@ -197,12 +194,15 @@ class OnboardingV3ViewModel @Inject constructor(
 
     fun onNotificationTimeChanged(slot: OnboardingV3NotificationSlot, time: Pair<Int, Int>) {
         intent {
-            if (!state.notificationTimeOfDayConfig.isAllowedNotificationHour(slot, time.first)) {
+            if (!state.notificationTimeOfDayConfig.isAllowedNotificationTime(slot, time)) {
                 return@intent
             }
             val updated = state.notificationSettings.map {
                 if (it.slot == slot) {
-                    it.copy(hour = time.first, minute = time.second)
+                    it.copy(
+                        hour = time.first.coerceIn(0, 23),
+                        minute = time.second.coerceIn(0, 59),
+                    )
                 } else {
                     it
                 }
@@ -328,14 +328,16 @@ class OnboardingV3ViewModel @Inject constructor(
                     }
                 }
                 OnboardingV3PreviewType.Soundscape -> {
-                    val sceneId = state.selectedScenes.firstNotNullOfOrNull { it.entityId }
-                        ?: state.introAnswers[IntroAnswerKeys.SCENES]?.entityId
+                    val selectedScene = state.selectedScenes.firstOrNull { it.entityId != null }
+                        ?: state.introAnswers[IntroAnswerKeys.SCENES]
+                    val sceneId = selectedScene?.entityId
                         ?: remoteConfigFetcher.getIntroDefaultSceneId()
                     if (sceneId != null) {
                         postSideEffect(
                             OnboardingV3SideEffect.NavigatePreviewSoundscape(
                                 sceneId = sceneId,
                                 introSceneTimerSeconds = remoteConfigFetcher.getIntroSceneTimerSeconds(),
+                                previewTitle = selectedScene?.text,
                             ),
                         )
                     } else {
@@ -691,13 +693,16 @@ val defaultOnboardingV3NotificationSettings = listOf(
     OnboardingV3NotificationSetting(OnboardingV3NotificationSlot.Evening, enabled = true, hour = 20, minute = 0),
 )
 
-fun TimeOfDayConfig.isAllowedNotificationHour(
+fun TimeOfDayConfig.isAllowedNotificationTime(
     slot: OnboardingV3NotificationSlot,
-    hour: Int,
-): Boolean = when (slot) {
-    OnboardingV3NotificationSlot.Morning -> isMorningRange(hour)
-    OnboardingV3NotificationSlot.Daytime -> isDaytimeRange(hour)
-    OnboardingV3NotificationSlot.Evening -> isEveningRange(hour)
+    time: Pair<Int, Int>,
+): Boolean {
+    val totalMinutes = time.first.coerceIn(0, 23) * 60 + time.second.coerceIn(0, 59)
+    return when (slot) {
+        OnboardingV3NotificationSlot.Morning -> totalMinutes in (5 * 60)..(12 * 60)
+        OnboardingV3NotificationSlot.Daytime -> totalMinutes in (12 * 60)..(18 * 60)
+        OnboardingV3NotificationSlot.Evening -> totalMinutes in (19 * 60)..(23 * 60 + 59) || totalMinutes == 0
+    }
 }
 
 data class OnboardingV3CurrentPage(
@@ -749,6 +754,7 @@ sealed class OnboardingV3SideEffect {
     data class NavigatePreviewSoundscape(
         val sceneId: Int,
         val introSceneTimerSeconds: Int,
+        val previewTitle: String?,
     ) : OnboardingV3SideEffect()
 }
 

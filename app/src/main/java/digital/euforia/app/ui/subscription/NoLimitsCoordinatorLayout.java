@@ -3,7 +3,12 @@ package digital.euforia.app.ui.subscription;
 import android.content.Context;
 import android.util.AttributeSet;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 /**
  * Created by ONCREATE COMPANY © 2023.
@@ -27,7 +32,12 @@ public class NoLimitsCoordinatorLayout extends CoordinatorLayout {
     }
 
     private void init() {
-        setOnApplyWindowInsetsListener((view, windowInsets) -> windowInsets.replaceSystemWindowInsets(0, 0, 0, windowInsets.getSystemWindowInsetBottom()));
+        ViewCompat.setOnApplyWindowInsetsListener(this, (view, windowInsets) -> {
+            Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            // Consume top/left/right so the video can draw behind the status bar.
+            // Keep the bottom inset so paywall copy stays above the nav bar.
+            return windowInsets.inset(systemBars.left, systemBars.top, systemBars.right, 0);
+        });
     }
 
     @Override
